@@ -113,7 +113,7 @@ const Welcome = () => {
             <motion.div variants={fadeInUp}>
               <Badge
                 variant="outline"
-                className="border-forest/30 text-forest bg-forest/5 text-lg px-4 py-2 font-medium"
+                className="border-forest/30 text-forest bg-forest/5 lg:text-base px-4 py-2 font-medium"
               >
                 🎾 WELCOME TO PADEL BATU ALAM PERMAI
               </Badge>
