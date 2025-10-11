@@ -2,8 +2,10 @@ import { Trophy, Zap, Target } from "lucide-react";
 import { Feature, PricingSection, CoachingPackage } from "@/types/home";
 
 export const BUSINESS_NAME = "Padel Batu Alam Permai";
+export const BUSINESS_ADDRESS =
+  "Komp. Batu Alam Permai, Samarinda, East Kalimantan";
 export const BUSINESS_EMAIL = "info@padelbatualampermai.com";
-export const BUSINESS_PHONE = "+1234567890";
+export const BUSINESS_PHONE = "+62 812 3456 7890";
 
 export const BOOKING_DURATION_OPTIONS = [
   { value: 60, label: "1 hour" },
@@ -206,4 +208,62 @@ export const racketRental = {
     "Standard: IDR 30,000 / per racket / per session",
     "Premium: IDR 60,000 / per racket / per session",
   ],
+};
+
+export const footerData = {
+  tagline: "Experience the thrill of Padel at our world class padel courts",
+
+  contact: {
+    address: BUSINESS_ADDRESS,
+    email: BUSINESS_EMAIL,
+    phone: BUSINESS_PHONE,
+    whatsapp: BUSINESS_PHONE,
+  },
+
+  social: [
+    {
+      name: "Facebook",
+      url: "https://facebook.com",
+      icon: "facebook",
+    },
+    {
+      name: "Instagram",
+      url: "https://instagram.com",
+      icon: "instagram",
+    },
+    {
+      name: "Twitter",
+      url: "https://twitter.com",
+      icon: "twitter",
+    },
+  ],
+
+  links: {
+    useful: [
+      { name: "Live Weather", href: "#weather" },
+      { name: "Activities", href: "#activities" },
+      { name: "Shop", href: "#shop" },
+      { name: "Pricing", href: "#pricing" },
+      { name: "Contact", href: "#contact" },
+    ],
+    legal: [
+      { name: "Privacy Policy", href: "#privacy" },
+      { name: "Terms of Service", href: "#terms" },
+      { name: "Cancellation Policy", href: "#cancellation" },
+    ],
+  },
+
+  hours: {
+    title: "Open Hours",
+    schedule: "6 AM - 11 PM, Monday - Sunday",
+    note: "Click below to see current court availability and activities",
+  },
+
+  cta: {
+    title: "Play Padel Today",
+    description:
+      "Experience the thrill of Padel at our world class padel courts",
+  },
+
+  copyright: `© ${new Date().getFullYear()} Padel Batu Alam Permai. All rights reserved.`,
 };
