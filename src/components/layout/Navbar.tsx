@@ -63,7 +63,7 @@ const Navbar = () => {
               <div className="absolute inset-0 bg-primary rounded-lg blur-md opacity-50 group-hover:opacity-75 transition-opacity" />
               <div className="relative bg-black p-2 rounded-lg">
                 <svg
-                  className="w-8 h-8 md:w-10 md:h-10"
+                  className={`transition-all ${isScrolled ? "w-10 h-10 md:w-12 md:h-12" : "w-8 h-8 md:w-10 md:h-10"}`}
                   viewBox="0 0 24 24"
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
@@ -81,8 +81,8 @@ const Navbar = () => {
             </motion.div>
 
             <div
-              className={`font-display font-bold text-sm md:text-base leading-tight transition-colors ${
-                isScrolled ? "text-black" : "text-white"
+              className={`logo text-sm md:text-base leading-tight transition-all ${
+                isScrolled ? "text-accent-foreground text-lg md:text-xl" : "text-accent"
               }`}
             >
               <div>PADEL</div>
@@ -103,8 +103,8 @@ const Navbar = () => {
                   href={link.href}
                   className={`relative font-medium text-sm xl:text-base transition-colors group ${
                     isScrolled
-                      ? "text-black hover:text-gray-700"
-                      : "text-white hover:text-primary"
+                      ? "text-accent-foreground hover:text-muted-foreground"
+                      : "text-accent hover:text-primary"
                   }`}
                 >
                   {link.name}
@@ -128,7 +128,7 @@ const Navbar = () => {
             <Button
               asChild
               size="lg"
-              className="rounded-full font-semibold hover:scale-105 transition-transform"
+              className={`rounded-full font-semibold hover:scale-105 transition-transform ${isScrolled && "hover:!text-accent-foreground"}`}
             >
               <Link href="#booking">BOOK NOW</Link>
             </Button>
@@ -141,8 +141,8 @@ const Navbar = () => {
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className={`lg:hidden ${
               isScrolled
-                ? "text-black hover:bg-black/10"
-                : "text-white hover:bg-white/10"
+                ? "text-accent-foreground hover:bg-black/10"
+                : "text-accent hover:bg-white/10"
             }`}
           >
             {isMobileMenuOpen ? <X /> : <Menu />}
@@ -155,7 +155,7 @@ const Navbar = () => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="lg:hidden py-4 border-t border-white/20"
+            className="lg:hidden py-4 border-t border-border/20"
           >
             <div className="flex flex-col gap-4">
               {navLinks.map((link) => (
@@ -165,8 +165,8 @@ const Navbar = () => {
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`py-2 font-medium transition-colors ${
                     isScrolled
-                      ? "text-black hover:text-gray-700"
-                      : "text-white hover:text-primary"
+                      ? "text-accent-foreground hover:text-muted-foreground"
+                      : "text-accent hover:text-primary"
                   }`}
                 >
                   {link.name}

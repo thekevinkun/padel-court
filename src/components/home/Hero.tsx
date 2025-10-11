@@ -45,7 +45,7 @@ const Hero = () => {
             {/* Main Heading - Using heading-1 utility class */}
             <motion.h1
               variants={fadeInUp}
-              className="heading-1 text-white mb-6"
+              className="heading-1 text-accent mb-6"
             >
               Your Premium{" "}
               <span className="text-primary italic">Padel Experience</span>{" "}
@@ -83,7 +83,7 @@ const Hero = () => {
                 asChild
                 size="lg"
                 variant="outline"
-                className="w-fit border-2 border-white bg-transparent text-white hover:bg-white hover:text-black font-semibold rounded-lg group"
+                className="w-fit border-2 border-accent bg-transparent text-accent hover:bg-accent hover:text-accent-foreground font-semibold rounded-lg group"
               >
                 <Link href="#pricing">
                   VIEW PRICING
@@ -138,7 +138,7 @@ const Hero = () => {
         }}
         className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10"
       >
-        <div className="flex flex-col items-center gap-2 text-white">
+        <div className="flex flex-col items-center gap-2 text-accent">
           <span className="text-sm font-medium">Scroll to explore</span>
           <svg
             className="w-6 h-6 animate-bounce"
