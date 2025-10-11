@@ -38,6 +38,7 @@ const Welcome = () => {
                   src="https://images.unsplash.com/photo-1507120410856-1f35574c3b45?q=80&w=800"
                   alt="Tennis racket and ball"
                   fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   className="object-cover hover:scale-105 transition-transform duration-500"
                 />
               </motion.div>
@@ -51,6 +52,7 @@ const Welcome = () => {
                   src="https://images.unsplash.com/photo-1622163642998-1ea32b0bbc67?q=80&w=800"
                   alt="Padel racket and ball"
                   fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   className="object-cover hover:scale-105 transition-transform duration-500"
                 />
               </motion.div>
@@ -64,6 +66,7 @@ const Welcome = () => {
                   src="https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?q=80&w=800"
                   alt="Professional padel court"
                   fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   className="object-cover hover:scale-105 transition-transform duration-500"
                 />
               </motion.div>
@@ -77,6 +80,7 @@ const Welcome = () => {
                   src="https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?q=80&w=800"
                   alt="Padel court equipment"
                   fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   className="object-cover hover:scale-105 transition-transform duration-500"
                 />
               </motion.div>
@@ -90,7 +94,7 @@ const Welcome = () => {
               transition={{ delay: 0.6 }}
               className="absolute -bottom-6 left-1/2 -translate-x-1/2 z-10"
             >
-              <Badge className="bg-forest text-white px-6 py-3 text-sm font-semibold shadow-xl hover:bg-forest-dark">
+              <Badge className="bg-forest text-accent px-6 py-3 text-sm font-semibold shadow-xl hover:bg-forest-dark">
                 <Sparkles className="w-4 h-4 mr-2" />
                 Premium Experience
               </Badge>
