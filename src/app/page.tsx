@@ -2,6 +2,7 @@ import Navbar from "@/components/layout/Navbar";
 import Hero from "@/components/home/Hero";
 import Welcome from "@/components/home/Welcome";
 import FeaturesGrid from "@/components/home/FeaturesGrid";
+import Pricing from "@/components/home/Pricing";
 
 export default function Home() {
   return (
@@ -10,6 +11,7 @@ export default function Home() {
       <Hero />
       <Welcome />
       <FeaturesGrid />
+      <Pricing />
 
       {/* Temporary section to test scrolling */}
       <section className="section-py bg-white">
