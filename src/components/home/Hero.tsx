@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
 
-const Hero = () => {
+const Hero = ({ onBookNowClick }: { onBookNowClick: () => void }) => {
   return (
     <section className="relative h-screen w-full overflow-hidden">
       {/* Background Image */}
@@ -68,14 +68,12 @@ const Hero = () => {
             >
               {/* Primary Button - uses forest by default */}
               <Button
-                asChild
+                onClick={onBookNowClick}
                 size="lg"
                 className="w-fit rounded-full font-semibold hover:scale-105 transition-transform group"
               >
-                <Link href="#booking">
-                  BOOK NOW
-                  <ArrowRight className="group-hover:translate-x-1 transition-transform" />
-                </Link>
+                BOOK NOW
+                <ArrowRight className="group-hover:translate-x-1 transition-transform" />
               </Button>
 
               {/* Secondary Button - outline variant */}
@@ -158,6 +156,6 @@ const Hero = () => {
       <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent z-[5]" />
     </section>
   );
-}
+};
 
 export default Hero;

@@ -1,4 +1,5 @@
 import { Trophy, Zap, Target } from "lucide-react";
+import { Court, TimeSlot } from "@/types";
 import { Feature, PricingSection, CoachingPackage } from "@/types/home";
 
 export const BUSINESS_NAME = "Padel Batu Alam Permai";
@@ -29,7 +30,7 @@ export const navLinks = [
 export const features: Feature[] = [
   {
     type: "image",
-    src: "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?q=80&w=1000",
+    src: "/images/features-1.jpg",
     alt: "Professional padel court at Batu Alam Permai",
   },
   {
@@ -39,11 +40,11 @@ export const features: Feature[] = [
     description:
       "Join our vibrant community with weekly tournaments, seasonal championships, and social mixers. Whether you're competing for glory or playing for fun, there's always an exciting match waiting for you at Padel Batu Alam Permai.",
     bgImage:
-      "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?q=80&w=1000",
+      "/images/features-highlight.jpg",
   },
   {
     type: "image",
-    src: "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?q=80&w=1000",
+    src: "/images/features-2.jpg",
     alt: "Players enjoying padel match",
   },
   {
@@ -53,11 +54,11 @@ export const features: Feature[] = [
     description:
       "From complete beginners to advanced competitors, our courts welcome everyone. Join casual drop-in sessions, organize private matches, or challenge yourself in our skill-based leagues. The padel lifestyle starts here.",
     bgImage:
-      "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?q=80&w=1000",
+      "/images/features-highlight.jpg",
   },
   {
     type: "image",
-    src: "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?q=80&w=1000",
+    src: "/images/features-3.jpg",
     alt: "Padel court facilities and amenities",
   },
   {
@@ -67,7 +68,7 @@ export const features: Feature[] = [
     description:
       "Experience the finest padel courts in Indonesia, built to international specifications with premium Italian glass walls and professional-grade turf. Every detail is crafted to deliver the authentic European padel experience right here in Bali.",
     bgImage:
-      "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?q=80&w=1000",
+      "/images/features-highlight.jpg",
   },
 ];
 
@@ -267,3 +268,157 @@ export const footerData = {
 
   copyright: `© ${new Date().getFullYear()} Padel Batu Alam Permai. All rights reserved.`,
 };
+
+export const courts: Court[] = [
+  {
+    id: "court-1",
+    name: "Court 1 - Paradise",
+    description: "Premium glass court with tropical view",
+    available: true,
+  },
+  {
+    id: "court-2",
+    name: "Court 2 - Sunset",
+    description: "Perfect for evening matches",
+    available: true,
+  },
+  {
+    id: "court-3",
+    name: "Court 3 - Jungle",
+    description: "Surrounded by lush greenery",
+    available: true,
+  },
+  {
+    id: "court-4",
+    name: "Court 4 - Ocean",
+    description: "With refreshing ocean breeze",
+    available: false,
+  },
+];
+
+export const timeSlots: TimeSlot[] = [
+  // Morning Peak
+  {
+    id: "slot-1",
+    time: "06:00 - 07:00",
+    available: true,
+    period: "peak",
+    pricePerPerson: 100000,
+  },
+  {
+    id: "slot-2",
+    time: "07:00 - 08:00",
+    available: true,
+    period: "peak",
+    pricePerPerson: 100000,
+  },
+  {
+    id: "slot-3",
+    time: "08:00 - 09:00",
+    available: false,
+    period: "peak",
+    pricePerPerson: 100000,
+  },
+  {
+    id: "slot-4",
+    time: "09:00 - 10:00",
+    available: true,
+    period: "peak",
+    pricePerPerson: 100000,
+  },
+
+  // Off-Peak
+  {
+    id: "slot-5",
+    time: "10:00 - 11:00",
+    available: true,
+    period: "off-peak",
+    pricePerPerson: 60000,
+  },
+  {
+    id: "slot-6",
+    time: "11:00 - 12:00",
+    available: true,
+    period: "off-peak",
+    pricePerPerson: 60000,
+  },
+  {
+    id: "slot-7",
+    time: "12:00 - 13:00",
+    available: true,
+    period: "off-peak",
+    pricePerPerson: 60000,
+  },
+  {
+    id: "slot-8",
+    time: "13:00 - 14:00",
+    available: true,
+    period: "off-peak",
+    pricePerPerson: 60000,
+  },
+  {
+    id: "slot-9",
+    time: "14:00 - 15:00",
+    available: true,
+    period: "off-peak",
+    pricePerPerson: 60000,
+  },
+
+  // Afternoon/Evening Peak
+  {
+    id: "slot-10",
+    time: "15:00 - 16:00",
+    available: true,
+    period: "peak",
+    pricePerPerson: 100000,
+  },
+  {
+    id: "slot-11",
+    time: "16:00 - 17:00",
+    available: false,
+    period: "peak",
+    pricePerPerson: 100000,
+  },
+  {
+    id: "slot-12",
+    time: "17:00 - 18:00",
+    available: true,
+    period: "peak",
+    pricePerPerson: 100000,
+  },
+  {
+    id: "slot-13",
+    time: "18:00 - 19:00",
+    available: true,
+    period: "peak",
+    pricePerPerson: 100000,
+  },
+  {
+    id: "slot-14",
+    time: "19:00 - 20:00",
+    available: true,
+    period: "peak",
+    pricePerPerson: 100000,
+  },
+  {
+    id: "slot-15",
+    time: "20:00 - 21:00",
+    available: true,
+    period: "peak",
+    pricePerPerson: 100000,
+  },
+  {
+    id: "slot-16",
+    time: "21:00 - 22:00",
+    available: true,
+    period: "peak",
+    pricePerPerson: 100000,
+  },
+];
+
+export const paymentMethods = [
+  { id: "bank-transfer", name: "Bank Transfer", fee: 0 },
+  { id: "credit-card", name: "Credit/Debit Card", fee: 2500 },
+  { id: "e-wallet", name: "E-Wallet (GoPay, OVO, DANA)", fee: 1500 },
+  { id: "qris", name: "QRIS", fee: 0 },
+];

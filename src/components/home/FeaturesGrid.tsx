@@ -35,7 +35,7 @@ const FeaturesGrid = () => {
                 </div>
               ) : (
                 // Text Grid Item with Background
-                <div className="relative aspect-square md:aspect-[4/5] overflow-hidden">
+                <div className="relative w-full aspect-square md:aspect-[4/5] overflow-hidden">
                   {/* Background Image with Low Opacity */}
                   <div className="absolute inset-0">
                     <Image

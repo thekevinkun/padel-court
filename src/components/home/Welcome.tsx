@@ -35,8 +35,8 @@ const Welcome = () => {
                 className="relative aspect-[3/4] rounded-2xl overflow-hidden shadow-xl"
               >
                 <Image
-                  src="https://images.unsplash.com/photo-1507120410856-1f35574c3b45?q=80&w=800"
-                  alt="Tennis racket and ball"
+                  src="/images/welcome-1.jpg"
+                  alt="Padel court"
                   fill
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   className="object-cover hover:scale-105 transition-transform duration-500"
@@ -49,7 +49,7 @@ const Welcome = () => {
                 className="relative aspect-[3/4] rounded-2xl overflow-hidden shadow-xl mt-8 md:mt-12"
               >
                 <Image
-                  src="https://images.unsplash.com/photo-1622163642998-1ea32b0bbc67?q=80&w=800"
+                  src="/images/welcome-2.jpg"
                   alt="Padel racket and ball"
                   fill
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -63,8 +63,8 @@ const Welcome = () => {
                 className="relative aspect-[3/4] rounded-2xl overflow-hidden shadow-xl -mt-8 md:-mt-12"
               >
                 <Image
-                  src="https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?q=80&w=800"
-                  alt="Professional padel court"
+                  src="/images/welcome-3.jpg"
+                  alt="Two girls padel player"
                   fill
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   className="object-cover hover:scale-105 transition-transform duration-500"
@@ -77,8 +77,8 @@ const Welcome = () => {
                 className="relative aspect-[3/4] rounded-2xl overflow-hidden shadow-xl"
               >
                 <Image
-                  src="https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?q=80&w=800"
-                  alt="Padel court equipment"
+                  src="/images/welcome-4.jpg"
+                  alt="Padel man serving"
                   fill
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   className="object-cover hover:scale-105 transition-transform duration-500"

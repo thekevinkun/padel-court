@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { fadeInDown, drawerVariants, backdropVariants } from "@/lib/animations";
 import { navLinks } from "@/lib/constants";
 
-const Navbar = () => {
+const Navbar = ({ onBookNowClick }: { onBookNowClick: () => void }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { scrollY } = useScroll();
@@ -60,6 +60,11 @@ const Navbar = () => {
   const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
+
+  const handleBookNowClick = () => {
+    closeMobileMenu();
+    onBookNowClick();
+  };
 
   return (
     <>
@@ -149,7 +154,7 @@ const Navbar = () => {
               ))}
             </div>
 
-            {/* CTA Button */}
+            {/* CTA Button - Desktop */}
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -157,13 +162,13 @@ const Navbar = () => {
               className="hidden lg:block"
             >
               <Button
-                asChild
+                onClick={onBookNowClick}
                 size="lg"
                 className={`rounded-full font-semibold hover:scale-105 transition-transform ${
                   isScrolled && "hover:!text-accent-foreground"
                 }`}
               >
-                <Link href="#booking">BOOK NOW</Link>
+                BOOK NOW
               </Button>
             </motion.div>
 
@@ -179,7 +184,7 @@ const Navbar = () => {
                     : "text-accent hover:bg-white/10"
                 }`}
               >
-                <Menu className="!w-6 !h-6"/>
+                <Menu className="!w-6 !h-6" />
               </Button>
             )}
           </div>
@@ -288,7 +293,7 @@ const Navbar = () => {
                 ))}
               </div>
 
-              {/* CTA Button */}
+              {/* CTA Button - Mobile */}
               <motion.div
                 className="p-6 border-t border-foreground/20"
                 initial={{ opacity: 0, y: 20 }}
@@ -297,13 +302,11 @@ const Navbar = () => {
                 transition={{ duration: 0.3, delay: 0.2 }}
               >
                 <Button
-                  asChild
+                  onClick={handleBookNowClick}
                   size="lg"
                   className="w-full rounded-full font-semibold text-foreground hover:scale-105 transition-transform"
                 >
-                  <Link href="#booking" onClick={closeMobileMenu}>
-                    BOOK NOW
-                  </Link>
+                  BOOK NOW
                 </Button>
               </motion.div>
             </motion.div>

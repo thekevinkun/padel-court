@@ -7,15 +7,6 @@ export interface User {
   created_at: string;
 }
 
-export interface Court {
-  id: string;
-  name: string;
-  description?: string;
-  image_url?: string;
-  price_per_hour: number;
-  is_active: boolean;
-}
-
 export interface Booking {
   id: string;
   user_id: string;
@@ -29,7 +20,31 @@ export interface Booking {
   created_at: string;
 }
 
+export interface Court {
+  id: string;
+  name: string;
+  description: string;
+  available: boolean;
+}
+
 export interface TimeSlot {
+  id: string;
   time: string;
   available: boolean;
+  period: "peak" | "off-peak";
+  pricePerPerson: number;
+}
+
+export interface BookingFormData {
+  courtId?: string;
+  slotId?: string;
+  date?: Date;
+  numberOfPlayers?: number;
+  name?: string;
+  email?: string;
+  phone?: string;
+  whatsapp?: string;
+  notes?: string;
+  paymentMethod?: string;
+  agreeTerms?: boolean;
 }
