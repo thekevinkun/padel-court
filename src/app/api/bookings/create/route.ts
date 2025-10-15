@@ -21,6 +21,8 @@ export async function POST(request: NextRequest) {
       notes,
     } = body;
 
+    console.log("bookings-create body: ", body);
+
     // Validate required fields
     if (!courtId || !timeSlotId || !date || !customerName || !customerEmail || !customerPhone) {
       return NextResponse.json(

@@ -6,7 +6,7 @@ const midtransClient = require("midtrans-client");
 export async function POST(request: NextRequest) {
   try {
     const notification = await request.json();
-    
+
     console.log("📩 Webhook received:", notification);
 
     // Initialize Midtrans API client
@@ -16,14 +16,18 @@ export async function POST(request: NextRequest) {
     });
 
     // Verify notification authenticity
-    const statusResponse = await apiClient.transaction.notification(notification);
-    
+    const statusResponse = await apiClient.transaction.notification(
+      notification
+    );
+
     const orderId = statusResponse.order_id;
     const transactionStatus = statusResponse.transaction_status;
     const fraudStatus = statusResponse.fraud_status;
     const paymentType = statusResponse.payment_type;
 
-    console.log(`📊 Transaction ${orderId}: ${transactionStatus}, Fraud: ${fraudStatus}`);
+    console.log(
+      `📊 Transaction ${orderId}: ${transactionStatus}, Fraud: ${fraudStatus}`
+    );
 
     const supabase = createServerClient();
 
@@ -42,17 +46,40 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
     }
 
+    // Determine payment status for our database
+    let paymentStatus = "PENDING";
+    if (transactionStatus === "capture" || transactionStatus === "settlement") {
+      if (fraudStatus === "accept" || transactionStatus === "settlement") {
+        paymentStatus = "SUCCESS";
+      }
+    } else if (transactionStatus === "pending") {
+      paymentStatus = "PENDING";
+    } else if (
+      transactionStatus === "deny" ||
+      transactionStatus === "cancel" ||
+      transactionStatus === "expire"
+    ) {
+      paymentStatus = "FAILED";
+    }
+
     // Update payment record
+    const updateData: any = {
+      midtrans_transaction_id: statusResponse.transaction_id,
+      payment_type: paymentType,
+      payment_method: statusResponse.payment_type,
+      status: paymentStatus,
+      payment_response: statusResponse,
+      updated_at: new Date().toISOString(),
+    };
+
+    // Add completed_at timestamp if payment successful
+    if (paymentStatus === "SUCCESS") {
+      updateData.completed_at = new Date().toISOString();
+    }
+
     await supabase
       .from("payments")
-      .update({
-        midtrans_transaction_id: statusResponse.transaction_id,
-        payment_type: paymentType,
-        payment_method: statusResponse.payment_type,
-        status: transactionStatus.toUpperCase(),
-        payment_response: statusResponse,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq("midtrans_order_id", orderId);
 
     // Handle different payment statuses
@@ -61,12 +88,33 @@ export async function POST(request: NextRequest) {
       if (fraudStatus === "accept" || transactionStatus === "settlement") {
         console.log("✅ Payment SUCCESS for booking:", bookingRef);
 
-        // Update booking status to PAID
+        // Calculate actual fee based on payment type
+        let actualFee = 0;
+        if (paymentType === "credit_card") {
+          actualFee = Math.round(booking.total_amount * 0.029 + 2000); // 2.9% + 2000
+        } else if (
+          paymentType === "gopay" ||
+          paymentType === "shopeepay" ||
+          paymentType === "dana"
+        ) {
+          actualFee = Math.round(booking.total_amount * 0.02); // 2%
+        } else if (paymentType === "qris") {
+          actualFee = Math.round(booking.total_amount * 0.007); // 0.7%
+        } else if (
+          paymentType.includes("va") ||
+          paymentType.includes("bank_transfer")
+        ) {
+          actualFee = 4000; // Flat fee
+        }
+
+        // Update booking status to PAID and its Payment Method
         await supabase
           .from("bookings")
           .update({
             status: "PAID",
             paid_at: new Date().toISOString(),
+            payment_method: paymentType,
+            payment_fee: actualFee,
           })
           .eq("id", booking.id);
 
@@ -77,28 +125,31 @@ export async function POST(request: NextRequest) {
           .eq("id", booking.time_slot_id);
 
         // Notification already created by trigger, just update it
-        await supabase
-          .from("admin_notifications")
-          .insert({
-            booking_id: booking.id,
-            type: "PAYMENT_RECEIVED",
-            title: "💰 Payment Received",
-            message: `Booking ${bookingRef} paid ${booking.total_amount.toLocaleString("id-ID")} via ${paymentType}`,
-            read: false,
-          });
+        await supabase.from("admin_notifications").insert({
+          booking_id: booking.id,
+          type: "PAYMENT_RECEIVED",
+          title: "💰 Payment Received",
+          message: `Booking ${bookingRef} paid ${booking.total_amount.toLocaleString(
+            "id-ID"
+          )} via ${paymentType}`,
+          read: false,
+        });
 
         console.log("✅ Booking updated to PAID");
       }
     } else if (transactionStatus === "pending") {
       // Payment pending (e.g., bank transfer)
       console.log("⏳ Payment PENDING for booking:", bookingRef);
-      
+
       await supabase
         .from("bookings")
         .update({ status: "PENDING" })
         .eq("id", booking.id);
-
-    } else if (transactionStatus === "deny" || transactionStatus === "cancel" || transactionStatus === "expire") {
+    } else if (
+      transactionStatus === "deny" ||
+      transactionStatus === "cancel" ||
+      transactionStatus === "expire"
+    ) {
       // Payment failed/cancelled
       console.log("❌ Payment FAILED/CANCELLED for booking:", bookingRef);
 
@@ -115,15 +166,13 @@ export async function POST(request: NextRequest) {
         .eq("id", booking.time_slot_id);
 
       // Notify admin
-      await supabase
-        .from("admin_notifications")
-        .insert({
-          booking_id: booking.id,
-          type: "PAYMENT_FAILED",
-          title: "❌ Payment Failed",
-          message: `Booking ${bookingRef} payment ${transactionStatus}. Slot released.`,
-          read: false,
-        });
+      await supabase.from("admin_notifications").insert({
+        booking_id: booking.id,
+        type: "PAYMENT_FAILED",
+        title: "❌ Payment Failed",
+        message: `Booking ${bookingRef} payment ${transactionStatus}. Slot released.`,
+        read: false,
+      });
     }
 
     return NextResponse.json({ success: true });

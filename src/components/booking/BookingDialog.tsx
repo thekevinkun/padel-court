@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Calendar,
@@ -9,9 +9,6 @@ import {
   ArrowRight,
   ArrowLeft,
   Loader2,
-  CheckCircle2,
-  Download,
-  MessageCircle,
 } from "lucide-react";
 import {
   Dialog,
@@ -37,9 +34,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 
 import { BookingFormData } from "@/types";
-import { courts, timeSlots, paymentMethods } from "@/lib/constants";
-import { generateBookingReceipt } from "@/lib/pdf-generator";
-import { sendWhatsAppReceipt } from "@/lib/whatsapp";
+import { supabase } from "@/lib/supabase/client";
 
 interface BookingDialogProps {
   open: boolean;
@@ -49,7 +44,7 @@ interface BookingDialogProps {
 const steps = [
   { id: 1, name: "Court & Time", icon: Calendar },
   { id: 2, name: "Your Info", icon: Users },
-  { id: 3, name: "Payment", icon: CreditCard },
+  { id: 3, name: "Confirm Payment", icon: CreditCard },
 ];
 
 export default function BookingDialog({
@@ -58,185 +53,143 @@ export default function BookingDialog({
 }: BookingDialogProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [receiptData, setReceiptData] = useState<any>(null);
-  const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
   const [formData, setFormData] = useState<Partial<BookingFormData>>({
     date: new Date(),
     numberOfPlayers: 4,
   });
 
+  // Fetch courts and time slots from database
+  const [courts, setCourts] = useState<any[]>([]);
+  const [timeSlots, setTimeSlots] = useState<any[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+
+  // Fetch courts on mount
+  useEffect(() => {
+    fetchCourts();
+  }, []);
+
+  // Fetch time slots when court or date changes
+  useEffect(() => {
+    if (formData.courtId && formData.date) {
+      fetchTimeSlots();
+    }
+  }, [formData.courtId, formData.date]);
+
+  const fetchCourts = async () => {
+    const { data, error } = await supabase
+      .from("courts")
+      .select("*")
+      .eq("available", true)
+      .order("name");
+
+    if (!error && data) {
+      setCourts(data);
+    }
+  };
+
+  const fetchTimeSlots = async () => {
+    if (!formData.courtId || !formData.date) return;
+
+    setLoadingSlots(true);
+    const dateStr = formData.date.toISOString().split("T")[0];
+
+    const { data, error } = await supabase
+      .from("time_slots")
+      .select("*")
+      .eq("court_id", formData.courtId)
+      .eq("date", dateStr)
+      .eq("available", true)
+      .order("time_start");
+
+    if (!error && data) {
+      // Format time slots to match your existing format
+      const formatted = data.map((slot) => ({
+        id: slot.id,
+        time: `${slot.time_start.substring(0, 5)} - ${slot.time_end.substring(0, 5)}`,
+        available: slot.available,
+        period: slot.period,
+        pricePerPerson: slot.price_per_person,
+      }));
+      setTimeSlots(formatted);
+    }
+    setLoadingSlots(false);
+  };
+
   const selectedCourt = courts.find((c) => c.id === formData.courtId);
   const selectedSlot = timeSlots.find((s) => s.id === formData.slotId);
-  const selectedPayment = paymentMethods.find(
-    (p) => p.id === formData.paymentMethod
-  );
 
   const calculateTotal = () => {
     if (!selectedSlot || !formData.numberOfPlayers) return 0;
     const subtotal = selectedSlot.pricePerPerson * formData.numberOfPlayers;
-    const paymentFee = selectedPayment?.fee || 0;
-    return subtotal + paymentFee;
+
+    return subtotal;
   };
 
   const handleSubmit = async () => {
     setIsProcessing(true);
 
     try {
-      // Step 1: Simulate payment processing (2 seconds)
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      // Step 2: Generate booking reference
-      const bookingRef = `BAP${Date.now().toString().slice(-8)}`;
-
-      // Step 3: Prepare receipt data
-      const receiptDataObj = {
-        bookingRef,
-        customerName: formData.name!,
-        email: formData.email!,
-        phone: formData.phone!,
-        courtName: selectedCourt!.name,
-        date: formData.date!.toLocaleDateString("id-ID", {
-          weekday: "long",
-          year: "numeric",
-          month: "long",
-          day: "numeric",
+      // Create booking in database
+      const bookingResponse = await fetch("/api/bookings/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          courtId: formData.courtId,
+          timeSlotId: formData.slotId,
+          date: formData.date?.toISOString().split("T")[0],
+          time: selectedSlot!.time,
+          customerName: formData.name,
+          customerEmail: formData.email,
+          customerPhone: formData.phone,
+          customerWhatsapp: formData.whatsapp,
+          numberOfPlayers: formData.numberOfPlayers,
+          subtotal: selectedSlot!.pricePerPerson * formData.numberOfPlayers!,
+          paymentFee: 0,
+          totalAmount: calculateTotal(),
+          paymentMethod: null,
+          notes: formData.notes,
         }),
-        time: selectedSlot!.time,
-        numberOfPlayers: formData.numberOfPlayers!,
-        pricePerPerson: selectedSlot!.pricePerPerson,
-        subtotal: selectedSlot!.pricePerPerson * formData.numberOfPlayers!,
-        paymentMethod: selectedPayment!.name,
-        paymentFee: selectedPayment!.fee,
-        total: calculateTotal(),
-        notes: formData.notes || "-",
-        timestamp: new Date().toLocaleString("id-ID"),
-      };
+      });
 
-      // Save receipt data to state
-      setReceiptData(receiptDataObj);
+      if (!bookingResponse.ok) {
+        throw new Error("Failed to create booking");
+      }
 
-      // Step 4: Generate PDF receipt
-      const pdfBlobGenerated = await generateBookingReceipt(receiptDataObj);
+      const { booking } = await bookingResponse.json();
 
-      // Save PDF to state for later download
-      setPdfBlob(pdfBlobGenerated);
+      // Create payment with Midtrans
+      const paymentResponse = await fetch("/api/payments/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bookingId: booking.id,
+        }),
+      });
 
-      // Step 5: Show success (PDF is ready but not downloaded yet)
-      setIsSuccess(true);
+      if (!paymentResponse.ok) {
+        throw new Error("Failed to create payment");
+      }
+
+      const { paymentUrl } = await paymentResponse.json();
+
+      // Redirect to Midtrans payment page
+      window.location.href = paymentUrl;
+
     } catch (error) {
       console.error("Booking error:", error);
       alert("An error occurred during booking. Please try again.");
-    } finally {
       setIsProcessing(false);
     }
   };
 
   const resetAndClose = () => {
     setCurrentStep(1);
-    setIsSuccess(false);
-    setReceiptData(null);
-    setPdfBlob(null);
     setFormData({ date: new Date(), numberOfPlayers: 4 });
     onOpenChange(false);
   };
 
-  const handleDownloadPDF = () => {
-    if (!pdfBlob || !receiptData) return;
-
-    const pdfUrl = URL.createObjectURL(pdfBlob);
-    const link = document.createElement("a");
-    link.href = pdfUrl;
-    link.download = `Padel-Receipt-${receiptData.bookingRef}.pdf`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(pdfUrl);
-  };
-
-  const handleShareWhatsApp = () => {
-    if (!receiptData || !formData.whatsapp) return;
-
-    const whatsappNumber = formData.whatsapp.replace(/\D/g, "");
-    sendWhatsAppReceipt(whatsappNumber, receiptData, pdfBlob || undefined);
-  };
-
-  if (isSuccess) {
-    return (
-      <Dialog open={open} onOpenChange={resetAndClose}>
-        <DialogContent className="max-w-md">
-          <div className="text-center py-8">
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", duration: 0.5 }}
-              className="w-20 h-20 bg-forest/10 rounded-full flex items-center justify-center mx-auto mb-6"
-            >
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 0.2, type: "spring" }}
-              >
-                <CheckCircle2 className="w-10 h-10 text-forest" />
-              </motion.div>
-            </motion.div>
-
-            <h3 className="heading-3 mb-2">Booking Confirmed!</h3>
-            <p className="text-body mb-6">
-              Your booking is confirmed. Download your receipt or share it via
-              WhatsApp.
-            </p>
-
-            <div className="bg-muted rounded-lg p-4 mb-6 text-left space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Court:</span>
-                <span className="font-medium">{selectedCourt?.name}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Time:</span>
-                <span className="font-medium">{selectedSlot?.time}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Total:</span>
-                <span className="font-bold text-forest">
-                  IDR {calculateTotal().toLocaleString("id-ID")}
-                </span>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <Button
-                onClick={handleDownloadPDF}
-                size="lg"
-                className="w-full rounded-full hover:text-accent-foreground"
-              >
-                Download PDF Receipt
-              </Button>
-              <Button
-                onClick={handleShareWhatsApp}
-                variant="outline"
-                size="lg"
-                className="w-full rounded-full"
-              >
-                Share via WhatsApp
-              </Button>
-              <Button
-                onClick={resetAndClose}
-                variant="ghost"
-                size="lg"
-                className="w-full rounded-full"
-              >
-                Close
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={resetAndClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-display">
@@ -351,47 +304,57 @@ export default function BookingDialog({
               {/* Time Slot Selection */}
               <div>
                 <Label>Select Time Slot</Label>
-                <RadioGroup
-                  value={formData.slotId}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, slotId: value })
-                  }
-                  className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2"
-                >
-                  {timeSlots.map((slot) => (
-                    <Card
-                      key={slot.id}
-                      className={`cursor-pointer transition-all ${
-                        formData.slotId === slot.id
-                          ? "border-forest ring-2 ring-forest/20"
-                          : slot.available
-                          ? "hover:border-forest/50"
-                          : "opacity-50 cursor-not-allowed"
-                      }`}
-                    >
-                      <CardContent className="p-3">
-                        <div className="flex flex-col items-center text-center gap-2">
-                          <RadioGroupItem
-                            value={slot.id}
-                            disabled={!slot.available}
-                          />
-                          <div className="text-sm font-medium">{slot.time}</div>
-                          <Badge
-                            variant={
-                              slot.period === "peak" ? "default" : "secondary"
-                            }
-                            className="text-xs"
-                          >
-                            {slot.period === "peak" ? "Peak" : "Off-Peak"}
-                          </Badge>
-                          <div className="text-xs font-bold text-forest">
-                            {slot.pricePerPerson.toLocaleString("id-ID")}/pax
+                {loadingSlots ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-forest" />
+                    <span className="ml-2 text-sm text-muted-foreground">
+                      Loading available slots...
+                    </span>
+                  </div>
+                ) : timeSlots.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    {formData.courtId
+                      ? "No available slots for this date"
+                      : "Please select a court first"}
+                  </div>
+                ) : (
+                  <RadioGroup
+                    value={formData.slotId}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, slotId: value })
+                    }
+                    className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2"
+                  >
+                    {timeSlots.map((slot) => (
+                      <Card
+                        key={slot.id}
+                        className={`cursor-pointer transition-all ${
+                          formData.slotId === slot.id
+                            ? "border-forest ring-2 ring-forest/20"
+                            : "hover:border-forest/50"
+                        }`}
+                      >
+                        <CardContent className="p-3">
+                          <div className="flex flex-col items-center text-center gap-2">
+                            <RadioGroupItem value={slot.id} />
+                            <div className="text-sm font-medium">{slot.time}</div>
+                            <Badge
+                              variant={
+                                slot.period === "peak" ? "default" : "secondary"
+                              }
+                              className="text-xs"
+                            >
+                              {slot.period === "peak" ? "Peak" : "Off-Peak"}
+                            </Badge>
+                            <div className="text-xs font-bold text-forest">
+                              {slot.pricePerPerson.toLocaleString("id-ID")}/pax
+                            </div>
                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </RadioGroup>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </RadioGroup>
+                )}
               </div>
 
               {/* Number of Players */}
@@ -549,27 +512,33 @@ export default function BookingDialog({
               <Card className="bg-muted/30">
                 <CardContent className="p-6 space-y-3">
                   <h4 className="font-semibold mb-4">Booking Summary</h4>
+                  
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Court:</span>
                     <span className="font-medium">{selectedCourt?.name}</span>
                   </div>
+
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Date:</span>
                     <span className="font-medium">
                       {formData.date?.toLocaleDateString("id-ID")}
                     </span>
                   </div>
+
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Time:</span>
                     <span className="font-medium">{selectedSlot?.time}</span>
                   </div>
+
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Players:</span>
                     <span className="font-medium">
                       {formData.numberOfPlayers}
                     </span>
                   </div>
+
                   <Separator />
+
                   <div className="flex justify-between text-sm">
                     <span>Subtotal:</span>
                     <span>
@@ -579,15 +548,9 @@ export default function BookingDialog({
                       ).toLocaleString("id-ID")}
                     </span>
                   </div>
-                  {selectedPayment && selectedPayment.fee > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span>Payment Fee:</span>
-                      <span>
-                        IDR {selectedPayment.fee.toLocaleString("id-ID")}
-                      </span>
-                    </div>
-                  )}
+
                   <Separator />
+
                   <div className="flex justify-between font-bold text-lg">
                     <span>Total:</span>
                     <span className="text-forest">
@@ -596,43 +559,6 @@ export default function BookingDialog({
                   </div>
                 </CardContent>
               </Card>
-
-              {/* Payment Method */}
-              <div>
-                <Label>Select Payment Method</Label>
-                <RadioGroup
-                  value={formData.paymentMethod}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, paymentMethod: value })
-                  }
-                  className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2"
-                >
-                  {paymentMethods.map((method) => (
-                    <Card
-                      key={method.id}
-                      className={`cursor-pointer transition-all ${
-                        formData.paymentMethod === method.id
-                          ? "border-forest ring-2 ring-forest/20"
-                          : "hover:border-forest/50"
-                      }`}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex items-center gap-3">
-                          <RadioGroupItem value={method.id} />
-                          <div className="flex-1">
-                            <div className="font-medium">{method.name}</div>
-                            {method.fee > 0 && (
-                              <div className="text-xs text-muted-foreground">
-                                +IDR {method.fee.toLocaleString("id-ID")} fee
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </RadioGroup>
-              </div>
 
               {/* Terms & Conditions */}
               <div className="flex items-start gap-3">
@@ -647,8 +573,7 @@ export default function BookingDialog({
                   htmlFor="terms"
                   className="text-sm text-muted-foreground cursor-pointer"
                 >
-                  I agree to the terms and conditions. This is a demo booking
-                  system with simulated payment.
+                  I agree to the terms and conditions. Payment will be processed securely by Midtrans.
                 </label>
               </div>
 
@@ -666,7 +591,6 @@ export default function BookingDialog({
                 <Button
                   onClick={handleSubmit}
                   disabled={
-                    !formData.paymentMethod ||
                     !formData.agreeTerms ||
                     isProcessing
                   }
