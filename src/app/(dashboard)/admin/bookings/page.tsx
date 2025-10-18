@@ -9,8 +9,15 @@ import {
   Clock,
   XCircle,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -19,13 +26,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 
 import { supabase } from "@/lib/supabase/client";
@@ -216,57 +224,37 @@ export default function BookingsPage() {
       </Card>
 
       {/* Bookings Table */}
-      <Card>
+      {/* Bookings Table */}
+      <Card className="!pb-1">
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Booking Ref
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Customer
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Court
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Time
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Total
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
+          <div className="rounded-md">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="font-medium">Booking Ref</TableHead>
+                  <TableHead className="font-medium">Customer</TableHead>
+                  <TableHead className="font-medium">Court</TableHead>
+                  <TableHead className="font-medium">Date</TableHead>
+                  <TableHead className="font-medium">Time</TableHead>
+                  <TableHead className="font-medium">Total</TableHead>
+                  <TableHead className="font-medium">Status</TableHead>
+                  <TableHead className="font-medium">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {filteredBookings.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="px-6 py-12 text-center">
+                  <TableRow>
+                    <TableCell colSpan={8} className="h-24 text-center">
                       <p className="text-muted-foreground">No bookings found</p>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   filteredBookings.map((booking) => (
-                    <tr
-                      key={booking.id}
-                      className="hover:bg-gray-50 transition-colors"
-                    >
-                      <td className="px-6 py-4">
-                        <span className="font-mono text-sm font-medium">
-                          {booking.booking_ref}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
+                    <TableRow key={booking.id}>
+                      <TableCell className="font-mono text-sm font-medium">
+                        {booking.booking_ref}
+                      </TableCell>
+                      <TableCell>
                         <div>
                           <div className="font-medium">
                             {booking.customer_name}
@@ -275,27 +263,19 @@ export default function BookingsPage() {
                             {booking.customer_email}
                           </div>
                         </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="text-sm">{booking.courts.name}</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="text-sm">
-                          {new Date(booking.date).toLocaleDateString("id-ID")}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="text-sm">{booking.time}</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="font-medium">
-                          IDR {booking.total_amount.toLocaleString("id-ID")}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        {getStatusBadge(booking.status)}
-                      </td>
-                      <td className="px-6 py-4">
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {booking.courts.name}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {new Date(booking.date).toLocaleDateString("id-ID")}
+                      </TableCell>
+                      <TableCell className="text-sm">{booking.time}</TableCell>
+                      <TableCell className="font-medium">
+                        IDR {booking.total_amount.toLocaleString("id-ID")}
+                      </TableCell>
+                      <TableCell>{getStatusBadge(booking.status)}</TableCell>
+                      <TableCell>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -307,12 +287,12 @@ export default function BookingsPage() {
                           <Eye className="w-4 h-4 mr-1" />
                           View
                         </Button>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))
                 )}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </CardContent>
       </Card>
