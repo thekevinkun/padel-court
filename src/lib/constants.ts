@@ -30,7 +30,7 @@ export const navLinks = [
 export const features: Feature[] = [
   {
     type: "image",
-    src: "/images/features-1.jpg",
+    src: "/images/feature-1.jpg",
     alt: "Professional padel court at Batu Alam Permai",
   },
   {
@@ -40,11 +40,11 @@ export const features: Feature[] = [
     description:
       "Join our vibrant community with weekly tournaments, seasonal championships, and social mixers. Whether you're competing for glory or playing for fun, there's always an exciting match waiting for you at Padel Batu Alam Permai.",
     bgImage:
-      "/images/features-highlight.jpg",
+      "/images/feature-highlight.jpg",
   },
   {
     type: "image",
-    src: "/images/features-2.jpg",
+    src: "/images/feature-2.jpg",
     alt: "Players enjoying padel match",
   },
   {
@@ -54,11 +54,11 @@ export const features: Feature[] = [
     description:
       "From complete beginners to advanced competitors, our courts welcome everyone. Join casual drop-in sessions, organize private matches, or challenge yourself in our skill-based leagues. The padel lifestyle starts here.",
     bgImage:
-      "/images/features-highlight.jpg",
+      "/images/feature-highlight.jpg",
   },
   {
     type: "image",
-    src: "/images/features-3.jpg",
+    src: "/images/feature-3.jpg",
     alt: "Padel court facilities and amenities",
   },
   {
@@ -68,7 +68,7 @@ export const features: Feature[] = [
     description:
       "Experience the finest padel courts in Indonesia, built to international specifications with premium Italian glass walls and professional-grade turf. Every detail is crafted to deliver the authentic European padel experience right here in Bali.",
     bgImage:
-      "/images/features-highlight.jpg",
+      "/images/feature-highlight.jpg",
   },
 ];
 

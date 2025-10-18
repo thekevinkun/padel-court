@@ -93,7 +93,7 @@ const Navbar = ({ onBookNowClick }: { onBookNowClick: () => void }) => {
                 <div className="absolute inset-0 bg-primary rounded-lg blur-md opacity-50 group-hover:opacity-75 transition-opacity" />
                 <div className="relative bg-black p-2 rounded-lg">
                   <svg
-                    className={`transition-all ${
+                    className={`transition-all duration-500 delay-200 ${
                       isScrolled
                         ? "w-10 h-10 md:w-12 md:h-12"
                         : "w-8 h-8 md:w-10 md:h-10"
@@ -115,7 +115,7 @@ const Navbar = ({ onBookNowClick }: { onBookNowClick: () => void }) => {
               </motion.div>
 
               <div
-                className={`logo text-sm md:text-base leading-tight transition-all ${
+                className={`logo text-sm md:text-base leading-tight transition-all duration-500 delay-200 ${
                   isScrolled
                     ? "text-accent-foreground text-lg md:text-xl"
                     : "text-accent"
@@ -164,7 +164,7 @@ const Navbar = ({ onBookNowClick }: { onBookNowClick: () => void }) => {
               <Button
                 onClick={onBookNowClick}
                 size="lg"
-                className={`rounded-full font-semibold hover:scale-105 transition-transform ${
+                className={`rounded-full font-semibold hover:scale-105 hover:!text-accent transition-transform ${
                   isScrolled && "hover:!text-accent-foreground"
                 }`}
               >

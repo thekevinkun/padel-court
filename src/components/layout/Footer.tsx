@@ -133,7 +133,6 @@ const Footer = () => {
                     href={link.href}
                     className="text-sm text-gray-400 hover:text-primary transition-colors inline-flex items-center gap-2 group"
                   >
-                    <span className="w-1.5 h-1.5 bg-forest rounded-full group-hover:bg-primary transition-colors" />
                     {link.name}
                   </Link>
                 </li>
@@ -203,7 +202,7 @@ const Footer = () => {
               <Button
                 asChild
                 size="sm"
-                className="font-semibold rounded-full w-full mt-4"
+                className="font-semibold rounded-full w-full mt-4 hover:!text-accent"
               >
                 <Link href="#booking">CHECK AVAILABILITY</Link>
               </Button>

@@ -33,7 +33,7 @@ export const heroInitial = {
     "World-class courts. Professional coaching. Seamless booking. Everything you need for the perfect game.",
   ctaPrimary: { text: "BOOK NOW", href: "/#booking" },
   ctaSecondary: { text: "VIEW PRICING", href: "/#pricing" },
-  image_url: "/images/hero-placeholder.jpg",
+  image_url: "/images/hero.png",
   stats: [
     { number: "4+", label: "Premium Courts" },
     { number: "500+", label: "Happy Players" },
@@ -67,13 +67,13 @@ export const featuresInitial: Feature[] = [
   {
     id: "f1",
     type: "image",
-    src: "/images/features-1.jpg",
+    src: "/images/feature-1.jpg",
     alt: "Professional padel court at Batu Alam Permai",
   },
   {
     id: "f2",
     type: "text",
-    bgImage: "/images/features-highlight.jpg",
+    bgImage: "/images/feature-highlight.jpg",
     icon: "Trophy",
     title: "Competitive Tournaments & Events",
     description:
@@ -82,13 +82,13 @@ export const featuresInitial: Feature[] = [
   {
     id: "f3",
     type: "image",
-    src: "/images/features-2.jpg",
+    src: "/images/feature-2.jpg",
     alt: "Players enjoying padel match",
   },
   {
     id: "f4",
     type: "text",
-    bgImage: "/images/features-highlight.jpg",
+    bgImage: "/images/feature-highlight.jpg",
     icon: "Zap",
     title: "Dynamic Play for All Skill Levels",
     description:
@@ -97,13 +97,13 @@ export const featuresInitial: Feature[] = [
   {
     id: "f5",
     type: "image",
-    src: "/images/features-3.jpg",
+    src: "/images/feature-3.jpg",
     alt: "Padel court facilities and amenities",
   },
   {
     id: "f6",
     type: "text",
-    bgImage: "/images/features-highlight.jpg",
+    bgImage: "/images/feature-highlight.jpg",
     icon: "Target",
     title: "European Standard Excellence",
     description:

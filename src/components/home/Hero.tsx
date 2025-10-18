@@ -16,7 +16,7 @@ const Hero = ({ onBookNowClick }: { onBookNowClick: () => void }) => {
           className="absolute inset-0 bg-cover bg-center"
           style={{
             backgroundImage:
-              "url('https://images.unsplash.com/photo-1554068865-24cecd4e34b8?q=80&w=2070')",
+              "url('http://localhost:3000/images/hero.png')",
           }}
         />
         <div className="absolute inset-0 bg-black/50" />
@@ -70,7 +70,7 @@ const Hero = ({ onBookNowClick }: { onBookNowClick: () => void }) => {
               <Button
                 onClick={onBookNowClick}
                 size="lg"
-                className="w-fit rounded-full font-semibold hover:scale-105 transition-transform group"
+                className="w-fit rounded-full font-semibold hover:scale-105 hover:!text-accent transition-transform group"
               >
                 BOOK NOW
                 <ArrowRight className="group-hover:translate-x-1 transition-transform" />
@@ -125,7 +125,7 @@ const Hero = ({ onBookNowClick }: { onBookNowClick: () => void }) => {
       </div>
 
       {/* Scroll Indicator */}
-      <motion.div
+      {/* <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{
@@ -150,7 +150,7 @@ const Hero = ({ onBookNowClick }: { onBookNowClick: () => void }) => {
             <path d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
           </svg>
         </div>
-      </motion.div>
+      </motion.div> */}
 
       {/* Gradient overlay at bottom */}
       <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent z-[5]" />
