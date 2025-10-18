@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect  } from "react";
 
+import SectionOrderManager from "@/components/dashboard/SectionOrderManager";
 import HeroSection from "@/components/dashboard/HeroSection";
 import WelcomeSection from "@/components/dashboard/WelcomeSection";
 import FeaturesGridSection from "@/components/dashboard/FeaturesGridSection";
@@ -16,12 +17,16 @@ import {
 import { supabase } from "@/lib/supabase/client";
 
 export default function ContentPage() {
+  const [loading, setLoading] = useState(true);
+
+  // Hero state
   const [hero, setHero] = useState({ ...heroInitial });
   const [heroDialogOpen, setHeroDialogOpen] = useState(false);
   const [heroImageFile, setHeroImageFile] = useState<File | null>(null);
   const [heroPreview, setHeroPreview] = useState<string | null>(hero.image_url);
   const [savingHero, setSavingHero] = useState(false);
 
+  // Welcome state
   const [welcome, setWelcome] = useState({ ...welcomeInitial });
   const [welcomeDialogOpen, setWelcomeDialogOpen] = useState(false);
   const [welcomeFiles, setWelcomeFiles] = useState<(File | null)[]>(
@@ -32,6 +37,7 @@ export default function ContentPage() {
   );
   const [savingWelcome, setSavingWelcome] = useState(false);
 
+  // Features state
   const [features, setFeatures] = useState([...featuresInitial]);
   const [featuresDialogOpen, setFeaturesDialogOpen] = useState(false);
   const [editingFeature, setEditingFeature] = useState<any>(null);
@@ -39,9 +45,55 @@ export default function ContentPage() {
   const [featurePreview, setFeaturePreview] = useState<string | null>(null);
   const [savingFeatures, setSavingFeatures] = useState(false);
 
+  // Pricing state
   const [pricing, setPricing] = useState({ ...pricingInitial });
   const [pricingDialogOpen, setPricingDialogOpen] = useState(false);
   const [savingPricing, setSavingPricing] = useState(false);
+
+  // Fetch all sections from database on mount
+  useEffect(() => {
+    fetchAllSections();
+  }, []);
+
+  const fetchAllSections = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("content_sections")
+        .select("*")
+        .order("section_order");
+
+      if (error) throw error;
+
+      if (data) {
+        // Map database data to state
+        data.forEach((section) => {
+          switch (section.section_type) {
+            case "hero":
+              setHero(section.content);
+              setHeroPreview(section.content.image_url);
+              break;
+            case "welcome":
+              setWelcome(section.content);
+              setWelcomePreviews(section.content.images || []);
+              break;
+            case "features":
+              setFeatures(section.content.items || []);
+              break;
+            case "pricing":
+              setPricing(section.content);
+              break;
+          }
+        });
+
+        console.log("✅ All sections loaded from database");
+      }
+    } catch (error) {
+      console.error("Error fetching sections:", error);
+      alert("Failed to load content. Using default values.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const readPreview = (file: File, setter: (s: string) => void) => {
     const reader = new FileReader();
@@ -60,6 +112,7 @@ export default function ContentPage() {
       const { error } = await supabase.storage
         .from("content")
         .upload(path, file);
+
       if (error) throw error;
 
       const { data } = supabase.storage.from("content").getPublicUrl(path);
@@ -87,10 +140,19 @@ export default function ContentPage() {
         if (uploaded) imageUrl = uploaded;
       }
 
-      // Here you would call Supabase insert/update to persist hero section.
-      // For now we update local state:
-      setHero((prev) => ({ ...prev, image_url: imageUrl }));
+      const updatedHero = { ...hero, image_url: imageUrl };
+
+      // Save to database
+      const { error } = await supabase
+        .from("content_sections")
+        .update({ content: updatedHero })
+        .eq("section_type", "hero");
+
+      if (error) throw error;
+
+      setHero(updatedHero);
       setHeroDialogOpen(false);
+      console.log("✅ Hero section saved");
     } catch (err) {
       console.error("Save hero error:", err);
       alert("Failed to save hero");
@@ -128,8 +190,20 @@ export default function ContentPage() {
           if (uploaded) images[i] = uploaded;
         }
       }
-      setWelcome((prev) => ({ ...prev, images }));
+
+      const updatedWelcome = { ...welcome, images };
+
+      // Save to database
+      const { error } = await supabase
+        .from("content_sections")
+        .update({ content: updatedWelcome })
+        .eq("section_type", "welcome");
+
+      if (error) throw error;
+
+      setWelcome(updatedWelcome);
       setWelcomeDialogOpen(false);
+      console.log("✅ Welcome section saved");
     } catch (err) {
       console.error("Save welcome error:", err);
       alert("Failed to save welcome");
@@ -187,15 +261,26 @@ export default function ContentPage() {
           else copy.bgImage = uploaded;
         }
       }
-      setFeatures((prev) => {
-        const exists = prev.find((p) => p.id === copy.id);
+      const updatedFeatures = (() => {
+        const exists = features.find((p) => p.id === copy.id);
         if (exists) {
-          return prev.map((p) => (p.id === copy.id ? copy : p));
+          return features.map((p) => (p.id === copy.id ? copy : p));
         }
-        return [...prev, copy];
-      });
+        return [...features, copy];
+      })();
+
+      // Save to database
+      const { error } = await supabase
+        .from("content_sections")
+        .update({ content: { items: updatedFeatures } })
+        .eq("section_type", "features");
+
+      if (error) throw error;
+
+      setFeatures(updatedFeatures);
       setFeaturesDialogOpen(false);
       setEditingFeature(null);
+      console.log("✅ Features section saved");
     } catch (err) {
       console.error("Save feature error:", err);
       alert("Failed to save feature");
@@ -210,8 +295,16 @@ export default function ContentPage() {
   const savePricing = async () => {
     setSavingPricing(true);
     try {
-      setPricing((p) => ({ ...p }));
+      // Save to database
+      const { error } = await supabase
+        .from("content_sections")
+        .update({ content: pricing })
+        .eq("section_type", "pricing");
+
+      if (error) throw error;
+
       setPricingDialogOpen(false);
+      console.log("✅ Pricing section saved");
     } catch (err) {
       console.error("Save pricing error:", err);
       alert("Failed to save pricing");
@@ -253,8 +346,18 @@ export default function ContentPage() {
     });
   };
 
+  // Show loading spinner while fetching
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-forest"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
+      <SectionOrderManager />
       <HeroSection
         hero={hero}
         setHero={setHero}
