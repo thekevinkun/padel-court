@@ -24,15 +24,20 @@ export interface Court {
   id: string;
   name: string;
   description: string;
+  image_url: string | null;
   available: boolean;
+  created_at: string;
 }
 
 export interface TimeSlot {
   id: string;
-  time: string;
-  available: boolean;
+  court_id: string;
+  date: string;
+  time_start: string;
+  time_end: string;
   period: "peak" | "off-peak";
-  pricePerPerson: number;
+  price_per_person: number;
+  available: boolean;
 }
 
 export interface BookingFormData {
@@ -48,3 +53,170 @@ export interface BookingFormData {
   paymentMethod?: string;
   agreeTerms?: boolean;
 }
+
+interface CTA {
+  text: string;
+  href: string;
+}
+
+interface StatItem {
+  number: string;
+  label: string;
+}
+
+export interface Hero {
+  badge: string;
+  title: string;
+  subtitle: string;
+  ctaPrimary: CTA;
+  ctaSecondary: CTA;
+  image_url: string;
+  stats: StatItem[];
+}
+
+export interface HeroSectionCMS {
+  hero: Hero;
+  setHero: React.Dispatch<React.SetStateAction<Hero>>;
+
+  heroDialogOpen: boolean;
+  setHeroDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
+
+  heroPreview: string | null;
+  setHeroPreview: React.Dispatch<React.SetStateAction<string | null>>;
+
+  setHeroImageFile: React.Dispatch<React.SetStateAction<File | null>>;
+
+  onHeroImageSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+
+  saveHero: () => Promise<void>;
+  savingHero: boolean;
+}
+
+interface FeatureItem {
+  icon: string;
+  title: string;
+  desc: string;
+}
+
+interface CTA {
+  text: string;
+  href: string;
+}
+
+export interface Welcome {
+  badge: string;
+  heading: string;
+  description: string;
+  images: string[];
+  features: FeatureItem[];
+  cta: CTA;
+}
+
+export interface WelcomeSectionCMS {
+  welcome: Welcome;
+  setWelcome: React.Dispatch<React.SetStateAction<Welcome>>;
+
+  welcomeDialogOpen: boolean;
+  setWelcomeDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
+
+  welcomePreviews: string[];
+  setWelcomePreviews: React.Dispatch<React.SetStateAction<string[]>>;
+
+  welcomeFiles: (File | null)[];
+  setWelcomeFiles: React.Dispatch<React.SetStateAction<(File | null)[]>>;
+
+  onWelcomeImageSelect: (
+    index: number,
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => void;
+
+  saveWelcome: () => Promise<void>;
+  savingWelcome: boolean;
+}
+
+export type Feature =
+  | {
+      id: string;
+      type: "image";
+      src: string;
+      alt: string;
+    }
+  | {
+      id: string;
+      type: "text";
+      bgImage: string;
+      icon: string;
+      title: string;
+      description: string;
+    };
+
+export interface FeaturesGridSectionCMS {
+  features: Feature[];
+  openCreateFeature: () => void;
+  openEditFeature: (f: Feature) => void;
+  deleteFeature: (id: string) => void;
+
+  editingFeature: Feature | null;
+  setEditingFeature: React.Dispatch<React.SetStateAction<Feature | null>>;
+
+  featurePreview: string | null;
+  setFeaturePreview: React.Dispatch<React.SetStateAction<string | null>>;
+  setFeatureFile: React.Dispatch<React.SetStateAction<File | null>>;
+
+  onFeatureImageSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+
+  featuresDialogOpen: boolean;
+  setFeaturesDialogOpen: (v: boolean) => void;
+
+  saveFeature: () => Promise<void>;
+  savingFeatures: boolean;
+}
+
+export interface PricingItem {
+  name: string;
+  price: string;
+  description: string;
+}
+
+export interface PricingSubSection {
+  title: string;
+  subtitle?: string;
+  items: PricingItem[];
+}
+
+export interface Pricing {
+  badge: string;
+  heading: string;
+  description: string;
+  notes: string[];
+  courtRental: {
+    peakHours: PricingSubSection;
+    offPeakHours: PricingSubSection;
+  };
+  headCoach: PricingSubSection;
+  seniorCoach: PricingSubSection;
+  juniorCoach: PricingSubSection;
+  racketRental: PricingSubSection;
+}
+
+export interface PricingSectionCMS {
+  pricing: Pricing;
+  setPricing: React.Dispatch<React.SetStateAction<Pricing>>;
+
+  pricingDialogOpen: boolean;
+  setPricingDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
+
+  updatePricingItem: (
+    section: string,
+    index: number,
+    field: keyof PricingItem,
+    value: string
+  ) => void;
+
+  addPricingItem: (section: string) => void;
+  removePricingItem: (section: string, index: number) => void;
+
+  savingPricing: boolean;
+  savePricing: () => Promise<void>;
+}
+
