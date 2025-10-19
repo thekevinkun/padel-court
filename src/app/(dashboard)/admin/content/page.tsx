@@ -13,21 +13,26 @@ import {
   welcomeInitial,
   featuresInitial,
   pricingInitial,
-} from "@/lib/dashboard";
+} from "@/lib/constants";
 import { supabase } from "@/lib/supabase/client";
+
+import { HeroContent, PricingContent, WelcomeContent } from "@/types";
 
 export default function ContentPage() {
   const [loading, setLoading] = useState(true);
 
   // Hero state
-  const [hero, setHero] = useState({ ...heroInitial, version: 1 });
+  const [hero, setHero] = useState<HeroContent>({ ...heroInitial, version: 1 });
   const [heroDialogOpen, setHeroDialogOpen] = useState(false);
   const [heroImageFile, setHeroImageFile] = useState<File | null>(null);
   const [heroPreview, setHeroPreview] = useState<string | null>(hero.image_url);
   const [savingHero, setSavingHero] = useState(false);
 
   // Welcome state
-  const [welcome, setWelcome] = useState({ ...welcomeInitial, version: 1 });
+  const [welcome, setWelcome] = useState<WelcomeContent>({
+    ...welcomeInitial,
+    version: 1,
+  });
   const [welcomeDialogOpen, setWelcomeDialogOpen] = useState(false);
   const [welcomeFiles, setWelcomeFiles] = useState<(File | null)[]>(
     Array(4).fill(null)
@@ -49,7 +54,10 @@ export default function ContentPage() {
   const [savingFeatures, setSavingFeatures] = useState(false);
 
   // Pricing state
-  const [pricing, setPricing] = useState({ ...pricingInitial, version: 1 });
+  const [pricing, setPricing] = useState<PricingContent>({
+    ...pricingInitial,
+    version: 1,
+  });
   const [pricingDialogOpen, setPricingDialogOpen] = useState(false);
   const [savingPricing, setSavingPricing] = useState(false);
 
@@ -98,6 +106,23 @@ export default function ContentPage() {
       alert("Failed to load content. Using default values.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Trigger revalidation for every save
+  const triggerRevalidation = async () => {
+    try {
+      const response = await fetch("/api/content/revalidate", {
+        method: "POST",
+      });
+
+      if (response.ok) {
+        console.log("✅ Frontend content revalidated");
+      } else {
+        console.warn("⚠️ Revalidation failed but content saved:", await response.text());
+      }
+    } catch (error) {
+      console.error("Failed to trigger revalidation:", error);
     }
   };
 
@@ -207,6 +232,10 @@ export default function ContentPage() {
 
       setHero({ ...updatedHero, version: hero.version });
       setHeroDialogOpen(false);
+
+      // Trigger revalidation
+      await triggerRevalidation();
+
       console.log("✅ Hero section saved");
     } catch (err) {
       console.error("Save hero error:", err);
@@ -257,6 +286,10 @@ export default function ContentPage() {
 
       setWelcome({ ...updatedWelcome, version: welcome.version });
       setWelcomeDialogOpen(false);
+
+      // Trigger revalidation
+      await triggerRevalidation();
+
       console.log("✅ Welcome section saved");
     } catch (err) {
       console.error("Save welcome error:", err);
@@ -341,6 +374,10 @@ export default function ContentPage() {
       setFeatures({ items: updatedFeatures, version: features.version });
       setFeaturesDialogOpen(false);
       setEditingFeature(null);
+
+      // Trigger revalidation
+      await triggerRevalidation();
+
       console.log("✅ Features section saved");
     } catch (err) {
       console.error("Save feature error:", err);
@@ -364,6 +401,10 @@ export default function ContentPage() {
       );
 
       setPricingDialogOpen(false);
+
+      // Trigger revalidation
+      await triggerRevalidation();
+
       console.log("✅ Pricing section saved");
     } catch (err) {
       console.error("Save pricing error:", err);

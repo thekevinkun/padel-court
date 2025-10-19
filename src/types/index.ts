@@ -64,8 +64,8 @@ interface StatItem {
   label: string;
 }
 
-export interface Hero {
-  version: number;
+export interface HeroContent {
+  version?: number;
   badge: string;
   title: string;
   subtitle: string;
@@ -76,8 +76,8 @@ export interface Hero {
 }
 
 export interface HeroSectionCMS {
-  hero: Hero;
-  setHero: React.Dispatch<React.SetStateAction<Hero>>;
+  hero: HeroContent;
+  setHero: React.Dispatch<React.SetStateAction<HeroContent>>;
 
   heroDialogOpen: boolean;
   setHeroDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -93,30 +93,25 @@ export interface HeroSectionCMS {
   savingHero: boolean;
 }
 
-interface FeatureItem {
+interface WelcomeFeatureItem {
   icon: string;
   title: string;
   desc: string;
 }
 
-interface CTA {
-  text: string;
-  href: string;
-}
-
-export interface Welcome {
-  version: number;
+export interface WelcomeContent {
+  version?: number;
   badge: string;
   heading: string;
   description: string;
   images: string[];
-  features: FeatureItem[];
+  features: WelcomeFeatureItem[];
   cta: CTA;
 }
 
 export interface WelcomeSectionCMS {
-  welcome: Welcome;
-  setWelcome: React.Dispatch<React.SetStateAction<Welcome>>;
+  welcome: WelcomeContent;
+  setWelcome: React.Dispatch<React.SetStateAction<WelcomeContent>>;
 
   welcomeDialogOpen: boolean;
   setWelcomeDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -136,7 +131,7 @@ export interface WelcomeSectionCMS {
   savingWelcome: boolean;
 }
 
-export type Feature =
+export type FeatureItem =
   | {
       id: string;
       type: "image";
@@ -152,17 +147,21 @@ export type Feature =
       description: string;
     };
 
+export type FeaturesContent = {
+  items: FeatureItem[];
+};
+
 export interface FeaturesGridSectionCMS {
   features: {
-    items: Feature[];
+    items: FeatureItem[];
     version: number;
   };
   openCreateFeature: () => void;
-  openEditFeature: (f: Feature) => void;
+  openEditFeature: (f: FeatureItem) => void;
   deleteFeature: (id: string) => void;
 
-  editingFeature: Feature | null;
-  setEditingFeature: React.Dispatch<React.SetStateAction<Feature | null>>;
+  editingFeature: FeatureItem | null;
+  setEditingFeature: React.Dispatch<React.SetStateAction<FeatureItem | null>>;
 
   featurePreview: string | null;
   setFeaturePreview: React.Dispatch<React.SetStateAction<string | null>>;
@@ -189,8 +188,8 @@ export interface PricingSubSection {
   items: PricingItem[];
 }
 
-export interface Pricing {
-  version: number;
+export interface PricingContent {
+  version?: number;
   badge: string;
   heading: string;
   description: string;
@@ -206,8 +205,8 @@ export interface Pricing {
 }
 
 export interface PricingSectionCMS {
-  pricing: Pricing;
-  setPricing: React.Dispatch<React.SetStateAction<Pricing>>;
+  pricing: PricingContent;
+  setPricing: React.Dispatch<React.SetStateAction<PricingContent>>;
 
   pricingDialogOpen: boolean;
   setPricingDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -225,6 +224,13 @@ export interface PricingSectionCMS {
   savingPricing: boolean;
   savePricing: () => Promise<void>;
 }
+
+export type ContentSections = {
+  hero: HeroContent | null;
+  welcome: WelcomeContent | null;
+  features: FeaturesContent | null;
+  pricing: PricingContent | null;
+};
 
 export type Version = {
   id: string;

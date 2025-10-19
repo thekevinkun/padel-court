@@ -5,9 +5,11 @@ import Link from "next/link";
 import { ArrowRight, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+
+import { HeroContent } from "@/types";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
 
-const Hero = ({ onBookNowClick }: { onBookNowClick: () => void }) => {
+const Hero = ({ content, onBookNowClick }: { content: HeroContent, onBookNowClick: () => void }) => {
   return (
     <section className="relative h-screen w-full overflow-hidden">
       {/* Background Image */}
@@ -16,7 +18,7 @@ const Hero = ({ onBookNowClick }: { onBookNowClick: () => void }) => {
           className="absolute inset-0 bg-cover bg-center"
           style={{
             backgroundImage:
-              "url('http://localhost:3000/images/hero.png')",
+              `url('${content.image_url}')`,
           }}
         />
         <div className="absolute inset-0 bg-black/50" />
@@ -38,11 +40,11 @@ const Hero = ({ onBookNowClick }: { onBookNowClick: () => void }) => {
                 className="inline-flex items-center gap-2 px-4 py-2 bg-primary/20 backdrop-blur-sm border-primary/30 text-primary hover:bg-primary/30 text-sm font-medium"
               >
                 <span className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-                #1 Padel Club in Batu Alam Permai
+                {content.badge}
               </Badge>
             </motion.div>
 
-            {/* Main Heading - Using heading-1 utility class */}
+            {/* Main Heading */}
             <motion.h1
               variants={fadeInUp}
               className="heading-1 text-accent mb-6"
@@ -57,8 +59,7 @@ const Hero = ({ onBookNowClick }: { onBookNowClick: () => void }) => {
               variants={fadeInUp}
               className="text-xl md:text-2xl text-gray-200 mb-10 max-w-2xl leading-relaxed"
             >
-              World-class courts. Professional coaching. Seamless booking.
-              Everything you need for the perfect game.
+              {content.subtitle}
             </motion.p>
 
             {/* CTA Buttons - Using customized shadcn Buttons */}
@@ -72,7 +73,7 @@ const Hero = ({ onBookNowClick }: { onBookNowClick: () => void }) => {
                 size="lg"
                 className="w-fit rounded-full font-semibold hover:scale-105 hover:!text-accent transition-transform group"
               >
-                BOOK NOW
+                {content.ctaPrimary.text}
                 <ArrowRight className="group-hover:translate-x-1 transition-transform" />
               </Button>
 
@@ -84,41 +85,24 @@ const Hero = ({ onBookNowClick }: { onBookNowClick: () => void }) => {
                 className="w-fit border-2 border-accent bg-transparent text-accent hover:bg-accent hover:text-accent-foreground font-semibold rounded-lg group"
               >
                 <Link href="#pricing">
-                  VIEW PRICING
+                  {content.ctaSecondary.text}
                   <Play className="w-4 h-4" />
                 </Link>
               </Button>
             </motion.div>
 
             {/* Stats */}
-            <motion.div
-              variants={fadeInUp}
-              className="grid grid-cols-3 gap-6 md:gap-12 mt-16 pt-10 border-t border-white/20"
-            >
-              <div>
-                <div className="text-3xl md:text-4xl font-bold text-primary font-display">
-                  4+
+            <motion.div variants={fadeInUp} className="grid grid-cols-3 gap-6 md:gap-12 mt-16 pt-10 border-t border-white/20">
+              {content.stats.map((stat, i) => ( // Use content.stats
+                <div key={i}>
+                  <div className="text-3xl md:text-4xl font-bold text-primary font-display">
+                    {stat.number}
+                  </div>
+                  <div className="text-sm md:text-base text-gray-300 mt-1">
+                    {stat.label}
+                  </div>
                 </div>
-                <div className="text-sm md:text-base text-gray-300 mt-1">
-                  Premium Courts
-                </div>
-              </div>
-              <div>
-                <div className="text-3xl md:text-4xl font-bold text-primary font-display">
-                  500+
-                </div>
-                <div className="text-sm md:text-base text-gray-300 mt-1">
-                  Happy Players
-                </div>
-              </div>
-              <div>
-                <div className="text-3xl md:text-4xl font-bold text-primary font-display">
-                  24/7
-                </div>
-                <div className="text-sm md:text-base text-gray-300 mt-1">
-                  Online Booking
-                </div>
-              </div>
+              ))}
             </motion.div>
           </motion.div>
         </div>

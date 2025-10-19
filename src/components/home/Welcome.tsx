@@ -9,9 +9,21 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
+import { WelcomeContent } from "@/types";
 import { fadeInUp, fadeIn, slideInLeft, slideInRight } from "@/lib/animations";
 
-const Welcome = () => {
+const Welcome = ({ content }: { content: WelcomeContent }) => {
+  // Map icon names to actual icon components
+  const getIcon = (iconName: string) => {
+    const icons: Record<string, any> = {
+      Users: Users,
+      Clock: Clock,
+      Sparkles: Sparkles,
+      MapPin: MapPin,
+    };
+    return icons[iconName] || Sparkles;
+  };
+
   return (
     <section className="section-py bg-background relative overflow-hidden">
       {/* Decorative background elements */}
@@ -29,61 +41,27 @@ const Welcome = () => {
             className="relative"
           >
             <div className="grid grid-cols-2 gap-4 md:gap-6">
-              {/* Top Left Image */}
-              <motion.div
-                variants={slideInLeft}
-                className="relative aspect-[3/4] rounded-2xl overflow-hidden shadow-xl"
-              >
-                <Image
-                  src="/images/welcome-1.jpg"
-                  alt="Padel court"
-                  fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  className="object-cover hover:scale-105 transition-transform duration-500"
-                />
-              </motion.div>
-
-              {/* Top Right Image - Offset */}
-              <motion.div
-                variants={slideInRight}
-                className="relative aspect-[3/4] rounded-2xl overflow-hidden shadow-xl mt-8 md:mt-12"
-              >
-                <Image
-                  src="/images/welcome-2.jpg"
-                  alt="Padel racket and ball"
-                  fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  className="object-cover hover:scale-105 transition-transform duration-500"
-                />
-              </motion.div>
-
-              {/* Bottom Left Image - Offset */}
-              <motion.div
-                variants={slideInLeft}
-                className="relative aspect-[3/4] rounded-2xl overflow-hidden shadow-xl -mt-8 md:-mt-12"
-              >
-                <Image
-                  src="/images/welcome-3.jpg"
-                  alt="Two girls padel player"
-                  fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  className="object-cover hover:scale-105 transition-transform duration-500"
-                />
-              </motion.div>
-
-              {/* Bottom Right Image */}
-              <motion.div
-                variants={slideInRight}
-                className="relative aspect-[3/4] rounded-2xl overflow-hidden shadow-xl"
-              >
-                <Image
-                  src="/images/welcome-4.jpg"
-                  alt="Padel man serving"
-                  fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  className="object-cover hover:scale-105 transition-transform duration-500"
-                />
-              </motion.div>
+              {/* Map through content.images */}
+              {content.images.map((image, index) => {
+                const variants = [slideInLeft, slideInRight, slideInLeft, slideInRight];
+                const mtClasses = ["", "mt-8 md:mt-12", "-mt-8 md:-mt-12", ""];
+                
+                return (
+                  <motion.div
+                    key={index}
+                    variants={variants[index]}
+                    className={`relative aspect-[3/4] rounded-2xl overflow-hidden shadow-xl ${mtClasses[index]}`}
+                  >
+                    <Image
+                      src={image}
+                      alt={`${content.heading} - Image ${index + 1}`}
+                      fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      className="object-cover hover:scale-105 transition-transform duration-500"
+                    />
+                  </motion.div>
+                );
+              })}
             </div>
 
             {/* Floating badge */}
@@ -115,7 +93,7 @@ const Welcome = () => {
                 variant="outline"
                 className="border-forest/30 text-forest bg-forest/5 lg:text-base px-4 py-2 font-medium"
               >
-                🎾 WELCOME TO PADEL BATU ALAM PERMAI
+                {content.badge}
               </Badge>
             </motion.div>
 
@@ -124,17 +102,12 @@ const Welcome = () => {
               variants={fadeInUp}
               className="heading-2 text-foreground"
             >
-              Where <span className="text-forest italic">Premium Courts</span>{" "}
-              Meet Paradise Setting
+              {content.heading}
             </motion.h2>
 
             {/* Description */}
             <motion.p variants={fadeInUp} className="text-body max-w-xl">
-              Discover Indonesia's Samarinda finest padel destination nestled in
-              the heart of Batu Alam Permai. Our state-of-the-art facilities
-              blend world-class infrastructure with natural tropical beauty,
-              creating an unmatched playing experience for enthusiasts of all
-              levels.
+              {content.description}
             </motion.p>
 
             {/* Features Cards */}
@@ -142,26 +115,22 @@ const Welcome = () => {
               variants={fadeInUp}
               className="grid grid-cols-2 gap-4 pt-2"
             >
-              <Card className="border-forest/20 hover:border-forest/40 transition-colors">
-                <CardContent className="p-4 space-y-2">
-                  <Users className="w-5 h-5 text-forest" />
-                  <div className="text-sm font-medium">
-                    Professional Coaching
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Expert trainers available
-                  </p>
-                </CardContent>
-              </Card>
-              <Card className="border-forest/20 hover:border-forest/40 transition-colors">
-                <CardContent className="p-4 space-y-2">
-                  <Clock className="w-5 h-5 text-forest" />
-                  <div className="text-sm font-medium">Flexible Hours</div>
-                  <p className="text-xs text-muted-foreground">
-                    Open daily 6 AM - 11 PM
-                  </p>
-                </CardContent>
-              </Card>
+              {content.features.map((feature, index) => {
+                const Icon = getIcon(feature.icon);
+                
+                return (
+                  <Card
+                    key={index}
+                    className="border-forest/20 hover:border-forest/40 transition-colors"
+                  >
+                    <CardContent className="p-4 space-y-2">
+                      <Icon className="w-5 h-5 text-forest" />
+                      <div className="text-sm font-medium">{feature.title}</div>
+                      <p className="text-xs text-muted-foreground">{feature.desc}</p>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </motion.div>
 
             <Separator className="my-4" />
@@ -174,7 +143,7 @@ const Welcome = () => {
                 className="rounded-full font-semibold hover:scale-105 transition-transform group hover:text-accent-foreground"
               >
                 <Link href="#booking">
-                  RESERVE YOUR COURT
+                  {content.cta.text}
                   <ArrowRight className="group-hover:translate-x-1 transition-transform" />
                 </Link>
               </Button>

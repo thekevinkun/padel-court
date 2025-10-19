@@ -1,26 +1,48 @@
 "use client";
 
-import { motion } from "framer-motion";
 import Image from "next/image";
+import { motion } from "framer-motion";
+import { Trophy, Zap, Users, Clock, Sparkles } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
-import { features } from "@/lib/constants";
+import { FeaturesContent } from "@/types";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
 
-const FeaturesGrid = () => {
+const FeaturesGrid = ({ content }: { content: FeaturesContent }) => {
+  // Map icon names to actual icon components
+  const getIcon = (iconName: string) => {
+    const icons: Record<string, any> = {
+      Trophy: Trophy,
+      Zap: Zap,
+      Users: Users,
+      Clock: Clock,
+      Sparkles: Sparkles,
+      Target: () => (
+        <svg
+          className="w-6 h-6 md:w-7 md:h-7"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <circle cx="12" cy="12" r="6" />
+          <circle cx="12" cy="12" r="2" />
+        </svg>
+      ),
+    };
+    return icons[iconName] || Sparkles;
+  };
+
   return (
     <section className="bg-muted/30">
       <div>
         {/* Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-          {features.map((feature, index) => (
+          {content.items.map((feature, index) => (
             <Card
-              key={index}
-              className={`overflow-hidden border-0 shadow-lg !py-0 !rounded-none ${
-                feature.type === "image"
-                  ? "row-span-1"
-                  : "row-span-1 md:row-span-1"
-              }`}
+              key={feature.id}
+              className="overflow-hidden border-0 shadow-lg !py-0 !rounded-none"
             >
               {feature.type === "image" ? (
                 // Image Grid Item
@@ -65,7 +87,12 @@ const FeaturesGrid = () => {
                         className="justify-items-center"
                       >
                         <div className="w-12 h-12 md:w-14 md:h-14 bg-black/10 backdrop-blur-sm rounded-2xl flex items-center justify-center">
-                          <feature.icon className="w-6 h-6 md:w-7 md:h-7 text-accent-foreground" />
+                          {(() => {
+                            const Icon = getIcon(feature.icon);
+                            return (
+                              <Icon className="w-6 h-6 md:w-7 md:h-7 text-accent-foreground" />
+                            );
+                          })()}
                         </div>
                       </motion.div>
 
