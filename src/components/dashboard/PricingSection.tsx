@@ -21,6 +21,8 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 
+import VersionHistoryDialog from "@/components/dashboard/VersionHistoryDialog";
+
 import { PricingSectionCMS } from "@/types";
 
 const PricingSection = ({
@@ -45,12 +47,19 @@ const PricingSection = ({
                 Complete pricing structure with all packages
               </p>
             </div>
-            <Button
-              onClick={() => setPricingDialogOpen(true)}
-              className="gap-2"
-            >
-              <Edit className="w-4 h-4" /> Edit All Pricing
-            </Button>
+
+            <div className="flex items-center gap-2">
+              <VersionHistoryDialog
+                sectionType="hero"
+                currentVersion={pricing.version || 1}
+              />
+              <Button
+                onClick={() => setPricingDialogOpen(true)}
+                className="gap-2"
+              >
+                <Edit className="w-4 h-4" /> Edit All Pricing
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>

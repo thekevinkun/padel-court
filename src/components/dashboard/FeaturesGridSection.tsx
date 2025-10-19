@@ -29,6 +29,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+import VersionHistoryDialog from "@/components/dashboard/VersionHistoryDialog";
+
 import { FeaturesGridSectionCMS } from "@/types";
 
 const FeaturesGridSection = ({
@@ -86,10 +88,10 @@ const FeaturesGridSection = ({
             </div>
             <div className="flex gap-2">
               <Badge variant="outline" className="text-xs">
-                {features.filter((f) => f.type === "image").length} Images
+                {features.items.filter((f) => f.type === "image").length} Images
               </Badge>
               <Badge variant="outline" className="text-xs">
-                {features.filter((f) => f.type === "text").length} Text Cards
+                {features.items.filter((f) => f.type === "text").length} Text Cards
               </Badge>
             </div>
           </div>
@@ -98,7 +100,7 @@ const FeaturesGridSection = ({
           <div className="space-y-4">
             {/* Feature Items */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {features.map((f, idx) => (
+              {features.items.map((f, idx) => (
                 <Card key={f.id} className="overflow-hidden">
                   <CardContent className="p-0">
                     <div className="flex items-start gap-4 p-4">
@@ -150,15 +152,22 @@ const FeaturesGridSection = ({
                         )}
 
                         <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="flex-1"
-                            onClick={() => openEditFeature(f)}
-                          >
-                            <Edit className="w-3 h-3 mr-1" />
-                            Edit
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            <VersionHistoryDialog
+                              sectionType="hero"
+                              currentVersion={features.version || 1}
+                            />
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-1"
+                              onClick={() => openEditFeature(f)}
+                            >
+                              <Edit className="w-3 h-3 mr-1" />
+                              Edit
+                            </Button>
+                          </div>
+
                           <Button
                             variant="destructive"
                             size="sm"
@@ -175,18 +184,18 @@ const FeaturesGridSection = ({
             </div>
 
             {/* Add Feature Button */}
-            {features.length < 6 && (
+            {features.items.length < 6 && (
               <Button
                 onClick={openCreateFeature}
                 variant="outline"
                 className="w-full"
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Add Feature Card ({features.length}/6)
+                Add Feature Card ({features.items.length}/6)
               </Button>
             )}
 
-            {features.length >= 6 && (
+            {features.items.length >= 6 && (
               <div className="text-center py-2">
                 <p className="text-xs text-muted-foreground">
                   Maximum 6 features reached. Delete one to add more.
@@ -202,7 +211,7 @@ const FeaturesGridSection = ({
           <DialogHeader>
             <DialogTitle>
               {editingFeature &&
-              features.find((f) => f.id === editingFeature.id)
+              features.items.find((f) => f.id === editingFeature.id)
                 ? "Edit Feature"
                 : "Add Feature"}
             </DialogTitle>

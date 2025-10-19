@@ -15,6 +15,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+import VersionHistoryDialog from "@/components/dashboard/VersionHistoryDialog";
+
 import { WelcomeSectionCMS } from "@/types";
 
 const WelcomeSection = ({
@@ -41,12 +43,18 @@ const WelcomeSection = ({
                 Image collage with welcome message and features
               </p>
             </div>
-            <Button
-              onClick={() => setWelcomeDialogOpen(true)}
-              className="gap-2"
-            >
-              <Edit className="w-4 h-4" /> Edit
-            </Button>
+            <div className="flex items-center gap-2">
+              <VersionHistoryDialog 
+                sectionType="hero" 
+                currentVersion={welcome.version || 1} 
+              />
+              <Button
+                onClick={() => setWelcomeDialogOpen(true)}
+                className="gap-2"
+              >
+                <Edit className="w-4 h-4" /> Edit
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>

@@ -14,6 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
+import VersionHistoryDialog from "@/components/dashboard/VersionHistoryDialog";
+
 import { HeroSectionCMS } from "@/types";
 
 const HeroSection = ({
@@ -39,9 +41,16 @@ const HeroSection = ({
                 Main landing section with hero image, title, and stats
               </p>
             </div>
-            <Button onClick={() => setHeroDialogOpen(true)} className="gap-2">
-              <Edit className="w-4 h-4" /> Edit
-            </Button>
+
+            <div className="flex items-center gap-2">
+              <VersionHistoryDialog 
+                sectionType="hero" 
+                currentVersion={hero.version || 1} 
+              />
+              <Button onClick={() => setHeroDialogOpen(true)} className="gap-2">
+                <Edit className="w-4 h-4" /> Edit
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>

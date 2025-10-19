@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect  } from "react";
+import React, { useState, useEffect } from "react";
 
 import SectionOrderManager from "@/components/dashboard/SectionOrderManager";
 import HeroSection from "@/components/dashboard/HeroSection";
@@ -20,14 +20,14 @@ export default function ContentPage() {
   const [loading, setLoading] = useState(true);
 
   // Hero state
-  const [hero, setHero] = useState({ ...heroInitial });
+  const [hero, setHero] = useState({ ...heroInitial, version: 1 });
   const [heroDialogOpen, setHeroDialogOpen] = useState(false);
   const [heroImageFile, setHeroImageFile] = useState<File | null>(null);
   const [heroPreview, setHeroPreview] = useState<string | null>(hero.image_url);
   const [savingHero, setSavingHero] = useState(false);
 
   // Welcome state
-  const [welcome, setWelcome] = useState({ ...welcomeInitial });
+  const [welcome, setWelcome] = useState({ ...welcomeInitial, version: 1 });
   const [welcomeDialogOpen, setWelcomeDialogOpen] = useState(false);
   const [welcomeFiles, setWelcomeFiles] = useState<(File | null)[]>(
     Array(4).fill(null)
@@ -38,7 +38,10 @@ export default function ContentPage() {
   const [savingWelcome, setSavingWelcome] = useState(false);
 
   // Features state
-  const [features, setFeatures] = useState([...featuresInitial]);
+  const [features, setFeatures] = useState({
+    items: [...featuresInitial],
+    version: 1,
+  });
   const [featuresDialogOpen, setFeaturesDialogOpen] = useState(false);
   const [editingFeature, setEditingFeature] = useState<any>(null);
   const [featureFile, setFeatureFile] = useState<File | null>(null);
@@ -46,7 +49,7 @@ export default function ContentPage() {
   const [savingFeatures, setSavingFeatures] = useState(false);
 
   // Pricing state
-  const [pricing, setPricing] = useState({ ...pricingInitial });
+  const [pricing, setPricing] = useState({ ...pricingInitial, version: 1 });
   const [pricingDialogOpen, setPricingDialogOpen] = useState(false);
   const [savingPricing, setSavingPricing] = useState(false);
 
@@ -69,18 +72,21 @@ export default function ContentPage() {
         data.forEach((section) => {
           switch (section.section_type) {
             case "hero":
-              setHero(section.content);
+              setHero({ ...section.content, version: section.version });
               setHeroPreview(section.content.image_url);
               break;
             case "welcome":
-              setWelcome(section.content);
+              setWelcome({ ...section.content, version: section.version });
               setWelcomePreviews(section.content.images || []);
               break;
             case "features":
-              setFeatures(section.content.items || []);
+              setFeatures({
+                items: section.content.items || [],
+                version: section.version,
+              });
               break;
             case "pricing":
-              setPricing(section.content);
+              setPricing({ ...section.content, version: section.version });
               break;
           }
         });
@@ -92,6 +98,60 @@ export default function ContentPage() {
       alert("Failed to load content. Using default values.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Save section with versioning
+  const saveSectionWithVersion = async (
+    sectionType: string,
+    content: any,
+    changeDescription?: string
+  ) => {
+    try {
+      // Get current section data
+      const { data: currentSection, error: fetchError } = await supabase
+        .from("content_sections")
+        .select("id, version")
+        .eq("section_type", sectionType)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const newVersion = currentSection.version + 1;
+
+      // First, Create version snapshot (save old content before updating)
+      const { data: userData } = await supabase.auth.getUser();
+
+      const { error: versionError } = await supabase
+        .from("content_versions")
+        .insert({
+          section_id: currentSection.id,
+          version: currentSection.version,
+          content: content, // Save the NEW content as a snapshot
+          changed_by: userData?.user?.id || null,
+          change_description:
+            changeDescription || `Updated ${sectionType} section`,
+        });
+
+      if (versionError) throw versionError;
+
+      // Second, Update section with new content and increment version
+      const { error: updateError } = await supabase
+        .from("content_sections")
+        .update({
+          content: content,
+          version: newVersion,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("section_type", sectionType);
+
+      if (updateError) throw updateError;
+
+      console.log(`✅ ${sectionType} saved with version ${newVersion}`);
+      return true;
+    } catch (error) {
+      console.error("Error saving with version:", error);
+      throw error;
     }
   };
 
@@ -143,14 +203,9 @@ export default function ContentPage() {
       const updatedHero = { ...hero, image_url: imageUrl };
 
       // Save to database
-      const { error } = await supabase
-        .from("content_sections")
-        .update({ content: updatedHero })
-        .eq("section_type", "hero");
+      await saveSectionWithVersion("hero", updatedHero, "Updated hero section");
 
-      if (error) throw error;
-
-      setHero(updatedHero);
+      setHero({ ...updatedHero, version: hero.version });
       setHeroDialogOpen(false);
       console.log("✅ Hero section saved");
     } catch (err) {
@@ -194,14 +249,13 @@ export default function ContentPage() {
       const updatedWelcome = { ...welcome, images };
 
       // Save to database
-      const { error } = await supabase
-        .from("content_sections")
-        .update({ content: updatedWelcome })
-        .eq("section_type", "welcome");
+      await saveSectionWithVersion(
+        "welcome",
+        updatedWelcome,
+        "Updated welcome section"
+      );
 
-      if (error) throw error;
-
-      setWelcome(updatedWelcome);
+      setWelcome({ ...updatedWelcome, version: welcome.version });
       setWelcomeDialogOpen(false);
       console.log("✅ Welcome section saved");
     } catch (err) {
@@ -246,7 +300,10 @@ export default function ContentPage() {
 
   const deleteFeature = (id: string) => {
     if (!confirm("Delete this feature?")) return;
-    setFeatures((prev) => prev.filter((p) => p.id !== id));
+    setFeatures((prev) => ({
+      ...prev,
+      items: prev.items.filter((p) => p.id !== id),
+    }));
   };
 
   const saveFeature = async () => {
@@ -261,23 +318,27 @@ export default function ContentPage() {
           else copy.bgImage = uploaded;
         }
       }
+
       const updatedFeatures = (() => {
-        const exists = features.find((p) => p.id === copy.id);
+        const exists = features.items.find((p) => p.id === copy.id);
         if (exists) {
-          return features.map((p) => (p.id === copy.id ? copy : p));
+          return features.items.map((p) => (p.id === copy.id ? copy : p));
         }
-        return [...features, copy];
+        return [...features.items, copy];
       })();
 
-      // Save to database
-      const { error } = await supabase
-        .from("content_sections")
-        .update({ content: { items: updatedFeatures } })
-        .eq("section_type", "features");
+      const changeDesc = editingFeature.id.startsWith("tmp-")
+        ? "Added new feature"
+        : "Updated feature";
 
-      if (error) throw error;
+      await saveSectionWithVersion(
+        "features",
+        { items: updatedFeatures },
+        changeDesc
+      );
 
-      setFeatures(updatedFeatures);
+      // Update state with new items and keep version
+      setFeatures({ items: updatedFeatures, version: features.version });
       setFeaturesDialogOpen(false);
       setEditingFeature(null);
       console.log("✅ Features section saved");
@@ -296,12 +357,11 @@ export default function ContentPage() {
     setSavingPricing(true);
     try {
       // Save to database
-      const { error } = await supabase
-        .from("content_sections")
-        .update({ content: pricing })
-        .eq("section_type", "pricing");
-
-      if (error) throw error;
+      await saveSectionWithVersion(
+        "pricing",
+        pricing,
+        "Updated pricing section"
+      );
 
       setPricingDialogOpen(false);
       console.log("✅ Pricing section saved");

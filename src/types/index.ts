@@ -65,6 +65,7 @@ interface StatItem {
 }
 
 export interface Hero {
+  version: number;
   badge: string;
   title: string;
   subtitle: string;
@@ -104,6 +105,7 @@ interface CTA {
 }
 
 export interface Welcome {
+  version: number;
   badge: string;
   heading: string;
   description: string;
@@ -151,7 +153,10 @@ export type Feature =
     };
 
 export interface FeaturesGridSectionCMS {
-  features: Feature[];
+  features: {
+    items: Feature[];
+    version: number;
+  };
   openCreateFeature: () => void;
   openEditFeature: (f: Feature) => void;
   deleteFeature: (id: string) => void;
@@ -185,6 +190,7 @@ export interface PricingSubSection {
 }
 
 export interface Pricing {
+  version: number;
   badge: string;
   heading: string;
   description: string;
@@ -220,3 +226,17 @@ export interface PricingSectionCMS {
   savePricing: () => Promise<void>;
 }
 
+export type Version = {
+  id: string;
+  version: number;
+  content: any;
+  changed_by: string | null;
+  change_description: string | null;
+  created_at: string;
+};
+
+export type VersionHistoryDialogProps = {
+  sectionType: string;
+  currentVersion: number;
+  onRestore?: (version: Version) => void;
+};
