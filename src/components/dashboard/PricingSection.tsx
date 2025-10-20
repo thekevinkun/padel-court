@@ -50,7 +50,7 @@ const PricingSection = ({
 
             <div className="flex items-center gap-2">
               <VersionHistoryDialog
-                sectionType="hero"
+                sectionType="pricing"
                 currentVersion={pricing.version || 1}
               />
               <Button

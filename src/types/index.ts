@@ -117,7 +117,10 @@ export interface WelcomeSectionCMS {
   setWelcomeDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
 
   welcomePreviews: string[];
-  setWelcomePreviews: React.Dispatch<React.SetStateAction<string[]>>;
+  setWelcomePreviews?: React.Dispatch<React.SetStateAction<string[]>>;
+
+  tempWelcomePreviews: string[];
+  setTempWelcomePreviews: React.Dispatch<React.SetStateAction<string[]>>;
 
   welcomeFiles: (File | null)[];
   setWelcomeFiles: React.Dispatch<React.SetStateAction<(File | null)[]>>;
@@ -129,6 +132,8 @@ export interface WelcomeSectionCMS {
 
   saveWelcome: () => Promise<void>;
   savingWelcome: boolean;
+
+  openWelcomeDialog: () => void;
 }
 
 export type FeatureItem =

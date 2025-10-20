@@ -40,6 +40,7 @@ export default function ContentPage() {
   const [welcomePreviews, setWelcomePreviews] = useState<string[]>(
     welcome.images.slice()
   );
+  const [tempWelcomePreviews, setTempWelcomePreviews] = useState<string[]>([]);
   const [savingWelcome, setSavingWelcome] = useState(false);
 
   // Features state
@@ -262,11 +263,17 @@ export default function ContentPage() {
       setWelcomePreviews(p);
     });
   };
+  
+  // When opening dialog, copy current previews to temp
+  const openWelcomeDialog = () => {
+    setTempWelcomePreviews([...welcomePreviews]); // Copy current to temp
+    setWelcomeDialogOpen(true);
+  };
 
   const saveWelcome = async () => {
     setSavingWelcome(true);
     try {
-      const images = [...welcomePreviews];
+      const images = [...tempWelcomePreviews]; // Use temp instead
       for (let i = 0; i < welcomeFiles.length; i++) {
         const f = welcomeFiles[i];
         if (f) {
@@ -285,6 +292,7 @@ export default function ContentPage() {
       );
 
       setWelcome({ ...updatedWelcome, version: welcome.version });
+      setWelcomePreviews(images);
       setWelcomeDialogOpen(false);
 
       // Trigger revalidation
@@ -477,12 +485,14 @@ export default function ContentPage() {
         welcomeDialogOpen={welcomeDialogOpen}
         setWelcomeDialogOpen={setWelcomeDialogOpen}
         welcomePreviews={welcomePreviews}
-        setWelcomePreviews={setWelcomePreviews}
+        tempWelcomePreviews={tempWelcomePreviews}
+        setTempWelcomePreviews={setTempWelcomePreviews} 
         welcomeFiles={welcomeFiles}
         setWelcomeFiles={setWelcomeFiles}
         onWelcomeImageSelect={onWelcomeImageSelect}
         saveWelcome={saveWelcome}
         savingWelcome={savingWelcome}
+        openWelcomeDialog={openWelcomeDialog}
       />
       <FeaturesGridSection
         features={features}

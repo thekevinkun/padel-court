@@ -25,12 +25,14 @@ const WelcomeSection = ({
   welcomeDialogOpen,
   setWelcomeDialogOpen,
   welcomePreviews,
-  setWelcomePreviews,
+  tempWelcomePreviews,
+  setTempWelcomePreviews,
   welcomeFiles,
   setWelcomeFiles,
   onWelcomeImageSelect,
   saveWelcome,
   savingWelcome,
+  openWelcomeDialog,
 }: WelcomeSectionCMS) => {
   return (
     <>
@@ -44,12 +46,12 @@ const WelcomeSection = ({
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <VersionHistoryDialog 
-                sectionType="hero" 
-                currentVersion={welcome.version || 1} 
+              <VersionHistoryDialog
+                sectionType="welcome"
+                currentVersion={welcome.version || 1}
               />
               <Button
-                onClick={() => setWelcomeDialogOpen(true)}
+                onClick={openWelcomeDialog}
                 className="gap-2"
               >
                 <Edit className="w-4 h-4" /> Edit
@@ -64,11 +66,17 @@ const WelcomeSection = ({
                 key={idx}
                 className="aspect-[3/4] bg-gray-100 rounded-lg overflow-hidden"
               >
-                <img
-                  src={p}
-                  alt={`welcome-${idx}`}
-                  className="w-full h-full object-cover"
-                />
+                {p ? ( // ADD THIS CHECK HERE!
+                  <img
+                    src={p}
+                    alt={`welcome-${idx}`}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">
+                    No image
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -124,7 +132,7 @@ const WelcomeSection = ({
             <div>
               <Label>Images (4 images)</Label>
               <div className="grid grid-cols-2 gap-3 mt-2">
-                {welcomePreviews.map((p, i) => (
+                {tempWelcomePreviews.map((p, i) => (
                   <div key={i} className="relative">
                     {p ? (
                       <>
@@ -135,9 +143,9 @@ const WelcomeSection = ({
                         />
                         <button
                           onClick={() => {
-                            const np = [...welcomePreviews];
+                            const np = [...tempWelcomePreviews];
                             np[i] = "";
-                            setWelcomePreviews(np);
+                            setTempWelcomePreviews(np);
                             const nf = [...welcomeFiles];
                             nf[i] = null;
                             setWelcomeFiles(nf);
