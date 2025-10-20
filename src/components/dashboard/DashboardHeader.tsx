@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 
 import { pageTitles } from "@/lib/dashboard";
 
-export default function DashboardHeader() {
+const DashboardHeader = () => {
   const pathname = usePathname();
   const pageTitle = pageTitles[pathname] || "Admin Panel";
 
@@ -46,3 +46,5 @@ export default function DashboardHeader() {
     </header>
   );
 }
+
+export default DashboardHeader;

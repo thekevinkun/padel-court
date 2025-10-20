@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { navigation } from "@/lib/dashboard";
 
-export default function Sidebar() {
+const Sidebar = () => {
   const pathname = usePathname();
   const { signOut, user } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -124,15 +124,17 @@ export default function Sidebar() {
             </div>
           </div>
           <Button
-            variant="outline"
+            variant="destructive"
             className="w-full justify-start"
             onClick={signOut}
           >
             <LogOut className="mr-2 h-4 w-4" />
-            Sign Out
+            Logout
           </Button>
         </div>
       </aside>
     </>
   );
 }
+
+export default Sidebar;
