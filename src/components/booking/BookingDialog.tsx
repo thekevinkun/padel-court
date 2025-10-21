@@ -47,10 +47,10 @@ const steps = [
   { id: 3, name: "Confirm Payment", icon: CreditCard },
 ];
 
-export default function BookingDialog({
+const BookingDialog = ({
   open,
   onOpenChange,
-}: BookingDialogProps) {
+}: BookingDialogProps) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const [formData, setFormData] = useState<Partial<BookingFormData>>({
@@ -614,3 +614,5 @@ export default function BookingDialog({
     </Dialog>
   );
 }
+
+export default BookingDialog;

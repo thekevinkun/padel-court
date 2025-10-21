@@ -10,6 +10,8 @@
             └── 📁admin
                 └── 📁bookings
                     ├── page.tsx
+                └── 📁content
+                    ├── page.tsx
                 └── 📁courts
                     ├── page.tsx
                 └── 📁settings
@@ -24,6 +26,10 @@
                     ├── route.ts
                 └── 📁create
                     ├── route.ts
+            └── 📁content
+                └── 📁revalidate
+                    ├── route.ts
+                ├── route.ts
             └── 📁payments
                 └── 📁create
                     ├── route.ts
@@ -41,14 +47,25 @@
         ├── globals.css
         ├── layout.tsx
         ├── page.tsx
+    └── 📁clients
+        ├── BookingsPageClient.tsx
+        ├── ContentPageClient.tsx
+        ├── CourtsPageClient.tsx
+        ├── DashboardLayoutClient.tsx
+        ├── SettingsPageClient.tsx
+        ├── TimeSlotsPageClient.tsx
     └── 📁components
         └── 📁booking
             ├── BookingDialog.tsx
         └── 📁dashboard
-            ├── BookingsTable.tsx
             ├── DashboardHeader.tsx
+            ├── FeaturesGridSection.tsx
+            ├── HeroSection.tsx
+            ├── PricingSection.tsx
+            ├── SectionOrderManager.tsx
             ├── Sidebar.tsx
-            ├── StatsCard.tsx
+            ├── VersionHistoryDialog.tsx
+            ├── WelcomeSection.tsx
         └── 📁home
             ├── FeaturesGrid.tsx
             ├── Hero.tsx
@@ -62,6 +79,29 @@
             ├── ErrorMessage.tsx
             ├── LoadingSpinner.tsx
         └── 📁ui
+            ├── accordion.tsx
+            ├── alert.tsx
+            ├── avatar.tsx
+            ├── badge.tsx
+            ├── button.tsx
+            ├── calendar.tsx
+            ├── card.tsx
+            ├── checkbox.tsx
+            ├── dialog.tsx
+            ├── dropdown-menu.tsx
+            ├── form.tsx
+            ├── input.tsx
+            ├── label.tsx
+            ├── radio-group.tsx
+            ├── scroll-area.tsx
+            ├── select.tsx
+            ├── separator.tsx
+            ├── skeleton.tsx
+            ├── sonner.tsx
+            ├── switch.tsx
+            ├── table.tsx
+            ├── tabs.tsx
+            ├── textarea.tsx
     └── 📁hooks
         ├── useAuth.ts
         ├── useBooking.ts
@@ -75,6 +115,7 @@
             ├── booking.ts
         ├── animations.ts
         ├── constants.ts
+        ├── content.ts
         ├── dashboard.ts
         ├── pdf-generator.ts
         ├── utils.ts
@@ -83,5 +124,6 @@
         ├── booking.ts
         ├── home.ts
         ├── index.ts
-        └── user.ts
+        ├── user.ts
+    └── folder-structure.md
 ```
