@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Save,
   Loader2,
@@ -19,8 +19,9 @@ import {
   Upload,
   X,
   Info,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,64 +29,240 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-import { initialSettings } from "@/lib/dashboard";
+import { SiteSettings } from "@/types/settings";
+import {
+  uploadImage,
+  deleteImage,
+  extractFilePathFromUrl,
+  validateImageFile,
+} from "@/lib/upload";
 
 const SettingsPageClient = () => {
-  const [settings, setSettings] = useState(initialSettings);
+  // Loading states
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">(
+    "idle"
+  );
+  const [errorMessage, setErrorMessage] = useState("");
+
+  // Settings state
+  const [settings, setSettings] = useState<SiteSettings | null>(null);
+
+  // Logo upload states
   const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [logoPreview, setLogoPreview] = useState<string | null>(settings.logo);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+
+  // Active tab
   const [activeTab, setActiveTab] = useState("business");
 
+  // Handle logo file selection
   const handleLogoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Validate file
+    const validation = validateImageFile(file, 5); // Max 5MB
+    if (!validation.isValid) {
+      setErrorMessage(validation.error || "Invalid file");
+      setSaveStatus("error");
+      return;
+    }
+
     setLogoFile(file);
     const reader = new FileReader();
     reader.onloadend = () => setLogoPreview(reader.result as string);
     reader.readAsDataURL(file);
   };
 
+  // Upload logo to Supabase Storage
   const uploadLogo = async (file: File): Promise<string | null> => {
-    // Simulate upload - replace with actual Supabase upload
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(URL.createObjectURL(file));
-      }, 1000);
-    });
-  };
-
-  const handleSave = async () => {
-    setSaving(true);
     try {
-      let logoUrl = settings.logo;
-      if (logoFile) {
-        const uploaded = await uploadLogo(logoFile);
-        if (uploaded) logoUrl = uploaded;
+      console.log("📤 Uploading logo...");
+
+      // Delete old logo if exists
+      if (settings?.logo_url) {
+        const oldFilePath = extractFilePathFromUrl(
+          settings.logo_url,
+          "settings"
+        );
+        if (oldFilePath) {
+          await deleteImage("settings", oldFilePath);
+          console.log("🗑️ Old logo deleted");
+        }
       }
 
-      // Save to database
-      // await supabase.from('settings').upsert({ ...settings, logo: logoUrl })
+      // Upload new logo to 'settings' bucket, 'logos' folder
+      const publicUrl = await uploadImage("settings", file, "logos");
 
-      setSettings((prev) => ({ ...prev, logo: logoUrl }));
+      if (!publicUrl) {
+        throw new Error("Failed to upload logo");
+      }
 
-      // Success notification
-      alert("Settings saved successfully!");
+      console.log("✅ Logo uploaded successfully:", publicUrl);
+      return publicUrl;
     } catch (error) {
-      console.error("Error saving settings:", error);
-      alert("Failed to save settings");
-    } finally {
-      setSaving(false);
-      setLogoFile(null);
+      console.error("Error uploading logo:", error);
+      return null;
     }
   };
 
+  // Save all settings
+  const handleSave = async () => {
+    if (!settings) return;
+
+    setSaving(true);
+    setSaveStatus("idle");
+    setErrorMessage("");
+
+    try {
+      let logoUrl = settings.logo_url;
+
+      // Upload logo if new file selected
+      if (logoFile) {
+        const uploaded = await uploadLogo(logoFile);
+        if (uploaded) {
+          logoUrl = uploaded;
+        } else {
+          throw new Error("Failed to upload logo. Please try again.");
+        }
+      }
+
+      // Prepare settings payload
+      const payload = {
+        ...settings,
+        logo_url: logoUrl,
+      };
+
+      // Send PUT request
+      const response = await fetch("/api/settings", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to save settings");
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Update local state with saved data
+        setSettings(data.settings);
+        setLogoPreview(data.settings.logo_url);
+        setLogoFile(null);
+
+        // Show success message
+        setSaveStatus("success");
+        console.log("✅ Settings saved successfully");
+
+        // Clear success message after 3 seconds
+        setTimeout(() => {
+          setSaveStatus("idle");
+        }, 3000);
+      }
+    } catch (error: any) {
+      console.error("Error saving settings:", error);
+      setErrorMessage(
+        error.message || "Failed to save settings. Please try again."
+      );
+      setSaveStatus("error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Update settings field
+  const updateField = (field: keyof SiteSettings, value: any) => {
+    if (!settings) return;
+    setSettings({ ...settings, [field]: value });
+  };
+
+  // Update nested field (for objects like operating_hours)
+  const updateNestedField = (
+    parent: keyof SiteSettings,
+    child: string,
+    value: any
+  ) => {
+    if (!settings) return;
+    setSettings({
+      ...settings,
+      [parent]: {
+        ...(settings[parent] as any),
+        [child]: value,
+      },
+    });
+  };
+
+  // Fetch settings from API
+  const fetchSettings = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("/api/settings");
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch settings");
+      }
+
+      const data = await response.json();
+
+      if (data.success && data.settings) {
+        setSettings(data.settings);
+        setLogoPreview(data.settings.logo_url);
+        console.log("✅ Settings loaded:", data.settings);
+      }
+    } catch (error) {
+      console.error("Error fetching settings:", error);
+      setErrorMessage("Failed to load settings. Please refresh the page.");
+      setSaveStatus("error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch settings on mount
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  // Show loading spinner while fetching
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-forest mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading settings...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error if settings failed to load
+  if (!settings) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Alert className="max-w-md" variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            {errorMessage ||
+              "Failed to load settings. Please refresh the page."}
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
+      {/* Header with Save Button */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Settings</h1>
@@ -104,6 +281,11 @@ const SettingsPageClient = () => {
               <Loader2 className="w-4 h-4 animate-spin" />
               Saving...
             </>
+          ) : saveStatus === "success" ? (
+            <>
+              <CheckCircle2 className="w-4 h-4" />
+              Saved!
+            </>
           ) : (
             <>
               <Save className="w-4 h-4" />
@@ -113,6 +295,27 @@ const SettingsPageClient = () => {
         </Button>
       </div>
 
+      {/* Success/Error Messages */}
+      {saveStatus === "success" && (
+        <Alert className="bg-green-50 border-green-200">
+          <CheckCircle2 className="h-4 w-4 text-green-600" />
+          <AlertDescription className="text-green-800">
+            Settings saved successfully! Changes will appear on your website
+            shortly.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {saveStatus === "error" && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            {errorMessage || "Failed to save settings. Please try again."}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Settings Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-2 lg:grid-cols-6">
           <TabsTrigger value="business">Business</TabsTrigger>
@@ -137,10 +340,8 @@ const SettingsPageClient = () => {
                 <Label htmlFor="businessName">Business Name</Label>
                 <Input
                   id="businessName"
-                  value={settings.businessName}
-                  onChange={(e) =>
-                    setSettings({ ...settings, businessName: e.target.value })
-                  }
+                  value={settings.business_name}
+                  onChange={(e) => updateField("business_name", e.target.value)}
                   className="mt-1"
                 />
               </div>
@@ -151,12 +352,9 @@ const SettingsPageClient = () => {
                 </Label>
                 <Textarea
                   id="businessDescription"
-                  value={settings.businessDescription}
+                  value={settings.business_description}
                   onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      businessDescription: e.target.value,
-                    })
+                    updateField("business_description", e.target.value)
                   }
                   className="mt-1"
                   rows={4}
@@ -165,20 +363,28 @@ const SettingsPageClient = () => {
 
               <div>
                 <Label>Business Logo</Label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Recommended: Square image (500x500px), max 5MB
+                </p>
                 <div className="mt-2">
                   {logoPreview ? (
                     <div className="relative inline-block">
                       <img
                         src={logoPreview}
                         alt="Logo"
-                        className="w-32 h-32 object-contain border rounded-lg p-2"
+                        className="w-32 h-32 object-contain border rounded-lg p-2 bg-white"
                       />
                       <button
+                        type="button"
                         onClick={() => {
                           setLogoPreview(null);
                           setLogoFile(null);
+                          // If there was an old logo, restore it
+                          if (settings?.logo_url) {
+                            setLogoPreview(settings.logo_url);
+                          }
                         }}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
+                        className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition-colors"
                       >
                         <X className="w-4 h-4" />
                       </button>
@@ -189,9 +395,12 @@ const SettingsPageClient = () => {
                       <p className="text-sm font-medium text-center">
                         Upload Logo
                       </p>
+                      <p className="text-xs text-muted-foreground text-center mt-1">
+                        JPG, PNG, GIF, WebP
+                      </p>
                       <input
                         type="file"
-                        accept="image/*"
+                        accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
                         onChange={handleLogoSelect}
                         className="hidden"
                       />
@@ -213,14 +422,14 @@ const SettingsPageClient = () => {
                     <div className="flex gap-2 mt-1">
                       <Input
                         type="time"
-                        value={settings.operatingHours.weekday.open}
+                        value={settings.operating_hours.weekday.open}
                         onChange={(e) =>
                           setSettings({
                             ...settings,
-                            operatingHours: {
-                              ...settings.operatingHours,
+                            operating_hours: {
+                              ...settings.operating_hours,
                               weekday: {
-                                ...settings.operatingHours.weekday,
+                                ...settings.operating_hours.weekday,
                                 open: e.target.value,
                               },
                             },
@@ -230,14 +439,14 @@ const SettingsPageClient = () => {
                       <span className="self-center">to</span>
                       <Input
                         type="time"
-                        value={settings.operatingHours.weekday.close}
+                        value={settings.operating_hours.weekday.close}
                         onChange={(e) =>
                           setSettings({
                             ...settings,
-                            operatingHours: {
-                              ...settings.operatingHours,
+                            operating_hours: {
+                              ...settings.operating_hours,
                               weekday: {
-                                ...settings.operatingHours.weekday,
+                                ...settings.operating_hours.weekday,
                                 close: e.target.value,
                               },
                             },
@@ -246,19 +455,20 @@ const SettingsPageClient = () => {
                       />
                     </div>
                   </div>
+
                   <div>
                     <Label className="text-sm">Weekend Hours</Label>
                     <div className="flex gap-2 mt-1">
                       <Input
                         type="time"
-                        value={settings.operatingHours.weekend.open}
+                        value={settings.operating_hours.weekend.open}
                         onChange={(e) =>
                           setSettings({
                             ...settings,
-                            operatingHours: {
-                              ...settings.operatingHours,
+                            operating_hours: {
+                              ...settings.operating_hours,
                               weekend: {
-                                ...settings.operatingHours.weekend,
+                                ...settings.operating_hours.weekend,
                                 open: e.target.value,
                               },
                             },
@@ -268,14 +478,14 @@ const SettingsPageClient = () => {
                       <span className="self-center">to</span>
                       <Input
                         type="time"
-                        value={settings.operatingHours.weekend.close}
+                        value={settings.operating_hours.weekend.close}
                         onChange={(e) =>
                           setSettings({
                             ...settings,
-                            operatingHours: {
-                              ...settings.operatingHours,
+                            operating_hours: {
+                              ...settings.operating_hours,
                               weekend: {
-                                ...settings.operatingHours.weekend,
+                                ...settings.operating_hours.weekend,
                                 close: e.target.value,
                               },
                             },
@@ -310,12 +520,11 @@ const SettingsPageClient = () => {
                     id="email"
                     type="email"
                     value={settings.email}
-                    onChange={(e) =>
-                      setSettings({ ...settings, email: e.target.value })
-                    }
+                    onChange={(e) => updateField("email", e.target.value)}
                     className="mt-1"
                   />
                 </div>
+
                 <div>
                   <Label htmlFor="phone">
                     <Phone className="w-4 h-4 inline mr-2" />
@@ -324,9 +533,7 @@ const SettingsPageClient = () => {
                   <Input
                     id="phone"
                     value={settings.phone}
-                    onChange={(e) =>
-                      setSettings({ ...settings, phone: e.target.value })
-                    }
+                    onChange={(e) => updateField("phone", e.target.value)}
                     className="mt-1"
                   />
                 </div>
@@ -340,9 +547,7 @@ const SettingsPageClient = () => {
                 <Input
                   id="whatsapp"
                   value={settings.whatsapp}
-                  onChange={(e) =>
-                    setSettings({ ...settings, whatsapp: e.target.value })
-                  }
+                  onChange={(e) => updateField("whatsapp", e.target.value)}
                   className="mt-1"
                 />
               </div>
@@ -355,9 +560,7 @@ const SettingsPageClient = () => {
                 <Textarea
                   id="address"
                   value={settings.address}
-                  onChange={(e) =>
-                    setSettings({ ...settings, address: e.target.value })
-                  }
+                  onChange={(e) => updateField("address", e.target.value)}
                   className="mt-1"
                   rows={3}
                 />
@@ -370,9 +573,9 @@ const SettingsPageClient = () => {
                 </Label>
                 <Input
                   id="googleMapsUrl"
-                  value={settings.googleMapsUrl}
+                  value={settings.google_maps_url}
                   onChange={(e) =>
-                    setSettings({ ...settings, googleMapsUrl: e.target.value })
+                    updateField("google_maps_url", e.target.value)
                   }
                   className="mt-1"
                   placeholder="https://maps.google.com/?q=..."
@@ -394,20 +597,15 @@ const SettingsPageClient = () => {
                     </Label>
                     <Input
                       id="facebook"
-                      value={settings.socialMedia.facebook}
+                      value={settings.facebook_url}
                       onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          socialMedia: {
-                            ...settings.socialMedia,
-                            facebook: e.target.value,
-                          },
-                        })
+                        updateField("facebook_url", e.target.value)
                       }
                       className="mt-1"
                       placeholder="https://facebook.com/..."
                     />
                   </div>
+
                   <div>
                     <Label htmlFor="instagram">
                       <Instagram className="w-4 h-4 inline mr-2" />
@@ -415,20 +613,15 @@ const SettingsPageClient = () => {
                     </Label>
                     <Input
                       id="instagram"
-                      value={settings.socialMedia.instagram}
+                      value={settings.instagram_url}
                       onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          socialMedia: {
-                            ...settings.socialMedia,
-                            instagram: e.target.value,
-                          },
-                        })
+                        updateField("instagram_url", e.target.value)
                       }
                       className="mt-1"
                       placeholder="https://instagram.com/..."
                     />
                   </div>
+
                   <div>
                     <Label htmlFor="whatsappCommunity">
                       <MessageCircle className="w-4 h-4 inline mr-2" />
@@ -436,15 +629,9 @@ const SettingsPageClient = () => {
                     </Label>
                     <Input
                       id="whatsappCommunity"
-                      value={settings.socialMedia.whatsappCommunity}
+                      value={settings.whatsapp_community_url}
                       onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          socialMedia: {
-                            ...settings.socialMedia,
-                            whatsappCommunity: e.target.value,
-                          },
-                        })
+                        updateField("whatsapp_community_url", e.target.value)
                       }
                       className="mt-1"
                       placeholder="https://chat.whatsapp.com/..."
@@ -483,15 +670,12 @@ const SettingsPageClient = () => {
                     id="minAdvance"
                     type="number"
                     min="0"
-                    value={settings.bookingSettings.minAdvanceBooking}
+                    value={settings.min_advance_booking}
                     onChange={(e) =>
-                      setSettings({
-                        ...settings,
-                        bookingSettings: {
-                          ...settings.bookingSettings,
-                          minAdvanceBooking: parseInt(e.target.value) || 0,
-                        },
-                      })
+                      updateField(
+                        "min_advance_booking",
+                        parseInt(e.target.value) || 0
+                      )
                     }
                     className="mt-1"
                   />
@@ -508,15 +692,12 @@ const SettingsPageClient = () => {
                     id="maxAdvance"
                     type="number"
                     min="1"
-                    value={settings.bookingSettings.maxAdvanceBooking}
+                    value={settings.max_advance_booking}
                     onChange={(e) =>
-                      setSettings({
-                        ...settings,
-                        bookingSettings: {
-                          ...settings.bookingSettings,
-                          maxAdvanceBooking: parseInt(e.target.value) || 1,
-                        },
-                      })
+                      updateField(
+                        "max_advance_booking",
+                        parseInt(e.target.value) || 1
+                      )
                     }
                     className="mt-1"
                   />
@@ -534,15 +715,12 @@ const SettingsPageClient = () => {
                   id="cancellation"
                   type="number"
                   min="0"
-                  value={settings.bookingSettings.cancellationWindow}
+                  value={settings.cancellation_window}
                   onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      bookingSettings: {
-                        ...settings.bookingSettings,
-                        cancellationWindow: parseInt(e.target.value) || 0,
-                      },
-                    })
+                    updateField(
+                      "cancellation_window",
+                      parseInt(e.target.value) || 0
+                    )
                   }
                   className="mt-1"
                 />
@@ -563,20 +741,14 @@ const SettingsPageClient = () => {
                     </p>
                   </div>
                   <Switch
-                    checked={settings.bookingSettings.requireDeposit}
+                    checked={settings.require_deposit}
                     onCheckedChange={(checked) =>
-                      setSettings({
-                        ...settings,
-                        bookingSettings: {
-                          ...settings.bookingSettings,
-                          requireDeposit: checked,
-                        },
-                      })
+                      updateField("require_deposit", checked)
                     }
                   />
                 </div>
 
-                {settings.bookingSettings.requireDeposit && (
+                {settings.require_deposit && (
                   <div>
                     <Label htmlFor="depositPercent">Deposit Percentage</Label>
                     <div className="flex gap-2 items-center mt-1">
@@ -585,15 +757,12 @@ const SettingsPageClient = () => {
                         type="number"
                         min="0"
                         max="100"
-                        value={settings.bookingSettings.depositPercentage}
+                        value={settings.deposit_percentage}
                         onChange={(e) =>
-                          setSettings({
-                            ...settings,
-                            bookingSettings: {
-                              ...settings.bookingSettings,
-                              depositPercentage: parseInt(e.target.value) || 0,
-                            },
-                          })
+                          updateField(
+                            "deposit_percentage",
+                            parseInt(e.target.value) || 0
+                          )
                         }
                         className="w-24"
                       />
@@ -636,13 +805,13 @@ const SettingsPageClient = () => {
                 <Input
                   id="midtransKey"
                   type="password"
-                  value={settings.paymentSettings.midtransClientKey}
+                  value={settings.payment_settings.midtrans_client_key}
                   onChange={(e) =>
                     setSettings({
                       ...settings,
-                      paymentSettings: {
-                        ...settings.paymentSettings,
-                        midtransClientKey: e.target.value,
+                      payment_settings: {
+                        ...settings.payment_settings,
+                        midtrans_client_key: e.target.value,
                       },
                     })
                   }
@@ -659,13 +828,13 @@ const SettingsPageClient = () => {
                   </p>
                 </div>
                 <Switch
-                  checked={settings.paymentSettings.midtransIsProduction}
+                  checked={settings.payment_settings.midtrans_is_production}
                   onCheckedChange={(checked) =>
                     setSettings({
                       ...settings,
-                      paymentSettings: {
-                        ...settings.paymentSettings,
-                        midtransIsProduction: checked,
+                      payment_settings: {
+                        ...settings.payment_settings,
+                        midtrans_is_production: checked,
                       },
                     })
                   }
@@ -680,58 +849,61 @@ const SettingsPageClient = () => {
                   <div className="flex items-center justify-between">
                     <Label>Credit/Debit Card</Label>
                     <Switch
-                      checked={settings.paymentSettings.enableCreditCard}
+                      checked={settings.payment_settings.enable_credit_card}
                       onCheckedChange={(checked) =>
                         setSettings({
                           ...settings,
-                          paymentSettings: {
-                            ...settings.paymentSettings,
-                            enableCreditCard: checked,
+                          payment_settings: {
+                            ...settings.payment_settings,
+                            enable_credit_card: checked,
                           },
                         })
                       }
                     />
                   </div>
+
                   <div className="flex items-center justify-between">
                     <Label>Bank Transfer</Label>
                     <Switch
-                      checked={settings.paymentSettings.enableBankTransfer}
+                      checked={settings.payment_settings.enable_bank_transfer}
                       onCheckedChange={(checked) =>
                         setSettings({
                           ...settings,
-                          paymentSettings: {
-                            ...settings.paymentSettings,
-                            enableBankTransfer: checked,
+                          payment_settings: {
+                            ...settings.payment_settings,
+                            enable_bank_transfer: checked,
                           },
                         })
                       }
                     />
                   </div>
+
                   <div className="flex items-center justify-between">
                     <Label>E-Wallet (GoPay, OVO, Dana, ShopeePay)</Label>
                     <Switch
-                      checked={settings.paymentSettings.enableEWallet}
+                      checked={settings.payment_settings.enable_ewallet}
                       onCheckedChange={(checked) =>
                         setSettings({
                           ...settings,
-                          paymentSettings: {
-                            ...settings.paymentSettings,
-                            enableEWallet: checked,
+                          payment_settings: {
+                            ...settings.payment_settings,
+                            enable_ewallet: checked,
                           },
                         })
                       }
                     />
                   </div>
+
                   <div className="flex items-center justify-between">
                     <Label>QRIS</Label>
                     <Switch
-                      checked={settings.paymentSettings.enableQRIS}
+                      checked={settings.payment_settings.enable_qris}
                       onCheckedChange={(checked) =>
                         setSettings({
                           ...settings,
-                          paymentSettings: {
-                            ...settings.paymentSettings,
-                            enableQRIS: checked,
+                          payment_settings: {
+                            ...settings.payment_settings,
+                            enable_qris: checked,
                           },
                         })
                       }
@@ -770,13 +942,13 @@ const SettingsPageClient = () => {
                     </p>
                   </div>
                   <Switch
-                    checked={settings.notificationSettings.emailNotifications}
+                    checked={settings.notification_settings.email_notifications}
                     onCheckedChange={(checked) =>
                       setSettings({
                         ...settings,
-                        notificationSettings: {
-                          ...settings.notificationSettings,
-                          emailNotifications: checked,
+                        notification_settings: {
+                          ...settings.notification_settings,
+                          email_notifications: checked,
                         },
                       })
                     }
@@ -792,14 +964,14 @@ const SettingsPageClient = () => {
                   </div>
                   <Switch
                     checked={
-                      settings.notificationSettings.whatsappNotifications
+                      settings.notification_settings.whatsapp_notifications
                     }
                     onCheckedChange={(checked) =>
                       setSettings({
                         ...settings,
-                        notificationSettings: {
-                          ...settings.notificationSettings,
-                          whatsappNotifications: checked,
+                        notification_settings: {
+                          ...settings.notification_settings,
+                          whatsapp_notifications: checked,
                         },
                       })
                     }
@@ -813,13 +985,15 @@ const SettingsPageClient = () => {
                 <div className="flex items-center justify-between">
                   <Label>Booking Confirmation</Label>
                   <Switch
-                    checked={settings.notificationSettings.bookingConfirmation}
+                    checked={
+                      settings.notification_settings.booking_confirmation
+                    }
                     onCheckedChange={(checked) =>
                       setSettings({
                         ...settings,
-                        notificationSettings: {
-                          ...settings.notificationSettings,
-                          bookingConfirmation: checked,
+                        notification_settings: {
+                          ...settings.notification_settings,
+                          booking_confirmation: checked,
                         },
                       })
                     }
@@ -829,13 +1003,13 @@ const SettingsPageClient = () => {
                 <div className="flex items-center justify-between">
                   <Label>Payment Reminder</Label>
                   <Switch
-                    checked={settings.notificationSettings.paymentReminder}
+                    checked={settings.notification_settings.payment_reminder}
                     onCheckedChange={(checked) =>
                       setSettings({
                         ...settings,
-                        notificationSettings: {
-                          ...settings.notificationSettings,
-                          paymentReminder: checked,
+                        notification_settings: {
+                          ...settings.notification_settings,
+                          payment_reminder: checked,
                         },
                       })
                     }
@@ -845,13 +1019,13 @@ const SettingsPageClient = () => {
                 <div className="flex items-center justify-between">
                   <Label>Booking Reminder (24h before)</Label>
                   <Switch
-                    checked={settings.notificationSettings.bookingReminder}
+                    checked={settings.notification_settings.booking_reminder}
                     onCheckedChange={(checked) =>
                       setSettings({
                         ...settings,
-                        notificationSettings: {
-                          ...settings.notificationSettings,
-                          bookingReminder: checked,
+                        notification_settings: {
+                          ...settings.notification_settings,
+                          booking_reminder: checked,
                         },
                       })
                     }
@@ -884,18 +1058,13 @@ const SettingsPageClient = () => {
                 <Label htmlFor="metaTitle">Meta Title</Label>
                 <Input
                   id="metaTitle"
-                  value={settings.seo.metaTitle}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      seo: { ...settings.seo, metaTitle: e.target.value },
-                    })
-                  }
+                  value={settings.meta_title}
+                  onChange={(e) => updateField("meta_title", e.target.value)}
                   className="mt-1"
                   maxLength={60}
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  {settings.seo.metaTitle.length}/60 characters (optimal: 50-60)
+                  {settings.meta_title.length}/60 characters (optimal: 50-60)
                 </p>
               </div>
 
@@ -903,19 +1072,16 @@ const SettingsPageClient = () => {
                 <Label htmlFor="metaDescription">Meta Description</Label>
                 <Textarea
                   id="metaDescription"
-                  value={settings.seo.metaDescription}
+                  value={settings.meta_description}
                   onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      seo: { ...settings.seo, metaDescription: e.target.value },
-                    })
+                    updateField("meta_description", e.target.value)
                   }
                   className="mt-1"
                   rows={3}
                   maxLength={160}
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  {settings.seo.metaDescription.length}/160 characters (optimal:
+                  {settings.meta_description.length}/160 characters (optimal:
                   150-160)
                 </p>
               </div>
@@ -924,13 +1090,8 @@ const SettingsPageClient = () => {
                 <Label htmlFor="metaKeywords">Meta Keywords</Label>
                 <Input
                   id="metaKeywords"
-                  value={settings.seo.metaKeywords}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      seo: { ...settings.seo, metaKeywords: e.target.value },
-                    })
-                  }
+                  value={settings.meta_keywords}
+                  onChange={(e) => updateField("meta_keywords", e.target.value)}
                   className="mt-1"
                   placeholder="padel, samarinda, sports, booking"
                 />
@@ -945,13 +1106,8 @@ const SettingsPageClient = () => {
                 <Label htmlFor="ogImage">Open Graph Image URL</Label>
                 <Input
                   id="ogImage"
-                  value={settings.seo.ogImage}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      seo: { ...settings.seo, ogImage: e.target.value },
-                    })
-                  }
+                  value={settings.og_image}
+                  onChange={(e) => updateField("og_image", e.target.value)}
                   className="mt-1"
                   placeholder="/images/og-image.jpg"
                 />
@@ -965,13 +1121,13 @@ const SettingsPageClient = () => {
                 <h3 className="font-semibold mb-2 text-sm">Preview</h3>
                 <div className="space-y-2">
                   <div className="text-blue-600 text-lg font-medium">
-                    {settings.seo.metaTitle}
+                    {settings.meta_title}
                   </div>
                   <div className="text-green-700 text-xs">
                     padelbap.com › booking
                   </div>
                   <div className="text-sm text-gray-600">
-                    {settings.seo.metaDescription}
+                    {settings.meta_description}
                   </div>
                 </div>
               </div>
@@ -993,6 +1149,11 @@ const SettingsPageClient = () => {
               <Loader2 className="w-4 h-4 animate-spin" />
               Saving All Changes...
             </>
+          ) : saveStatus === "success" ? (
+            <>
+              <CheckCircle2 className="w-4 h-4" />
+              Saved!
+            </>
           ) : (
             <>
               <Save className="w-4 h-4" />
@@ -1006,6 +1167,6 @@ const SettingsPageClient = () => {
       <div className="lg:hidden h-20" />
     </div>
   );
-}
+};
 
 export default SettingsPageClient;
