@@ -11,11 +11,13 @@ import {
   Instagram,
   Twitter,
   ArrowRight,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
+import { useSettings } from "@/hooks/useSettings";
 import { footerData } from "@/lib/constants";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
 
@@ -26,6 +28,36 @@ const socialIcons = {
 };
 
 const Footer = () => {
+  const { settings, loading, error } = useSettings();
+
+  // Use settings from database or fallback
+  const businessName =
+    settings?.business_name || footerData.businessName;
+  const tagline = settings?.business_description || footerData.tagline;
+  const email = settings?.email || footerData.email;
+  const phone = settings?.phone || footerData.phone;
+  const whatsapp = settings?.whatsapp || footerData.whatsapp;
+  const address = settings?.address || footerData.address;
+  const operatingHours =
+    settings?.operating_hours || footerData.operatingHours;
+  const usefulLinks = footerData.links.useful;
+  const legalLinks = footerData.links.legal;
+  const copyright = footerData.copyright;
+
+  // Social media links
+  const socialLinks = [
+    {
+      name: "Facebook",
+      icon: "facebook",
+      url: settings?.facebook_url || footerData.social[0].url,
+    },
+    {
+      name: "Instagram",
+      icon: "instagram",
+      url: settings?.instagram_url || footerData.social[1].url,
+    },
+  ].filter((social) => social.url); // Remove if no URL
+
   return (
     <footer className="relative bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white">
       {/* CTA Section - Overlapping */}
@@ -37,9 +69,11 @@ const Footer = () => {
               <div className="flex flex-col md:flex-row items-center justify-between gap-6">
                 <div className="text-center md:text-left">
                   <h3 className="heading-3 text-foreground mb-2">
-                    {footerData.cta.title}
+                    Ready to Play?
                   </h3>
-                  <p className="text-body">{footerData.cta.description}</p>
+                  <p className="text-body">
+                    Book your court now and experience the best padel facilities
+                  </p>
                 </div>
                 <Button
                   asChild
@@ -57,7 +91,7 @@ const Footer = () => {
         </div>
       </div>
 
-      {/* Main Footer Content - Extra padding top for CTA overlap */}
+      {/* Main Footer Content */}
       <div className="container-custom pt-8 pb-12 md:pb-16">
         <motion.div
           initial="hidden"
@@ -96,27 +130,27 @@ const Footer = () => {
                 </div>
               </div>
             </Link>
-            <p className="text-sm text-gray-400 mb-6">{footerData.tagline}</p>
+            <p className="text-sm text-gray-400 mb-6">{tagline}</p>
 
             {/* Contact Info */}
             <div className="space-y-3">
               <a
-                href={`mailto:${footerData.contact.email}`}
+                href={`mailto:${email}`}
                 className="flex items-start gap-3 text-sm text-gray-400 hover:text-primary transition-colors group"
               >
                 <Mail className="w-4 h-4 mt-0.5 shrink-0 group-hover:text-primary" />
-                <span>{footerData.contact.email}</span>
+                <span>{email}</span>
               </a>
               <a
-                href={`tel:${footerData.contact.phone}`}
+                href={`tel:${phone}`}
                 className="flex items-start gap-3 text-sm text-gray-400 hover:text-primary transition-colors group"
               >
                 <Phone className="w-4 h-4 mt-0.5 shrink-0 group-hover:text-primary" />
-                <span>{footerData.contact.phone}</span>
+                <span>{phone}</span>
               </a>
               <div className="flex items-start gap-3 text-sm text-gray-400">
                 <MapPin className="w-4 h-4 mt-0.5 shrink-0" />
-                <span>{footerData.contact.address}</span>
+                <span>{address}</span>
               </div>
             </div>
           </motion.div>
@@ -127,7 +161,7 @@ const Footer = () => {
               Useful Links
             </h4>
             <ul className="space-y-2.5">
-              {footerData.links.useful.map((link) => (
+              {usefulLinks.map((link) => (
                 <li key={link.name}>
                   <Link
                     href={link.href}
@@ -146,7 +180,7 @@ const Footer = () => {
               Follow Us
             </h4>
             <div className="flex gap-3 mb-6">
-              {footerData.social.map((social) => {
+              {socialLinks.map((social) => {
                 const Icon =
                   socialIcons[social.icon as keyof typeof socialIcons];
                 return (
@@ -168,7 +202,7 @@ const Footer = () => {
               Legal
             </h4>
             <ul className="space-y-2.5">
-              {footerData.links.legal.map((link) => (
+              {legalLinks.map((link) => (
                 <li key={link.name}>
                   <Link
                     href={link.href}
@@ -181,21 +215,24 @@ const Footer = () => {
             </ul>
           </motion.div>
 
-          {/* Open Hours */}
+          {/* Operating Hours */}
           <motion.div variants={fadeInUp}>
             <h4 className="font-display font-bold text-primary text-lg mb-4">
-              {footerData.hours.title}
+              Opening Hours
             </h4>
             <div className="space-y-4">
               <div className="flex items-start gap-3">
                 <Clock className="w-5 h-5 text-primary mt-0.5 shrink-0" />
                 <div>
                   <p className="text-white font-medium text-sm mb-1">
-                    {footerData.hours.schedule}
+                    Weekdays: {operatingHours.weekday.open} -{" "}
+                    {operatingHours.weekday.close}
                   </p>
-                  <p className="text-xs text-gray-400">
-                    {footerData.hours.note}
+                  <p className="text-white font-medium text-sm mb-1">
+                    Weekends: {operatingHours.weekend.open} -{" "}
+                    {operatingHours.weekend.close}
                   </p>
+                  <p className="text-xs text-gray-400">Open every day</p>
                 </div>
               </div>
 
@@ -220,13 +257,13 @@ const Footer = () => {
           transition={{ delay: 0.3 }}
           className="text-center text-sm text-gray-500"
         >
-          {footerData.copyright}
+          {copyright}
         </motion.div>
       </div>
 
       {/* WhatsApp Floating Button */}
       <a
-        href={`https://wa.me/${footerData.contact.whatsapp.replace(/\D/g, "")}`}
+        href={`https://wa.me/${whatsapp.replace(/\D/g, "")}`}
         target="_blank"
         rel="noopener noreferrer"
         className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-green-500 hover:bg-green-600 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform group"

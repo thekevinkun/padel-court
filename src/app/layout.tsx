@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
+import { generateSiteMetadata, defaultMetadata } from "@/lib/metadata";
+import StructuredData from "@/components/StructuredData";
 import "./globals.css";
 
 const inter = Inter({
@@ -14,11 +16,36 @@ const spaceGrotesk = Space_Grotesk({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: "Padel Batu Alam Permai - Book Your Court Online",
-  description:
-    "Book padel courts instantly. Best courts in Batu Alam Permai with easy online booking.",
-};
+/* Generate metadata from settings */
+export async function generateMetadata(): Promise<Metadata> {
+  try {
+    // Fetch settings from API
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/settings`,
+      {
+        // Important: Don't cache during build, but cache at runtime
+        next: { revalidate: 300 }, // Revalidate every 5 minutes
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch settings");
+    }
+
+    const data = await response.json();
+
+    if (data.success && data.settings) {
+      return generateSiteMetadata(data.settings);
+    }
+
+    // Fallback to default metadata
+    return defaultMetadata;
+  } catch (error) {
+    console.error("Error generating metadata:", error);
+    // Fallback to default metadata
+    return defaultMetadata;
+  }
+}
 
 export default function RootLayout({
   children,
@@ -27,6 +54,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable}`}>
+      <head>
+        <StructuredData />
+      </head>
       <body>
         {children}
       </body>
