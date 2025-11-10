@@ -19,12 +19,22 @@ export async function POST(request: NextRequest) {
       totalAmount,
       paymentMethod,
       notes,
+      requireDeposit,
+      depositAmount,
+      fullAmount,
     } = body;
 
     console.log("bookings-create body: ", body);
 
     // Validate required fields
-    if (!courtId || !timeSlotId || !date || !customerName || !customerEmail || !customerPhone) {
+    if (
+      !courtId ||
+      !timeSlotId ||
+      !date ||
+      !customerName ||
+      !customerEmail ||
+      !customerPhone
+    ) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -57,6 +67,11 @@ export async function POST(request: NextRequest) {
     // Generate unique booking reference
     const bookingRef = `BAP${Date.now().toString().slice(-8)}`;
 
+    // Calculate remaining balance
+    const remainingBalance = requireDeposit
+      ? (fullAmount || subtotal) - totalAmount
+      : 0;
+
     // Create booking
     const { data: booking, error: bookingError } = await supabase
       .from("bookings")
@@ -77,6 +92,10 @@ export async function POST(request: NextRequest) {
         payment_method: paymentMethod,
         notes: notes || null,
         status: "PENDING", // Payment not done yet
+        require_deposit: requireDeposit || false,
+        deposit_amount: depositAmount || 0,
+        full_amount: fullAmount || subtotal,
+        remaining_balance: remainingBalance,
       })
       .select()
       .single();
@@ -96,15 +115,19 @@ export async function POST(request: NextRequest) {
       .eq("id", timeSlotId);
 
     // Create admin notification
-    await supabase
-      .from("admin_notifications")
-      .insert({
-        booking_id: booking.id,
-        type: "NEW_BOOKING",
-        title: "New Booking Created",
-        message: `Booking ${bookingRef} created. Customer: ${customerName}. Waiting for payment.`,
-        read: false,
-      });
+    const notificationMessage = requireDeposit
+      ? `Booking ${bookingRef} created. Customer: ${customerName}. Deposit: IDR ${totalAmount.toLocaleString(
+          "id-ID"
+        )}. Balance: IDR ${remainingBalance.toLocaleString("id-ID")}.`
+      : `Booking ${bookingRef} created. Customer: ${customerName}. Waiting for payment.`;
+
+    await supabase.from("admin_notifications").insert({
+      booking_id: booking.id,
+      type: "NEW_BOOKING",
+      title: "New Booking Created",
+      message: notificationMessage,
+      read: false,
+    });
 
     return NextResponse.json({
       success: true,
@@ -112,6 +135,9 @@ export async function POST(request: NextRequest) {
         id: booking.id,
         bookingRef: booking.booking_ref,
         status: booking.status,
+        requireDeposit: booking.require_deposit,
+        depositAmount: booking.deposit_amount,
+        remainingBalance: booking.remaining_balance,
       },
     });
   } catch (error) {

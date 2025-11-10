@@ -52,18 +52,24 @@ export async function POST(request: NextRequest) {
     // Generate unique order ID
     const orderId = `BOOKING-${booking.booking_ref}`;
 
-    // Create transaction parameters
-    const parameter = {
-      transaction_details: {
-        order_id: orderId,
-        gross_amount: booking.total_amount,
-      },
-      customer_details: {
-        first_name: booking.customer_name,
-        email: booking.customer_email,
-        phone: booking.customer_phone,
-      },
-      item_details: [
+    // Adjust item_details to match total_amount
+    // If total_amount is less than subtotal, it's a deposit payment
+    const isDepositPayment = booking.total_amount < booking.subtotal;
+
+    let itemDetails;
+    if (isDepositPayment) {
+      // For deposit: Create item that matches deposit amount
+      itemDetails = [
+        {
+          id: "court-booking-deposit",
+          price: booking.total_amount, // Use deposit amount
+          quantity: 1,
+          name: `${booking.courts.name} - ${booking.time} (Deposit)`,
+        }
+      ];
+    } else {
+      // For full payment: Use subtotal + fees as before
+      itemDetails = [
         {
           id: "court-booking",
           price: booking.subtotal,
@@ -76,13 +82,34 @@ export async function POST(request: NextRequest) {
           quantity: 1,
           name: "Payment Processing Fee",
         }] : []),
-      ],
+      ];
+    }
+
+    // Create transaction parameters
+    const parameter = {
+      transaction_details: {
+        order_id: orderId,
+        gross_amount: booking.total_amount,
+      },
+      customer_details: {
+        first_name: booking.customer_name,
+        email: booking.customer_email,
+        phone: booking.customer_phone,
+      },
+      item_details: itemDetails, // ⭐ Use conditional items
       callbacks: {
         finish: `${process.env.NEXT_PUBLIC_SITE_URL}/booking/success/${booking.booking_ref}`,
         error: `${process.env.NEXT_PUBLIC_SITE_URL}/booking/failed`,
         pending: `${process.env.NEXT_PUBLIC_SITE_URL}/booking/pending/${booking.booking_ref}`,
       },
     };
+
+    console.log("💳 Creating Midtrans transaction:", {
+      orderId,
+      gross_amount: booking.total_amount,
+      isDeposit: isDepositPayment,
+      items: itemDetails,
+    });
 
     // Create transaction with Midtrans
     const transaction = await snap.createTransaction(parameter);
@@ -102,10 +129,16 @@ export async function POST(request: NextRequest) {
       token: transaction.token,
       orderId: orderId,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error creating payment:", error);
+    const errorMessage = error.message || "Failed to create payment";
+    const errorDetails = error.ApiResponse || error.httpStatusCode || "Unknown error";
+
     return NextResponse.json(
-      { error: "Failed to create payment", details: error },
+      { 
+        error: errorMessage,
+        details: typeof errorDetails === 'object' ? JSON.stringify(errorDetails) : errorDetails 
+      },
       { status: 500 }
     );
   }

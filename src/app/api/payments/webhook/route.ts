@@ -89,22 +89,41 @@ export async function POST(request: NextRequest) {
         console.log("✅ Payment SUCCESS for booking:", bookingRef);
 
         // Calculate actual fee based on payment type
-        let actualFee = 0;
+        // let actualFee = 0;
+        // if (paymentType === "credit_card") {
+        //   actualFee = Math.round(booking.total_amount * 0.029 + 2000); // 2.9% + 2000
+        // } else if (
+        //   paymentType === "gopay" ||
+        //   paymentType === "shopeepay" ||
+        //   paymentType === "dana"
+        // ) {
+        //   actualFee = Math.round(booking.total_amount * 0.02); // 2%
+        // } else if (paymentType === "qris") {
+        //   actualFee = Math.round(booking.total_amount * 0.007); // 0.7%
+        // } else if (
+        //   paymentType.includes("va") ||
+        //   paymentType.includes("bank_transfer")
+        // ) {
+        //   actualFee = 4000; // Flat fee
+        // }
+
+        // Calculate actual fee (for records only)
+        let midtransFee = 0;
         if (paymentType === "credit_card") {
-          actualFee = Math.round(booking.total_amount * 0.029 + 2000); // 2.9% + 2000
+          midtransFee = Math.round(booking.total_amount * 0.029 + 2000); // 2.9% + 2000
         } else if (
           paymentType === "gopay" ||
           paymentType === "shopeepay" ||
           paymentType === "dana"
         ) {
-          actualFee = Math.round(booking.total_amount * 0.02); // 2%
+          midtransFee = Math.round(booking.total_amount * 0.02); // 2%
         } else if (paymentType === "qris") {
-          actualFee = Math.round(booking.total_amount * 0.007); // 0.7%
+          midtransFee = Math.round(booking.total_amount * 0.007); // 0.7%
         } else if (
           paymentType.includes("va") ||
           paymentType.includes("bank_transfer")
         ) {
-          actualFee = 4000; // Flat fee
+          midtransFee = 4000; // Flat fee
         }
 
         // Update booking status to PAID and its Payment Method
@@ -114,7 +133,7 @@ export async function POST(request: NextRequest) {
             status: "PAID",
             paid_at: new Date().toISOString(),
             payment_method: paymentType,
-            payment_fee: actualFee,
+            payment_fee: midtransFee,
           })
           .eq("id", booking.id);
 

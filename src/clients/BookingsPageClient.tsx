@@ -8,6 +8,8 @@ import {
   CheckCircle,
   Clock,
   XCircle,
+  Info,
+  DollarSign,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,6 +37,7 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 import { supabase } from "@/lib/supabase/client";
 
@@ -110,7 +113,10 @@ const BookingsPageClient = () => {
       "Date",
       "Time",
       "Players",
-      "Total Amount",
+      "Deposit Required",
+      "Deposit Amount",
+      "Total Paid",
+      "Remaining Balance",
       "Status",
       "Created At",
     ];
@@ -124,7 +130,10 @@ const BookingsPageClient = () => {
       b.date,
       b.time,
       b.number_of_players,
+      b.require_deposit ? "Yes" : "No",
+      b.deposit_amount || 0,
       b.total_amount,
+      b.remaining_balance || 0,
       b.status,
       new Date(b.created_at).toLocaleString("id-ID"),
     ]);
@@ -224,10 +233,9 @@ const BookingsPageClient = () => {
       </Card>
 
       {/* Bookings Table */}
-      {/* Bookings Table */}
       <Card className="!pb-1">
         <CardContent className="p-0">
-          <div className="rounded-md">
+          <div className="rounded-md overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -236,7 +244,7 @@ const BookingsPageClient = () => {
                   <TableHead className="font-medium">Court</TableHead>
                   <TableHead className="font-medium">Date</TableHead>
                   <TableHead className="font-medium">Time</TableHead>
-                  <TableHead className="font-medium">Total</TableHead>
+                  <TableHead className="font-medium">Amount Paid</TableHead>
                   <TableHead className="font-medium">Status</TableHead>
                   <TableHead className="font-medium">Actions</TableHead>
                 </TableRow>
@@ -253,6 +261,11 @@ const BookingsPageClient = () => {
                     <TableRow key={booking.id}>
                       <TableCell className="font-mono text-sm font-medium">
                         {booking.booking_ref}
+                        {booking.require_deposit && (
+                          <Badge variant="outline" className="ml-2 text-xs">
+                            Deposit
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div>
@@ -271,8 +284,19 @@ const BookingsPageClient = () => {
                         {new Date(booking.date).toLocaleDateString("id-ID")}
                       </TableCell>
                       <TableCell className="text-sm">{booking.time}</TableCell>
-                      <TableCell className="font-medium">
-                        IDR {booking.total_amount.toLocaleString("id-ID")}
+                      <TableCell>
+                        <div className="font-medium">
+                          IDR {booking.total_amount.toLocaleString("id-ID")}
+                        </div>
+                        {booking.require_deposit &&
+                          booking.remaining_balance > 0 && (
+                            <div className="text-xs text-orange-600 mt-1">
+                              Balance: IDR{" "}
+                              {booking.remaining_balance.toLocaleString(
+                                "id-ID"
+                              )}
+                            </div>
+                          )}
                       </TableCell>
                       <TableCell>{getStatusBadge(booking.status)}</TableCell>
                       <TableCell>
@@ -315,11 +339,41 @@ const BookingsPageClient = () => {
                   <p className="text-2xl font-bold font-mono">
                     {selectedBooking.booking_ref}
                   </p>
+                  {selectedBooking.require_deposit && (
+                    <Badge variant="outline" className="mt-2">
+                      <DollarSign className="w-3 h-3 mr-1" />
+                      Deposit Payment
+                    </Badge>
+                  )}
                 </div>
                 {getStatusBadge(selectedBooking.status)}
               </div>
 
               <Separator />
+
+              {/* Deposit Alert */}
+              {selectedBooking.require_deposit &&
+                selectedBooking.remaining_balance > 0 && (
+                  <Alert className="bg-orange-50 border-orange-200">
+                    <Info className="h-4 w-4 text-orange-600" />
+                    <AlertDescription className="text-sm text-orange-800">
+                      <strong>Deposit Booking:</strong> Customer paid deposit of{" "}
+                      <strong>
+                        IDR{" "}
+                        {selectedBooking.deposit_amount.toLocaleString("id-ID")}
+                      </strong>{" "}
+                      online.
+                      <br />
+                      <strong>
+                        Remaining balance of IDR{" "}
+                        {selectedBooking.remaining_balance.toLocaleString(
+                          "id-ID"
+                        )}
+                      </strong>{" "}
+                      must be collected at venue.
+                    </AlertDescription>
+                  </Alert>
+                )}
 
               {/* Customer Information */}
               <div>
@@ -395,39 +449,96 @@ const BookingsPageClient = () => {
                       IDR {selectedBooking.subtotal.toLocaleString("id-ID")}
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Payment Fee</span>
-                    <span>
-                      IDR {selectedBooking.payment_fee.toLocaleString("id-ID")}
-                    </span>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between font-bold text-lg">
-                    <span>Total</span>
-                    <span className="text-forest">
-                      IDR {selectedBooking.total_amount.toLocaleString("id-ID")}
-                    </span>
-                  </div>
-                  {selectedBooking.payment_method && (
+
+                  {/* Show Midtrans fee (if tracking) */}
+                  {selectedBooking.payment_fee > 0 && (
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">
-                        Payment Method
+                        Midtrans Fee (absorbed by business)
                       </span>
-                      <span className="capitalize">
-                        {selectedBooking.payment_method}
-                      </span>
-                    </div>
-                  )}
-                  {selectedBooking.paid_at && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Paid At</span>
-                      <span>
-                        {new Date(selectedBooking.paid_at).toLocaleString(
-                          "id-ID"
-                        )}
+                      <span className="text-red-600">
+                        - IDR{" "}
+                        {selectedBooking.payment_fee.toLocaleString("id-ID")}
                       </span>
                     </div>
                   )}
+
+                  {selectedBooking.require_deposit ? (
+                    <>
+                      <Separator />
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">
+                          Full Amount
+                        </span>
+                        <span>
+                          IDR{" "}
+                          {(
+                            selectedBooking.full_amount ||
+                            selectedBooking.subtotal
+                          ).toLocaleString("id-ID")}
+                        </span>
+                      </div>
+                      <div className="flex justify-between font-bold text-green-700">
+                        <span>Customer Paid (Deposit)</span>
+                        <span>
+                          IDR{" "}
+                          {selectedBooking.total_amount.toLocaleString("id-ID")}
+                        </span>
+                      </div>
+                      {selectedBooking.payment_fee > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">
+                            You Received (after Midtrans fee)
+                          </span>
+                          <span className="text-green-600">
+                            IDR{" "}
+                            {(
+                              selectedBooking.total_amount -
+                              selectedBooking.payment_fee
+                            ).toLocaleString("id-ID")}
+                          </span>
+                        </div>
+                      )}
+                      {selectedBooking.remaining_balance > 0 && (
+                        <div className="flex justify-between font-bold text-orange-700">
+                          <span>💰 Balance Due at Venue</span>
+                          <span>
+                            IDR{" "}
+                            {selectedBooking.remaining_balance.toLocaleString(
+                              "id-ID"
+                            )}
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <Separator />
+                      <div className="flex justify-between font-bold text-lg">
+                        <span>Customer Paid</span>
+                        <span className="text-forest">
+                          IDR{" "}
+                          {selectedBooking.total_amount.toLocaleString("id-ID")}
+                        </span>
+                      </div>
+                      {selectedBooking.payment_fee > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">
+                            You Received (after Midtrans fee)
+                          </span>
+                          <span className="text-green-600">
+                            IDR{" "}
+                            {(
+                              selectedBooking.total_amount -
+                              selectedBooking.payment_fee
+                            ).toLocaleString("id-ID")}
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* ... rest of payment info ... */}
                 </div>
               </div>
 
@@ -464,6 +575,6 @@ const BookingsPageClient = () => {
       </Dialog>
     </div>
   );
-}
+};
 
 export default BookingsPageClient;

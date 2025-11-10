@@ -1,10 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import {
+  differenceInHours,
+  differenceInDays,
+  addDays,
+  isBefore,
+  isAfter,
+} from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Calendar,
   Users,
+  Info,
   CreditCard,
   ArrowRight,
   ArrowLeft,
@@ -33,6 +42,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 
+import { useSettings } from "@/hooks/useSettings";
 import { BookingFormData } from "@/types";
 import { supabase } from "@/lib/supabase/client";
 
@@ -47,16 +57,16 @@ const steps = [
   { id: 3, name: "Confirm Payment", icon: CreditCard },
 ];
 
-const BookingDialog = ({
-  open,
-  onOpenChange,
-}: BookingDialogProps) => {
+const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const [formData, setFormData] = useState<Partial<BookingFormData>>({
     date: new Date(),
     numberOfPlayers: 4,
   });
+
+  // Fetch settings
+  const { settings, loading: settingsLoading } = useSettings();
 
   // Fetch courts and time slots from database
   const [courts, setCourts] = useState<any[]>([]);
@@ -105,7 +115,10 @@ const BookingDialog = ({
       // Format time slots to match your existing format
       const formatted = data.map((slot) => ({
         id: slot.id,
-        time: `${slot.time_start.substring(0, 5)} - ${slot.time_end.substring(0, 5)}`,
+        time: `${slot.time_start.substring(0, 5)} - ${slot.time_end.substring(
+          0,
+          5
+        )}`,
         available: slot.available,
         period: slot.period,
         pricePerPerson: slot.price_per_person,
@@ -127,8 +140,11 @@ const BookingDialog = ({
 
   const handleSubmit = async () => {
     setIsProcessing(true);
-
     try {
+      const deposit = calculateDeposit();
+      const total = calculateTotal();
+      const amountToPay = settings?.require_deposit ? deposit : total;
+
       // Create booking in database
       const bookingResponse = await fetch("/api/bookings/create", {
         method: "POST",
@@ -145,9 +161,12 @@ const BookingDialog = ({
           numberOfPlayers: formData.numberOfPlayers,
           subtotal: selectedSlot!.pricePerPerson * formData.numberOfPlayers!,
           paymentFee: 0,
-          totalAmount: calculateTotal(),
+          totalAmount: amountToPay, // Use deposit if required, otherwise full amount
           paymentMethod: null,
           notes: formData.notes,
+          requireDeposit: settings?.require_deposit || false, // NEW: Track if this is a deposit
+          depositAmount: deposit, // NEW: Store deposit amount
+          fullAmount: total, // NEW: Store full amount
         }),
       });
 
@@ -174,12 +193,94 @@ const BookingDialog = ({
 
       // Redirect to Midtrans payment page
       window.location.href = paymentUrl;
-
     } catch (error) {
       console.error("Booking error:", error);
       alert("An error occurred during booking. Please try again.");
       setIsProcessing(false);
     }
+  };
+
+  // Helper function to check if date is allowed
+  const isDateAllowed = (date: Date): boolean => {
+    if (!settings) return true; // Allow all if settings not loaded
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const targetDate = new Date(date);
+    targetDate.setHours(0, 0, 0, 0);
+
+    // Check max advance booking
+    const maxDate = addDays(today, settings.max_advance_booking);
+    if (isAfter(targetDate, maxDate)) {
+      return false; // Too far in future
+    }
+
+    // Check min advance booking (must be at least X hours from now)
+    const minDate = new Date();
+    minDate.setHours(minDate.getHours() + settings.min_advance_booking);
+
+    // If booking for today, check if any slots are still available
+    if (differenceInDays(targetDate, today) === 0) {
+      // Allow today if current time + min advance is still within today
+      return isBefore(minDate, new Date(targetDate).setHours(23, 59, 59));
+    }
+
+    return true; // Date is within allowed range
+  };
+
+  // Helper to check if time slot has already passed
+  const isTimeSlotPassed = (slot: any, bookingDate: Date): boolean => {
+    const now = new Date();
+    const slotDateTime = new Date(bookingDate);
+
+    // Parse slot time (e.g., "14:00 - 15:00")
+    const timeStart = slot.time.split(" - ")[0];
+    const [hours, minutes] = timeStart.split(":").map(Number);
+
+    slotDateTime.setHours(hours, minutes, 0, 0);
+
+    // Slot has passed if it's in the past
+    return slotDateTime < now;
+  };
+
+  // Helper function to check if time slot is allowed (too soon)
+  const isTimeSlotTooSoon = (slot: any, bookingDate: Date): boolean => {
+    if (!settings) return false;
+
+    const now = new Date();
+    const slotDateTime = new Date(bookingDate);
+
+    // Parse slot time
+    const timeStart = slot.time.split(" - ")[0];
+    const [hours, minutes] = timeStart.split(":").map(Number);
+
+    slotDateTime.setHours(hours, minutes, 0, 0);
+
+    // Check if slot is at least min_advance_booking hours away
+    const hoursDiff = differenceInHours(slotDateTime, now);
+
+    // Slot is too soon if it's in the future but within min advance window
+    return hoursDiff >= 0 && hoursDiff < settings.min_advance_booking;
+  };
+
+  // Combined check for allowed slots
+  const isTimeSlotAllowed = (slot: any, bookingDate: Date): boolean => {
+    // Slot is NOT allowed if it has passed OR is too soon
+    return (
+      !isTimeSlotPassed(slot, bookingDate) &&
+      !isTimeSlotTooSoon(slot, bookingDate)
+    );
+  };
+
+  // Calculate deposit if required
+  const calculateDeposit = (): number => {
+    if (!settings || !selectedSlot || !formData.numberOfPlayers) return 0;
+
+    if (!settings.require_deposit) return 0;
+
+    const subtotal = selectedSlot.pricePerPerson * formData.numberOfPlayers;
+    return Math.round(subtotal * (settings.deposit_percentage / 100));
   };
 
   const resetAndClose = () => {
@@ -239,6 +340,12 @@ const BookingDialog = ({
               {/* Date Selection */}
               <div>
                 <Label>Select Date</Label>
+                {settings && (
+                  <p className="text-xs text-muted-foreground mt-1 mb-2">
+                    You can book up to {settings.max_advance_booking} days in
+                    advance
+                  </p>
+                )}
                 <Input
                   type="date"
                   value={formData.date?.toISOString().split("T")[0]}
@@ -246,6 +353,13 @@ const BookingDialog = ({
                     setFormData({ ...formData, date: new Date(e.target.value) })
                   }
                   min={new Date().toISOString().split("T")[0]}
+                  max={
+                    settings
+                      ? addDays(new Date(), settings.max_advance_booking)
+                          .toISOString()
+                          .split("T")[0]
+                      : undefined
+                  }
                   className="mt-2"
                 />
               </div>
@@ -304,6 +418,13 @@ const BookingDialog = ({
               {/* Time Slot Selection */}
               <div>
                 <Label>Select Time Slot</Label>
+                {settings && (
+                  <p className="text-xs text-muted-foreground mt-1 mb-2">
+                    Slots must be booked at least {settings.min_advance_booking}{" "}
+                    hours in advance
+                  </p>
+                )}
+
                 {loadingSlots ? (
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="h-6 w-6 animate-spin text-forest" />
@@ -325,34 +446,66 @@ const BookingDialog = ({
                     }
                     className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2"
                   >
-                    {timeSlots.map((slot) => (
-                      <Card
-                        key={slot.id}
-                        className={`cursor-pointer transition-all ${
-                          formData.slotId === slot.id
-                            ? "border-forest ring-2 ring-forest/20"
-                            : "hover:border-forest/50"
-                        }`}
-                      >
-                        <CardContent className="p-3">
-                          <div className="flex flex-col items-center text-center gap-2">
-                            <RadioGroupItem value={slot.id} />
-                            <div className="text-sm font-medium">{slot.time}</div>
-                            <Badge
-                              variant={
-                                slot.period === "peak" ? "default" : "secondary"
-                              }
-                              className="text-xs"
-                            >
-                              {slot.period === "peak" ? "Peak" : "Off-Peak"}
-                            </Badge>
-                            <div className="text-xs font-bold text-forest">
-                              {slot.pricePerPerson.toLocaleString("id-ID")}/pax
+                    {timeSlots.map((slot) => {
+                      const hasPassed = formData.date
+                        ? isTimeSlotPassed(slot, formData.date)
+                        : false;
+                      const isTooSoon = formData.date
+                        ? isTimeSlotTooSoon(slot, formData.date)
+                        : false;
+                      const isAllowed = !hasPassed && !isTooSoon;
+
+                      return (
+                        <Card
+                          key={slot.id}
+                          className={`cursor-pointer transition-all ${
+                            formData.slotId === slot.id
+                              ? "border-forest ring-2 ring-forest/20"
+                              : isAllowed
+                              ? "hover:border-forest/50"
+                              : "opacity-50 cursor-not-allowed"
+                          }`}
+                        >
+                          <CardContent className="p-3">
+                            <div className="flex flex-col items-center text-center gap-2">
+                              <RadioGroupItem
+                                value={slot.id}
+                                disabled={!isAllowed}
+                              />
+                              <div className="text-sm font-medium">
+                                {slot.time}
+                              </div>
+                              <Badge
+                                variant={
+                                  slot.period === "peak"
+                                    ? "default"
+                                    : "secondary"
+                                }
+                                className="text-xs"
+                              >
+                                {slot.period === "peak" ? "Peak" : "Off-Peak"}
+                              </Badge>
+                              <div className="text-xs font-bold text-forest">
+                                {slot.pricePerPerson.toLocaleString("id-ID")}
+                                /pax
+                              </div>
+
+                              {/* Show appropriate message */}
+                              {hasPassed && (
+                                <div className="text-xs text-gray-400 font-medium">
+                                  Passed
+                                </div>
+                              )}
+                              {isTooSoon && !hasPassed && (
+                                <div className="text-xs text-red-500 font-medium">
+                                  Too soon
+                                </div>
+                              )}
                             </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </RadioGroup>
                 )}
               </div>
@@ -512,24 +665,21 @@ const BookingDialog = ({
               <Card className="bg-muted/30">
                 <CardContent className="p-6 space-y-3">
                   <h4 className="font-semibold mb-4">Booking Summary</h4>
-                  
+
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Court:</span>
                     <span className="font-medium">{selectedCourt?.name}</span>
                   </div>
-
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Date:</span>
                     <span className="font-medium">
                       {formData.date?.toLocaleDateString("id-ID")}
                     </span>
                   </div>
-
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Time:</span>
                     <span className="font-medium">{selectedSlot?.time}</span>
                   </div>
-
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Players:</span>
                     <span className="font-medium">
@@ -549,16 +699,66 @@ const BookingDialog = ({
                     </span>
                   </div>
 
+                  {/* ADD THIS: Show deposit info if required */}
+                  {settings?.require_deposit && (
+                    <>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">
+                          Deposit ({settings.deposit_percentage}%):
+                        </span>
+                        <span className="font-medium text-forest">
+                          IDR {calculateDeposit().toLocaleString("id-ID")}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">
+                          Pay at venue:
+                        </span>
+                        <span>
+                          IDR{" "}
+                          {(
+                            calculateTotal() - calculateDeposit()
+                          ).toLocaleString("id-ID")}
+                        </span>
+                      </div>
+                      <Alert className="bg-blue-50 border-blue-200">
+                        <Info className="h-4 w-4 text-blue-600" />
+                        <AlertDescription className="text-xs text-blue-800">
+                          Pay {settings.deposit_percentage}% now to secure your
+                          booking. Remaining balance due at the venue.
+                        </AlertDescription>
+                      </Alert>
+                    </>
+                  )}
+
                   <Separator />
 
                   <div className="flex justify-between font-bold text-lg">
-                    <span>Total:</span>
+                    <span>
+                      {settings?.require_deposit ? "Deposit to Pay:" : "Total:"}
+                    </span>
                     <span className="text-forest">
-                      IDR {calculateTotal().toLocaleString("id-ID")}
+                      IDR{" "}
+                      {(settings?.require_deposit
+                        ? calculateDeposit()
+                        : calculateTotal()
+                      ).toLocaleString("id-ID")}
                     </span>
                   </div>
                 </CardContent>
               </Card>
+
+              {/* ADD THIS: Cancellation Policy */}
+              {settings && (
+                <Alert className="bg-yellow-50 border-yellow-200">
+                  <Info className="h-4 w-4 text-yellow-600" />
+                  <AlertDescription className="text-sm text-yellow-800">
+                    <strong>Cancellation Policy:</strong> Free cancellation up
+                    to {settings.cancellation_window} hours before your booking.
+                    After that, deposit is non-refundable.
+                  </AlertDescription>
+                </Alert>
+              )}
 
               {/* Terms & Conditions */}
               <div className="flex items-start gap-3">
@@ -573,10 +773,19 @@ const BookingDialog = ({
                   htmlFor="terms"
                   className="text-sm text-muted-foreground cursor-pointer"
                 >
-                  I agree to the terms and conditions. Payment will be processed securely by Midtrans.
+                  I agree to the terms and conditions. Payment will be processed
+                  securely by Midtrans.
+                  {settings && settings.cancellation_window > 0 && (
+                    <>
+                      {" "}
+                      I understand the {settings.cancellation_window}-hour
+                      cancellation policy.
+                    </>
+                  )}
                 </label>
               </div>
 
+              {/* Action Buttons */}
               <div className="flex justify-between gap-3 pt-4">
                 <Button
                   onClick={() => setCurrentStep(2)}
@@ -590,10 +799,7 @@ const BookingDialog = ({
                 </Button>
                 <Button
                   onClick={handleSubmit}
-                  disabled={
-                    !formData.agreeTerms ||
-                    isProcessing
-                  }
+                  disabled={!formData.agreeTerms || isProcessing}
                   size="lg"
                   className="rounded-full hover:text-accent-foreground"
                 >
@@ -613,6 +819,6 @@ const BookingDialog = ({
       </DialogContent>
     </Dialog>
   );
-}
+};
 
 export default BookingDialog;

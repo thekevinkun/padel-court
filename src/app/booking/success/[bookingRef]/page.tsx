@@ -3,7 +3,14 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { CheckCircle2, Download, MessageCircle, Home } from "lucide-react";
+import {
+  CheckCircle2,
+  Download,
+  MessageCircle,
+  Info,
+  Home,
+} from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -146,7 +153,10 @@ export default function BookingSuccessPage() {
               We couldn't find this booking. Please check your booking
               reference.
             </p>
-            <Button onClick={() => router.push("/")} className="rounded-full hover:text-accent-foreground">
+            <Button
+              onClick={() => router.push("/")}
+              className="rounded-full hover:text-accent-foreground"
+            >
               <Home className="mr-2 h-4 w-4" />
               Go Home
             </Button>
@@ -230,6 +240,21 @@ export default function BookingSuccessPage() {
                     IDR {booking.total_amount.toLocaleString("id-ID")}
                   </span>
                 </div>
+
+                {booking.require_deposit && booking.remaining_balance > 0 && (
+                <div>
+                  
+                  <Alert className="bg-yellow-50 border-yellow-200">
+                    <Info className="h-4 w-4 text-yellow-600" />
+                    <AlertDescription className="text-sm text-yellow-800">
+                      <strong>Remaining Balance:</strong> IDR{" "}
+                      {booking.remaining_balance.toLocaleString("id-ID")}
+                      <br />
+                      Please pay this amount when you arrive at the venue.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              )}
               </div>
             </CardContent>
           </Card>
