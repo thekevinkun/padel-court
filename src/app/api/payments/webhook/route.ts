@@ -88,25 +88,6 @@ export async function POST(request: NextRequest) {
       if (fraudStatus === "accept" || transactionStatus === "settlement") {
         console.log("✅ Payment SUCCESS for booking:", bookingRef);
 
-        // Calculate actual fee based on payment type
-        // let actualFee = 0;
-        // if (paymentType === "credit_card") {
-        //   actualFee = Math.round(booking.total_amount * 0.029 + 2000); // 2.9% + 2000
-        // } else if (
-        //   paymentType === "gopay" ||
-        //   paymentType === "shopeepay" ||
-        //   paymentType === "dana"
-        // ) {
-        //   actualFee = Math.round(booking.total_amount * 0.02); // 2%
-        // } else if (paymentType === "qris") {
-        //   actualFee = Math.round(booking.total_amount * 0.007); // 0.7%
-        // } else if (
-        //   paymentType.includes("va") ||
-        //   paymentType.includes("bank_transfer")
-        // ) {
-        //   actualFee = 4000; // Flat fee
-        // }
-
         // Calculate actual fee (for records only)
         let midtransFee = 0;
         if (paymentType === "credit_card") {
@@ -117,7 +98,7 @@ export async function POST(request: NextRequest) {
           paymentType === "dana"
         ) {
           midtransFee = Math.round(booking.total_amount * 0.02); // 2%
-        } else if (paymentType === "qris") {
+        } else if (paymentType === "qris" || paymentType === "other_qris") {
           midtransFee = Math.round(booking.total_amount * 0.007); // 0.7%
         } else if (
           paymentType.includes("va") ||

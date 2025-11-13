@@ -215,16 +215,19 @@ export default function BookingSuccessPage() {
                   <span className="text-muted-foreground">Court:</span>
                   <span className="font-medium">{booking.courts.name}</span>
                 </div>
+
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Date:</span>
                   <span className="font-medium">
                     {new Date(booking.date).toLocaleDateString("id-ID")}
                   </span>
                 </div>
+
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Time:</span>
                   <span className="font-medium">{booking.time}</span>
                 </div>
+
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Players:</span>
                   <span className="font-medium">
@@ -234,28 +237,98 @@ export default function BookingSuccessPage() {
 
                 <Separator className="my-4" />
 
+                {/* Payment Summary */}
+                <div className="bg-muted/50 p-4 rounded-lg space-y-2">
+                  <h4 className="font-semibold text-sm mb-2">
+                    Payment Summary
+                  </h4>
+
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      Court Booking:
+                    </span>
+                    <span>IDR {booking.subtotal.toLocaleString("id-ID")}</span>
+                  </div>
+
+                  {booking.require_deposit ? (
+                    <>
+                      <Separator />
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">
+                          Deposit Paid (
+                          {Math.round(
+                            (booking.deposit_amount / booking.subtotal) * 100
+                          )}
+                          %):
+                        </span>
+                        <span className="font-medium text-green-700">
+                          IDR {booking.deposit_amount.toLocaleString("id-ID")}
+                        </span>
+                      </div>
+
+                      {booking.remaining_balance > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">
+                            Balance at Venue:
+                          </span>
+                          <span className="font-medium text-orange-600">
+                            IDR{" "}
+                            {booking.remaining_balance.toLocaleString("id-ID")}
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <Separator />
+                      <div className="flex justify-between text-sm font-semibold">
+                        <span>Full Payment:</span>
+                        <span className="text-green-700">
+                          IDR {booking.subtotal.toLocaleString("id-ID")}
+                        </span>
+                      </div>
+                    </>
+                  )}
+
+                  <div className="text-xs text-muted-foreground mt-2 pt-2 border-t">
+                    Paid via{" "}
+                    {booking.payment_method?.toUpperCase() || "Online Payment"}
+                    {booking.payment_fee > 0 && (
+                      <span className="block mt-1">
+                        (Processing fee of IDR{" "}
+                        {booking.payment_fee.toLocaleString("id-ID")} absorbed
+                        by business)
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <Separator />
+
                 <div className="flex justify-between text-lg">
-                  <span className="font-semibold">Total Paid:</span>
+                  <span className="font-semibold">
+                    {booking.require_deposit
+                      ? "Amount You Paid:"
+                      : "Total Paid:"}
+                  </span>
                   <span className="font-bold text-forest">
                     IDR {booking.total_amount.toLocaleString("id-ID")}
                   </span>
                 </div>
-
-                {booking.require_deposit && booking.remaining_balance > 0 && (
-                <div>
-                  
-                  <Alert className="bg-yellow-50 border-yellow-200">
-                    <Info className="h-4 w-4 text-yellow-600" />
-                    <AlertDescription className="text-sm text-yellow-800">
-                      <strong>Remaining Balance:</strong> IDR{" "}
-                      {booking.remaining_balance.toLocaleString("id-ID")}
-                      <br />
-                      Please pay this amount when you arrive at the venue.
-                    </AlertDescription>
-                  </Alert>
-                </div>
-              )}
               </div>
+
+              {/* Deposit reminder */}
+              {booking.require_deposit && booking.remaining_balance > 0 && (
+                <Alert className="bg-orange-50 border-orange-200 mt-4">
+                  <Info className="h-4 w-4 text-orange-600" />
+                  <AlertDescription className="text-sm text-orange-800">
+                    <strong>Remaining Balance:</strong> IDR{" "}
+                    {booking.remaining_balance.toLocaleString("id-ID")}
+                    <br />
+                    Please pay this amount when you arrive at the venue.
+                  </AlertDescription>
+                </Alert>
+              )}
             </CardContent>
           </Card>
 

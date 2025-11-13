@@ -237,10 +237,7 @@ const SettingsPageClient = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-forest mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading settings...</p>
-        </div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-forest"></div>
       </div>
     );
   }
@@ -877,23 +874,7 @@ const SettingsPageClient = () => {
                       }
                     />
                   </div>
-
-                  <div className="flex items-center justify-between">
-                    <Label>E-Wallet (GoPay, OVO, Dana, ShopeePay)</Label>
-                    <Switch
-                      checked={settings.payment_settings.enable_ewallet}
-                      onCheckedChange={(checked) =>
-                        setSettings({
-                          ...settings,
-                          payment_settings: {
-                            ...settings.payment_settings,
-                            enable_ewallet: checked,
-                          },
-                        })
-                      }
-                    />
-                  </div>
-
+                  
                   <div className="flex items-center justify-between">
                     <Label>QRIS</Label>
                     <Switch
@@ -904,6 +885,22 @@ const SettingsPageClient = () => {
                           payment_settings: {
                             ...settings.payment_settings,
                             enable_qris: checked,
+                          },
+                        })
+                      }
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <Label>E-Wallet (GoPay, ShopeePay, Dana)</Label>
+                    <Switch
+                      checked={settings.payment_settings.enable_ewallet}
+                      onCheckedChange={(checked) =>
+                        setSettings({
+                          ...settings,
+                          payment_settings: {
+                            ...settings.payment_settings,
+                            enable_ewallet: checked,
                           },
                         })
                       }

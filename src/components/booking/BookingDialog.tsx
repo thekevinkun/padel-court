@@ -548,7 +548,6 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
               </div>
             </motion.div>
           )}
-
           {/* Step 2: Personal Information */}
           {currentStep === 2 && (
             <motion.div
@@ -651,8 +650,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
               </div>
             </motion.div>
           )}
-
-          {/* Step 3: Payment */}
+          // Step 3: Payment - UPDATED SUMMARY
           {currentStep === 3 && (
             <motion.div
               key="step3"
@@ -670,16 +668,19 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                     <span className="text-muted-foreground">Court:</span>
                     <span className="font-medium">{selectedCourt?.name}</span>
                   </div>
+
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Date:</span>
                     <span className="font-medium">
                       {formData.date?.toLocaleDateString("id-ID")}
                     </span>
                   </div>
+
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Time:</span>
                     <span className="font-medium">{selectedSlot?.time}</span>
                   </div>
+
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Players:</span>
                     <span className="font-medium">
@@ -689,73 +690,86 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
 
                   <Separator />
 
-                  <div className="flex justify-between text-sm">
-                    <span>Subtotal:</span>
-                    <span>
-                      IDR{" "}
-                      {(
-                        selectedSlot!.pricePerPerson * formData.numberOfPlayers!
-                      ).toLocaleString("id-ID")}
-                    </span>
-                  </div>
-
-                  {/* ADD THIS: Show deposit info if required */}
-                  {settings?.require_deposit && (
+                  {/* FULL PAYMENT - Simple display */}
+                  {!settings?.require_deposit && (
                     <>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">
-                          Deposit ({settings.deposit_percentage}%):
-                        </span>
-                        <span className="font-medium text-forest">
-                          IDR {calculateDeposit().toLocaleString("id-ID")}
+                      <div className="flex justify-between font-bold text-lg">
+                        <span>Total Amount:</span>
+                        <span className="text-forest">
+                          IDR {calculateTotal().toLocaleString("id-ID")}
                         </span>
                       </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">
-                          Pay at venue:
-                        </span>
-                        <span>
-                          IDR{" "}
-                          {(
-                            calculateTotal() - calculateDeposit()
-                          ).toLocaleString("id-ID")}
-                        </span>
+                      <div className="text-xs text-muted-foreground text-center mt-2">
+                        💳 Payment method will be selected on the next page
                       </div>
-                      <Alert className="bg-blue-50 border-blue-200">
-                        <Info className="h-4 w-4 text-blue-600" />
-                        <AlertDescription className="text-xs text-blue-800">
-                          Pay {settings.deposit_percentage}% now to secure your
-                          booking. Remaining balance due at the venue.
-                        </AlertDescription>
-                      </Alert>
                     </>
                   )}
 
-                  <Separator />
+                  {/* DEPOSIT PAYMENT - Show breakdown */}
+                  {settings?.require_deposit && (
+                    <>
+                      <div className="flex justify-between text-sm">
+                        <span>Court Booking:</span>
+                        <span>
+                          IDR {calculateTotal().toLocaleString("id-ID")}
+                        </span>
+                      </div>
 
-                  <div className="flex justify-between font-bold text-lg">
-                    <span>
-                      {settings?.require_deposit ? "Deposit to Pay:" : "Total:"}
-                    </span>
-                    <span className="text-forest">
-                      IDR{" "}
-                      {(settings?.require_deposit
-                        ? calculateDeposit()
-                        : calculateTotal()
-                      ).toLocaleString("id-ID")}
-                    </span>
-                  </div>
+                      <Separator />
+
+                      <div className="bg-blue-50 p-3 rounded-lg space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-blue-800 font-medium">
+                            Pay Now ({settings.deposit_percentage}% Deposit):
+                          </span>
+                          <span className="font-bold text-blue-900">
+                            IDR {calculateDeposit().toLocaleString("id-ID")}
+                          </span>
+                        </div>
+
+                        <div className="flex justify-between text-sm">
+                          <span className="text-blue-700">
+                            Pay at Venue (Remaining):
+                          </span>
+                          <span className="font-medium text-blue-800">
+                            IDR{" "}
+                            {(
+                              calculateTotal() - calculateDeposit()
+                            ).toLocaleString("id-ID")}
+                          </span>
+                        </div>
+                      </div>
+
+                      <Alert className="bg-blue-50 border-blue-200 mt-3">
+                        <Info className="h-4 w-4 text-blue-600" />
+                        <AlertDescription className="text-xs text-blue-800">
+                          <strong>Secure your booking now!</strong> Pay{" "}
+                          {settings.deposit_percentage}% deposit online. The
+                          remaining balance will be collected when you arrive at
+                          the venue.
+                        </AlertDescription>
+                      </Alert>
+
+                      <div className="text-xs text-muted-foreground text-center mt-2">
+                        Payment method will be selected on the next page
+                      </div>
+                    </>
+                  )}
                 </CardContent>
               </Card>
 
-              {/* ADD THIS: Cancellation Policy */}
+              {/* Cancellation Policy */}
               {settings && (
                 <Alert className="bg-yellow-50 border-yellow-200">
                   <Info className="h-4 w-4 text-yellow-600" />
                   <AlertDescription className="text-sm text-yellow-800">
-                    <strong>Cancellation Policy:</strong> Free cancellation up
-                    to {settings.cancellation_window} hours before your booking.
-                    After that, deposit is non-refundable.
+                    <strong>Cancellation Policy:</strong> Free cancellation
+                    up to {settings.cancellation_window} hours before your
+                    booking. After that,
+                    {settings.require_deposit
+                      ? " deposit is"
+                      : " payment is"}{" "}
+                    non-refundable.
                   </AlertDescription>
                 </Alert>
               )}
@@ -773,8 +787,16 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                   htmlFor="terms"
                   className="text-sm text-muted-foreground cursor-pointer"
                 >
-                  I agree to the terms and conditions. Payment will be processed
-                  securely by Midtrans.
+                  I agree to the{" "}
+                  <a
+                    href="/terms"
+                    className="text-forest underline"
+                    target="_blank"
+                  >
+                    terms and conditions
+                  </a>
+                  . Payment will be processed securely by{" "}
+                  <strong className="text-forest">Midtrans</strong>.
                   {settings && settings.cancellation_window > 0 && (
                     <>
                       {" "}
@@ -797,6 +819,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                   <ArrowLeft className="mr-2" />
                   Back
                 </Button>
+
                 <Button
                   onClick={handleSubmit}
                   disabled={!formData.agreeTerms || isProcessing}
@@ -809,7 +832,10 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                       Processing...
                     </>
                   ) : (
-                    "Confirm Booking"
+                    <>
+                      Proceed to Payment
+                      <ArrowRight className="ml-2" />
+                    </>
                   )}
                 </Button>
               </div>

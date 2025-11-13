@@ -441,104 +441,263 @@ const BookingsPageClient = () => {
 
               {/* Payment Information */}
               <div>
-                <h3 className="font-semibold mb-3">Payment Information</h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Subtotal</span>
-                    <span>
-                      IDR {selectedBooking.subtotal.toLocaleString("id-ID")}
+                <h3 className="font-semibold mb-3">
+                  Payment & Revenue Information
+                </h3>
+                <div className="space-y-3">
+                  {/* Court booking base price */}
+                  <div className="bg-gray-50 p-3 rounded-lg">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        Court Booking:
+                      </span>
+                      <span className="font-medium">
+                        IDR {selectedBooking.subtotal.toLocaleString("id-ID")}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* DEPOSIT PAYMENT BREAKDOWN */}
+                  {selectedBooking.require_deposit ? (
+                    <>
+                      <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 space-y-3">
+                        <h4 className="font-semibold text-blue-900 text-sm flex items-center gap-2">
+                          Online Deposit Payment
+                        </h4>
+
+                        {/* What customer paid online */}
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-blue-800">
+                              Customer Paid Online:
+                            </span>
+                            <span className="font-bold text-blue-900">
+                              IDR{" "}
+                              {selectedBooking.total_amount.toLocaleString(
+                                "id-ID"
+                              )}
+                            </span>
+                          </div>
+
+                          <div className="flex justify-between text-xs pl-4">
+                            <span className="text-blue-700">
+                              └─ Deposit (
+                              {Math.round(
+                                (selectedBooking.deposit_amount /
+                                  selectedBooking.subtotal) *
+                                  100
+                              )}
+                              %)
+                            </span>
+                            <span className="text-blue-800">
+                              IDR{" "}
+                              {selectedBooking.deposit_amount.toLocaleString(
+                                "id-ID"
+                              )}
+                            </span>
+                          </div>
+
+                          <div className="flex justify-between text-xs pl-4">
+                            <span className="text-blue-700">
+                              └─ Midtrans Processing Fee
+                            </span>
+                            <span className="text-red-600">
+                              - IDR{" "}
+                              {selectedBooking.payment_fee.toLocaleString(
+                                "id-ID"
+                              )}
+                            </span>
+                          </div>
+                        </div>
+
+                        <Separator className="bg-blue-200" />
+
+                        {/* Net received from online */}
+                        <div className="flex justify-between font-semibold text-green-700 bg-green-50 p-2 rounded">
+                          <span>You Received (Net from Online):</span>
+                          <span>
+                            IDR{" "}
+                            {(
+                              selectedBooking.total_amount -
+                              selectedBooking.payment_fee
+                            ).toLocaleString("id-ID")}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Venue payment (remaining balance) */}
+                      {selectedBooking.remaining_balance > 0 && (
+                        <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-4">
+                          <h4 className="font-semibold text-orange-900 text-sm flex items-center gap-2 mb-2">
+                            Cash Payment at Venue
+                          </h4>
+
+                          <div className="flex justify-between font-semibold text-orange-800">
+                            <span>To Collect (No fees):</span>
+                            <span className="text-lg">
+                              IDR{" "}
+                              {selectedBooking.remaining_balance.toLocaleString(
+                                "id-ID"
+                              )}
+                            </span>
+                          </div>
+
+                          <p className="text-xs text-orange-700 mt-2">
+                            This is the remaining{" "}
+                            {100 -
+                              Math.round(
+                                (selectedBooking.deposit_amount /
+                                  selectedBooking.subtotal) *
+                                  100
+                              )}
+                            % of the booking - collect in cash when customer
+                            arrives
+                          </p>
+                        </div>
+                      )}
+
+                      <Separator />
+
+                      {/* TOTAL BUSINESS REVENUE */}
+                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-lg p-4">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="text-sm text-green-800 font-medium">
+                              Total Business Revenue
+                            </p>
+                            <p className="text-xs text-green-700 mt-1">
+                              Online:{" "}
+                              {selectedBooking.deposit_amount.toLocaleString(
+                                "id-ID"
+                              )}{" "}
+                              + Venue:{" "}
+                              {selectedBooking.remaining_balance.toLocaleString(
+                                "id-ID"
+                              )}
+                            </p>
+                          </div>
+                          <span className="text-2xl font-bold text-green-700">
+                            IDR{" "}
+                            {(
+                              selectedBooking.deposit_amount +
+                              selectedBooking.remaining_balance
+                            ).toLocaleString("id-ID")}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Fee absorbed note */}
+                      <div className="bg-gray-50 p-3 rounded text-xs text-gray-600 border-l-4 border-gray-400">
+                        <strong>Note:</strong> Midtrans fee (IDR{" "}
+                        {selectedBooking.payment_fee.toLocaleString("id-ID")})
+                        was absorbed by your business to provide better customer
+                        experience.
+                      </div>
+                    </>
+                  ) : (
+                    /* FULL PAYMENT BREAKDOWN */
+                    <>
+                      <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 space-y-3">
+                        <h4 className="font-semibold text-blue-900 text-sm flex items-center gap-2">
+                          <span className="text-lg">💳</span> Full Payment
+                          Online
+                        </h4>
+
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-blue-800">
+                              Customer Paid:
+                            </span>
+                            <span className="font-bold text-blue-900">
+                              IDR{" "}
+                              {selectedBooking.total_amount.toLocaleString(
+                                "id-ID"
+                              )}
+                            </span>
+                          </div>
+
+                          <div className="flex justify-between text-xs pl-4">
+                            <span className="text-blue-700">
+                              └─ Booking Amount
+                            </span>
+                            <span className="text-blue-800">
+                              IDR{" "}
+                              {selectedBooking.subtotal.toLocaleString("id-ID")}
+                            </span>
+                          </div>
+
+                          <div className="flex justify-between text-xs pl-4">
+                            <span className="text-blue-700">
+                              └─ Midtrans Processing Fee
+                            </span>
+                            <span className="text-red-600">
+                              - IDR{" "}
+                              {selectedBooking.payment_fee.toLocaleString(
+                                "id-ID"
+                              )}
+                            </span>
+                          </div>
+                        </div>
+
+                        <Separator className="bg-blue-200" />
+
+                        <div className="flex justify-between font-semibold text-green-700 bg-green-50 p-2 rounded">
+                          <span>You Received (Net):</span>
+                          <span>
+                            IDR{" "}
+                            {(
+                              selectedBooking.total_amount -
+                              selectedBooking.payment_fee
+                            ).toLocaleString("id-ID")}
+                          </span>
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      {/* TOTAL REVENUE */}
+                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-lg p-4">
+                        <div className="flex justify-between items-center">
+                          <p className="text-sm text-green-800 font-medium">
+                            Total Business Revenue
+                          </p>
+                          <span className="text-2xl font-bold text-green-700">
+                            IDR{" "}
+                            {selectedBooking.subtotal.toLocaleString("id-ID")}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Fee absorbed note */}
+                      <div className="bg-gray-50 p-3 rounded text-xs text-gray-600 border-l-4 border-gray-400">
+                        <strong>ℹ️ Note:</strong> Midtrans fee (IDR{" "}
+                        {selectedBooking.payment_fee.toLocaleString("id-ID")})
+                        was absorbed by your business to provide better customer
+                        experience.
+                      </div>
+                    </>
+                  )}
+
+                  {/* Payment method info */}
+                  <div className="flex items-center justify-between text-xs bg-gray-50 p-2 rounded">
+                    <span className="text-muted-foreground">
+                      Payment Method:
+                    </span>
+                    <span className="font-medium uppercase">
+                      {selectedBooking.payment_method || "N/A"}
                     </span>
                   </div>
 
-                  {/* Show Midtrans fee (if tracking) */}
-                  {selectedBooking.payment_fee > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">
-                        Midtrans Fee (absorbed by business)
-                      </span>
-                      <span className="text-red-600">
-                        - IDR{" "}
-                        {selectedBooking.payment_fee.toLocaleString("id-ID")}
+                  {selectedBooking.paid_at && (
+                    <div className="flex items-center justify-between text-xs bg-gray-50 p-2 rounded">
+                      <span className="text-muted-foreground">Paid At:</span>
+                      <span className="font-medium">
+                        {new Date(selectedBooking.paid_at).toLocaleString(
+                          "id-ID"
+                        )}
                       </span>
                     </div>
                   )}
-
-                  {selectedBooking.require_deposit ? (
-                    <>
-                      <Separator />
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">
-                          Full Amount
-                        </span>
-                        <span>
-                          IDR{" "}
-                          {(
-                            selectedBooking.full_amount ||
-                            selectedBooking.subtotal
-                          ).toLocaleString("id-ID")}
-                        </span>
-                      </div>
-                      <div className="flex justify-between font-bold text-green-700">
-                        <span>Customer Paid (Deposit)</span>
-                        <span>
-                          IDR{" "}
-                          {selectedBooking.total_amount.toLocaleString("id-ID")}
-                        </span>
-                      </div>
-                      {selectedBooking.payment_fee > 0 && (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">
-                            You Received (after Midtrans fee)
-                          </span>
-                          <span className="text-green-600">
-                            IDR{" "}
-                            {(
-                              selectedBooking.total_amount -
-                              selectedBooking.payment_fee
-                            ).toLocaleString("id-ID")}
-                          </span>
-                        </div>
-                      )}
-                      {selectedBooking.remaining_balance > 0 && (
-                        <div className="flex justify-between font-bold text-orange-700">
-                          <span>💰 Balance Due at Venue</span>
-                          <span>
-                            IDR{" "}
-                            {selectedBooking.remaining_balance.toLocaleString(
-                              "id-ID"
-                            )}
-                          </span>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <Separator />
-                      <div className="flex justify-between font-bold text-lg">
-                        <span>Customer Paid</span>
-                        <span className="text-forest">
-                          IDR{" "}
-                          {selectedBooking.total_amount.toLocaleString("id-ID")}
-                        </span>
-                      </div>
-                      {selectedBooking.payment_fee > 0 && (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">
-                            You Received (after Midtrans fee)
-                          </span>
-                          <span className="text-green-600">
-                            IDR{" "}
-                            {(
-                              selectedBooking.total_amount -
-                              selectedBooking.payment_fee
-                            ).toLocaleString("id-ID")}
-                          </span>
-                        </div>
-                      )}
-                    </>
-                  )}
-
-                  {/* ... rest of payment info ... */}
                 </div>
               </div>
 

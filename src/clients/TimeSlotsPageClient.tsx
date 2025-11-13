@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Lock, Unlock, Edit2, Loader2 } from "lucide-react";
+import { Lock, Unlock, Edit2, Loader2, Plus, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -39,6 +39,11 @@ const TimeSlotsPageClient = () => {
   // Edit form
   const [editPrice, setEditPrice] = useState<number>(0);
   const [editAvailable, setEditAvailable] = useState(true);
+
+  // Generate time slots
+  const [generating, setGenerating] = useState(false);
+  const [generateDays, setGenerateDays] = useState(30);
+  const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchCourts();
@@ -82,6 +87,28 @@ const TimeSlotsPageClient = () => {
 
       if (!error && data) {
         setTimeSlots(data);
+      }
+
+      // Check if we need more slots
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const { data: futureSlotsCheck } = await supabase
+        .from("time_slots")
+        .select("date")
+        .gte("date", today.toISOString().split("T")[0])
+        .order("date", { ascending: false })
+        .limit(1);
+
+      if (futureSlotsCheck && futureSlotsCheck.length > 0) {
+        const lastSlotDate = new Date(futureSlotsCheck[0].date);
+        const daysRemaining = Math.floor(
+          (lastSlotDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+        );
+
+        if (daysRemaining < 7) {
+          console.warn(`⚠️ Only ${daysRemaining} days of slots remaining!`);
+        }
       }
     } catch (error) {
       console.error("Error fetching time slots:", error);
@@ -176,6 +203,43 @@ const TimeSlotsPageClient = () => {
     }
   };
 
+  const handleGenerateSlots = async () => {
+    if (!confirm(`Generate time slots for the next ${generateDays} days?`)) {
+      return;
+    }
+
+    setGenerating(true);
+    try {
+      const response = await fetch("/api/time-slots/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          days: generateDays,
+          startDate: new Date().toISOString().split("T")[0],
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate time slots");
+      }
+
+      const data = await response.json();
+
+      alert(
+        `✅ Success!\n\nGenerated: ${data.generated} slots\nSkipped: ${data.skipped} existing slots\nDate Range: ${data.startDate} to ${data.endDate}`
+      );
+
+      // Refresh current view
+      await fetchTimeSlots();
+      setGenerateDialogOpen(false);
+    } catch (error) {
+      console.error("Error generating slots:", error);
+      alert("Failed to generate time slots. Please try again.");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   if (loading || courts.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -220,6 +284,18 @@ const TimeSlotsPageClient = () => {
                 onChange={(e) => setSelectedDate(e.target.value)}
                 className="mt-2"
               />
+            </div>
+
+            {/* Generate Slots Button */}
+            <div className="flex items-end gap-2">
+              <Button
+                variant="default"
+                onClick={() => setGenerateDialogOpen(true)}
+                className="w-full lg:w-auto bg-forest"
+              >
+                <RefreshCw className="w-4 h-4 mr-1" />
+                Generate Slots
+              </Button>
             </div>
 
             {/* Bulk Actions */}
@@ -412,6 +488,84 @@ const TimeSlotsPageClient = () => {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Generate Slots Dialog */}
+      <Dialog open={generateDialogOpen} onOpenChange={setGenerateDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Generate Time Slots</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <strong>ℹ️ How it works:</strong>
+              </p>
+              <p className="mt-2 text-sm text-blue-800">
+                This will automatically create time slots for all available
+                courts for the next X days. Existing slots will be skipped.
+              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="generateDays">Number of Days</Label>
+              <Input
+                id="generateDays"
+                type="number"
+                min="1"
+                max="90"
+                value={generateDays}
+                onChange={(e) =>
+                  setGenerateDays(parseInt(e.target.value) || 30)
+                }
+                className="mt-2"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Recommended: 30 days. Maximum: 90 days.
+              </p>
+            </div>
+
+            <div className="p-3 bg-gray-50 rounded">
+              <h4 className="font-semibold text-sm mb-2">
+                Time Slot Schedule:
+              </h4>
+              <ul className="text-xs space-y-1 text-muted-foreground">
+                <li>• Morning Peak: 06:00 - 10:00 (IDR 100,000/pax)</li>
+                <li>• Off-Peak: 10:00 - 15:00 (IDR 60,000/pax)</li>
+                <li>• Evening Peak: 15:00 - 22:00 (IDR 100,000/pax)</li>
+              </ul>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setGenerateDialogOpen(false)}
+                disabled={generating}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="flex-1 bg-forest"
+                onClick={handleGenerateSlots}
+                disabled={generating}
+              >
+                {generating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4 mr-1" />
+                    Generate
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

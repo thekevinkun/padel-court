@@ -2,13 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import {
-  Calendar,
-  DollarSign,
-  Users,
-  Clock,
-  CheckCircle,
-} from "lucide-react";
+import { Calendar, DollarSign, Users, Clock, CheckCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { supabase } from "@/lib/supabase/client";
@@ -17,6 +11,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState({
     todayBookings: 0,
     todayRevenue: 0,
+    todayNetRevenue: 0,
     totalBookings: 0,
     availableSlots: 0,
   });
@@ -30,20 +25,50 @@ export default function DashboardPage() {
   const fetchDashboardData = async () => {
     try {
       // Get today's date
-      const today = new Date().toISOString().split("T")[0];
+      const today = new Date().toLocaleDateString("en-CA");
+      console.log("Today's date:", today);
 
       // Fetch today's bookings
       const { data: todayData } = await supabase
         .from("bookings")
-        .select("total_amount, status")
+        .select(
+          "total_amount, status, require_deposit, deposit_amount, subtotal, payment_fee"
+        )
         .eq("date", today);
 
       // Calculate today's stats
       const todayBookings = todayData?.length || 0;
+
+      // Revenue = actual booking revenue (excluding payment fees)
       const todayRevenue =
         todayData
           ?.filter((b) => b.status === "PAID")
-          .reduce((sum, b) => sum + b.total_amount, 0) || 0;
+          .reduce((sum, b) => {
+            // If deposit booking, count only the deposit amount paid
+            // If full payment, count the subtotal
+            const bookingRevenue = b.require_deposit
+              ? b.deposit_amount
+              : b.subtotal;
+            return sum + bookingRevenue;
+          }, 0) || 0;
+
+      // Also calculate net revenue (what you actually received)
+      const todayNetRevenue =
+        todayData
+          ?.filter((b) => b.status === "PAID")
+          .reduce((sum, b) => {
+            // Net = what customer paid minus Midtrans fee
+            const netAmount = b.total_amount - b.payment_fee;
+            return sum + netAmount;
+          }, 0) || 0;
+
+      console.log("💰 Revenue breakdown:", {
+        gross: todayData
+          ?.filter((b) => b.status === "PAID")
+          .reduce((sum, b) => sum + b.total_amount, 0),
+        booking: todayRevenue,
+        net: todayNetRevenue,
+      });
 
       // Fetch total bookings
       const { count: totalBookings } = await supabase
@@ -72,6 +97,7 @@ export default function DashboardPage() {
       setStats({
         todayBookings,
         todayRevenue,
+        todayNetRevenue,
         totalBookings: totalBookings || 0,
         availableSlots: availableSlots || 0,
       });
@@ -91,6 +117,7 @@ export default function DashboardPage() {
       icon: Calendar,
       color: "text-blue-600",
       bgColor: "bg-blue-100",
+      subtitle: "Total confirmed bookings",
     },
     {
       title: "Today's Revenue",
@@ -98,13 +125,15 @@ export default function DashboardPage() {
       icon: DollarSign,
       color: "text-green-600",
       bgColor: "bg-green-100",
+      subtitle: "Total booking value (excl. fees)",
     },
     {
-      title: "Total Bookings",
-      value: stats.totalBookings,
-      icon: Users,
-      color: "text-purple-600",
-      bgColor: "bg-purple-100",
+      title: "Net Received",
+      value: `IDR ${stats.todayNetRevenue.toLocaleString("id-ID")}`,
+      icon: DollarSign,
+      color: "text-emerald-600",
+      bgColor: "bg-emerald-100",
+      subtitle: "After Midtrans fees",
     },
     {
       title: "Available Slots",
@@ -112,6 +141,7 @@ export default function DashboardPage() {
       icon: Clock,
       color: "text-orange-600",
       bgColor: "bg-orange-100",
+      subtitle: "Remaining today",
     },
   ];
 
@@ -148,11 +178,18 @@ export default function DashboardPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
             >
-              <Card className="h-full">
+              <Card className="h-full hover:shadow-lg transition-shadow">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    {stat.title}
-                  </CardTitle>
+                  <div className="flex-1">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      {stat.title}
+                    </CardTitle>
+                    {stat.subtitle && (
+                      <p className="text-xs text-muted-foreground/70 mt-0.5">
+                        {stat.subtitle}
+                      </p>
+                    )}
+                  </div>
                   <div className={`p-2 rounded-lg ${stat.bgColor}`}>
                     <Icon className={`h-4 w-4 ${stat.color}`} />
                   </div>
@@ -204,10 +241,22 @@ export default function DashboardPage() {
                       </p>
                     </div>
                   </div>
+
                   <div className="text-right">
+                    {/* SHOW BOOKING REVENUE, NOT TOTAL WITH FEE */}
                     <p className="font-medium">
-                      IDR {booking.total_amount.toLocaleString("id-ID")}
+                      IDR{" "}
+                      {(booking.require_deposit
+                        ? booking.deposit_amount
+                        : booking.subtotal
+                      ).toLocaleString("id-ID")}
                     </p>
+                    {booking.require_deposit && (
+                      <p className="text-xs text-orange-600">
+                        +{booking.remaining_balance.toLocaleString("id-ID")} at
+                        venue
+                      </p>
+                    )}
                     <p
                       className={`text-sm ${
                         booking.status === "PAID"
