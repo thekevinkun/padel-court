@@ -1,3 +1,5 @@
+import { VenuePayment } from "./reports";
+
 export interface User {
   id: string;
   email: string;
@@ -18,6 +20,30 @@ export interface Booking {
   status: "pending" | "confirmed" | "cancelled" | "completed";
   payment_status: "pending" | "paid" | "refunded";
   created_at: string;
+}
+
+export interface BookingWithVenuePayment {
+  id: string;
+  booking_ref: string;
+  customer_name: string;
+  customer_email: string;
+  subtotal: number;
+  deposit_amount: number;
+  remaining_balance: number;
+  venue_payment_received: boolean;
+  venue_payment_amount: number;
+  venue_payment_date: string | null;
+  venue_payment_method: string | null;
+  venue_payments?: VenuePayment[];
+}
+
+export interface DashboardStats {
+  todayBookings: number;
+  todayRevenue: number;
+  totalBookings: number;
+  availableSlots: number;
+  pendingVenuePayments: number;
+  pendingVenueAmount: number;
 }
 
 export interface Court {

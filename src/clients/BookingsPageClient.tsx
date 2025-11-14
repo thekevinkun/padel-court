@@ -1,6 +1,9 @@
-"use client";
+// /src/clients/BookingsPageClient.tsx
+// UPDATED VERSION - Replace your existing file
 
+"use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   Search,
   Download,
@@ -10,16 +13,12 @@ import {
   XCircle,
   Info,
   DollarSign,
+  Wallet,
+  AlertCircle,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -36,9 +35,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-
 import { supabase } from "@/lib/supabase/client";
 
 const BookingsPageClient = () => {
@@ -47,8 +43,7 @@ const BookingsPageClient = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
-  const [selectedBooking, setSelectedBooking] = useState<any>(null);
-  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [venuePaymentFilter, setVenuePaymentFilter] = useState("ALL"); // NEW
 
   useEffect(() => {
     fetchBookings();
@@ -56,7 +51,7 @@ const BookingsPageClient = () => {
 
   useEffect(() => {
     filterBookings();
-  }, [searchQuery, statusFilter, bookings]);
+  }, [searchQuery, statusFilter, venuePaymentFilter, bookings]);
 
   const fetchBookings = async () => {
     try {
@@ -64,9 +59,9 @@ const BookingsPageClient = () => {
         .from("bookings")
         .select(
           `
-            *,
-            courts (name, description)
-            `
+          *,
+          courts (name, description)
+        `
         )
         .order("created_at", { ascending: false });
 
@@ -87,6 +82,21 @@ const BookingsPageClient = () => {
     // Filter by status
     if (statusFilter !== "ALL") {
       filtered = filtered.filter((b) => b.status === statusFilter);
+    }
+
+    // NEW: Filter by venue payment status
+    if (venuePaymentFilter === "PENDING") {
+      filtered = filtered.filter(
+        (b) =>
+          b.status === "PAID" &&
+          b.require_deposit &&
+          !b.venue_payment_received &&
+          b.remaining_balance > 0
+      );
+    } else if (venuePaymentFilter === "COMPLETED") {
+      filtered = filtered.filter(
+        (b) => b.venue_payment_received || !b.require_deposit
+      );
     }
 
     // Filter by search query
@@ -116,6 +126,7 @@ const BookingsPageClient = () => {
       "Deposit Required",
       "Deposit Amount",
       "Total Paid",
+      "Venue Payment",
       "Remaining Balance",
       "Status",
       "Created At",
@@ -133,6 +144,7 @@ const BookingsPageClient = () => {
       b.require_deposit ? "Yes" : "No",
       b.deposit_amount || 0,
       b.total_amount,
+      b.venue_payment_received ? "Received" : "Pending",
       b.remaining_balance || 0,
       b.status,
       new Date(b.created_at).toLocaleString("id-ID"),
@@ -155,22 +167,51 @@ const BookingsPageClient = () => {
       CANCELLED: "bg-red-100 text-red-800",
       EXPIRED: "bg-gray-100 text-gray-800",
     };
-
     const icons = {
       PAID: CheckCircle,
       PENDING: Clock,
       CANCELLED: XCircle,
       EXPIRED: XCircle,
     };
-
     const Icon = icons[status as keyof typeof icons] || Clock;
-
     return (
       <Badge className={styles[status as keyof typeof styles] || ""}>
         <Icon className="w-3 h-3 mr-1" />
         {status}
       </Badge>
     );
+  };
+
+  // NEW: Get venue payment status badge
+  const getVenuePaymentBadge = (booking: any) => {
+    if (!booking.require_deposit) {
+      return (
+        <Badge variant="secondary" className="text-xs">
+          <CheckCircle className="w-3 h-3 mr-1" />
+          Full Payment
+        </Badge>
+      );
+    }
+
+    if (booking.venue_payment_received) {
+      return (
+        <Badge className="bg-green-100 text-green-800 text-xs">
+          <CheckCircle className="w-3 h-3 mr-1" />
+          Completed
+        </Badge>
+      );
+    }
+
+    if (booking.status === "PAID" && booking.remaining_balance > 0) {
+      return (
+        <Badge className="bg-orange-100 text-orange-800 text-xs">
+          <AlertCircle className="w-3 h-3 mr-1" />
+          Pending
+        </Badge>
+      );
+    }
+
+    return null;
   };
 
   if (loading) {
@@ -181,8 +222,45 @@ const BookingsPageClient = () => {
     );
   }
 
+  // NEW: Calculate pending venue payments
+  const pendingVenuePayments = bookings.filter(
+    (b) =>
+      b.status === "PAID" &&
+      b.require_deposit &&
+      !b.venue_payment_received &&
+      b.remaining_balance > 0
+  ).length;
+
   return (
     <div className="space-y-6">
+      {/* Pending Venue Payments Alert */}
+      {pendingVenuePayments > 0 && (
+        <Card className="bg-orange-50 border-orange-200">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <Wallet className="w-5 h-5 text-orange-600" />
+              <div className="flex-1">
+                <p className="font-semibold text-orange-900">
+                  {pendingVenuePayments} Booking
+                  {pendingVenuePayments > 1 ? "s" : ""} Awaiting Venue Payment
+                </p>
+                <p className="text-sm text-orange-700">
+                  Customers need to pay remaining balance at venue
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setVenuePaymentFilter("PENDING")}
+                className="border-orange-300 hover:bg-orange-100"
+              >
+                View All
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Filters */}
       <Card>
         <CardContent className="p-6">
@@ -211,6 +289,21 @@ const BookingsPageClient = () => {
                 <SelectItem value="PENDING">Pending</SelectItem>
                 <SelectItem value="CANCELLED">Cancelled</SelectItem>
                 <SelectItem value="EXPIRED">Expired</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* NEW: Venue Payment Filter */}
+            <Select
+              value={venuePaymentFilter}
+              onValueChange={setVenuePaymentFilter}
+            >
+              <SelectTrigger className="w-full lg:w-48">
+                <SelectValue placeholder="Venue payment" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All Payments</SelectItem>
+                <SelectItem value="PENDING">⏳ Pending Venue</SelectItem>
+                <SelectItem value="COMPLETED">✓ Completed</SelectItem>
               </SelectContent>
             </Select>
 
@@ -244,7 +337,8 @@ const BookingsPageClient = () => {
                   <TableHead className="font-medium">Court</TableHead>
                   <TableHead className="font-medium">Date</TableHead>
                   <TableHead className="font-medium">Time</TableHead>
-                  <TableHead className="font-medium">Amount Paid</TableHead>
+                  <TableHead className="font-medium">Amount</TableHead>
+                  <TableHead className="font-medium">Venue Payment</TableHead>
                   <TableHead className="font-medium">Status</TableHead>
                   <TableHead className="font-medium">Actions</TableHead>
                 </TableRow>
@@ -252,7 +346,7 @@ const BookingsPageClient = () => {
               <TableBody>
                 {filteredBookings.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="h-24 text-center">
+                    <TableCell colSpan={9} className="h-24 text-center">
                       <p className="text-muted-foreground">No bookings found</p>
                     </TableCell>
                   </TableRow>
@@ -298,19 +392,16 @@ const BookingsPageClient = () => {
                             </div>
                           )}
                       </TableCell>
+                      {/* NEW: Venue Payment Status Column */}
+                      <TableCell>{getVenuePaymentBadge(booking)}</TableCell>
                       <TableCell>{getStatusBadge(booking.status)}</TableCell>
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedBooking(booking);
-                            setDetailsOpen(true);
-                          }}
-                        >
-                          <Eye className="w-4 h-4 mr-1" />
-                          View
-                        </Button>
+                        <Link href={`/admin/bookings/${booking.id}`}>
+                          <Button variant="ghost" size="sm">
+                            <Eye className="w-4 h-4 mr-1" />
+                            View
+                          </Button>
+                        </Link>
                       </TableCell>
                     </TableRow>
                   ))
@@ -320,418 +411,6 @@ const BookingsPageClient = () => {
           </div>
         </CardContent>
       </Card>
-
-      {/* Booking Details Dialog */}
-      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Booking Details</DialogTitle>
-          </DialogHeader>
-
-          {selectedBooking && (
-            <div className="space-y-6">
-              {/* Booking Reference */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">
-                    Booking Reference
-                  </p>
-                  <p className="text-2xl font-bold font-mono">
-                    {selectedBooking.booking_ref}
-                  </p>
-                  {selectedBooking.require_deposit && (
-                    <Badge variant="outline" className="mt-2">
-                      <DollarSign className="w-3 h-3 mr-1" />
-                      Deposit Payment
-                    </Badge>
-                  )}
-                </div>
-                {getStatusBadge(selectedBooking.status)}
-              </div>
-
-              <Separator />
-
-              {/* Deposit Alert */}
-              {selectedBooking.require_deposit &&
-                selectedBooking.remaining_balance > 0 && (
-                  <Alert className="bg-orange-50 border-orange-200">
-                    <Info className="h-4 w-4 text-orange-600" />
-                    <AlertDescription className="text-sm text-orange-800">
-                      <strong>Deposit Booking:</strong> Customer paid deposit of{" "}
-                      <strong>
-                        IDR{" "}
-                        {selectedBooking.deposit_amount.toLocaleString("id-ID")}
-                      </strong>{" "}
-                      online.
-                      <br />
-                      <strong>
-                        Remaining balance of IDR{" "}
-                        {selectedBooking.remaining_balance.toLocaleString(
-                          "id-ID"
-                        )}
-                      </strong>{" "}
-                      must be collected at venue.
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-              {/* Customer Information */}
-              <div>
-                <h3 className="font-semibold mb-3">Customer Information</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Name</p>
-                    <p className="font-medium">
-                      {selectedBooking.customer_name}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Email</p>
-                    <p className="font-medium">
-                      {selectedBooking.customer_email}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Phone</p>
-                    <p className="font-medium">
-                      {selectedBooking.customer_phone}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">WhatsApp</p>
-                    <p className="font-medium">
-                      {selectedBooking.customer_whatsapp}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Booking Details */}
-              <div>
-                <h3 className="font-semibold mb-3">Booking Details</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Court</p>
-                    <p className="font-medium">{selectedBooking.courts.name}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Date</p>
-                    <p className="font-medium">
-                      {new Date(selectedBooking.date).toLocaleDateString(
-                        "id-ID"
-                      )}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Time</p>
-                    <p className="font-medium">{selectedBooking.time}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Players</p>
-                    <p className="font-medium">
-                      {selectedBooking.number_of_players}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Payment Information */}
-              <div>
-                <h3 className="font-semibold mb-3">
-                  Payment & Revenue Information
-                </h3>
-                <div className="space-y-3">
-                  {/* Court booking base price */}
-                  <div className="bg-gray-50 p-3 rounded-lg">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">
-                        Court Booking:
-                      </span>
-                      <span className="font-medium">
-                        IDR {selectedBooking.subtotal.toLocaleString("id-ID")}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* DEPOSIT PAYMENT BREAKDOWN */}
-                  {selectedBooking.require_deposit ? (
-                    <>
-                      <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 space-y-3">
-                        <h4 className="font-semibold text-blue-900 text-sm flex items-center gap-2">
-                          Online Deposit Payment
-                        </h4>
-
-                        {/* What customer paid online */}
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-blue-800">
-                              Customer Paid Online:
-                            </span>
-                            <span className="font-bold text-blue-900">
-                              IDR{" "}
-                              {selectedBooking.total_amount.toLocaleString(
-                                "id-ID"
-                              )}
-                            </span>
-                          </div>
-
-                          <div className="flex justify-between text-xs pl-4">
-                            <span className="text-blue-700">
-                              └─ Deposit (
-                              {Math.round(
-                                (selectedBooking.deposit_amount /
-                                  selectedBooking.subtotal) *
-                                  100
-                              )}
-                              %)
-                            </span>
-                            <span className="text-blue-800">
-                              IDR{" "}
-                              {selectedBooking.deposit_amount.toLocaleString(
-                                "id-ID"
-                              )}
-                            </span>
-                          </div>
-
-                          <div className="flex justify-between text-xs pl-4">
-                            <span className="text-blue-700">
-                              └─ Midtrans Processing Fee
-                            </span>
-                            <span className="text-red-600">
-                              - IDR{" "}
-                              {selectedBooking.payment_fee.toLocaleString(
-                                "id-ID"
-                              )}
-                            </span>
-                          </div>
-                        </div>
-
-                        <Separator className="bg-blue-200" />
-
-                        {/* Net received from online */}
-                        <div className="flex justify-between font-semibold text-green-700 bg-green-50 p-2 rounded">
-                          <span>You Received (Net from Online):</span>
-                          <span>
-                            IDR{" "}
-                            {(
-                              selectedBooking.total_amount -
-                              selectedBooking.payment_fee
-                            ).toLocaleString("id-ID")}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Venue payment (remaining balance) */}
-                      {selectedBooking.remaining_balance > 0 && (
-                        <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-4">
-                          <h4 className="font-semibold text-orange-900 text-sm flex items-center gap-2 mb-2">
-                            Cash Payment at Venue
-                          </h4>
-
-                          <div className="flex justify-between font-semibold text-orange-800">
-                            <span>To Collect (No fees):</span>
-                            <span className="text-lg">
-                              IDR{" "}
-                              {selectedBooking.remaining_balance.toLocaleString(
-                                "id-ID"
-                              )}
-                            </span>
-                          </div>
-
-                          <p className="text-xs text-orange-700 mt-2">
-                            This is the remaining{" "}
-                            {100 -
-                              Math.round(
-                                (selectedBooking.deposit_amount /
-                                  selectedBooking.subtotal) *
-                                  100
-                              )}
-                            % of the booking - collect in cash when customer
-                            arrives
-                          </p>
-                        </div>
-                      )}
-
-                      <Separator />
-
-                      {/* TOTAL BUSINESS REVENUE */}
-                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-lg p-4">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <p className="text-sm text-green-800 font-medium">
-                              Total Business Revenue
-                            </p>
-                            <p className="text-xs text-green-700 mt-1">
-                              Online:{" "}
-                              {selectedBooking.deposit_amount.toLocaleString(
-                                "id-ID"
-                              )}{" "}
-                              + Venue:{" "}
-                              {selectedBooking.remaining_balance.toLocaleString(
-                                "id-ID"
-                              )}
-                            </p>
-                          </div>
-                          <span className="text-2xl font-bold text-green-700">
-                            IDR{" "}
-                            {(
-                              selectedBooking.deposit_amount +
-                              selectedBooking.remaining_balance
-                            ).toLocaleString("id-ID")}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Fee absorbed note */}
-                      <div className="bg-gray-50 p-3 rounded text-xs text-gray-600 border-l-4 border-gray-400">
-                        <strong>Note:</strong> Midtrans fee (IDR{" "}
-                        {selectedBooking.payment_fee.toLocaleString("id-ID")})
-                        was absorbed by your business to provide better customer
-                        experience.
-                      </div>
-                    </>
-                  ) : (
-                    /* FULL PAYMENT BREAKDOWN */
-                    <>
-                      <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 space-y-3">
-                        <h4 className="font-semibold text-blue-900 text-sm flex items-center gap-2">
-                          <span className="text-lg">💳</span> Full Payment
-                          Online
-                        </h4>
-
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-blue-800">
-                              Customer Paid:
-                            </span>
-                            <span className="font-bold text-blue-900">
-                              IDR{" "}
-                              {selectedBooking.total_amount.toLocaleString(
-                                "id-ID"
-                              )}
-                            </span>
-                          </div>
-
-                          <div className="flex justify-between text-xs pl-4">
-                            <span className="text-blue-700">
-                              └─ Booking Amount
-                            </span>
-                            <span className="text-blue-800">
-                              IDR{" "}
-                              {selectedBooking.subtotal.toLocaleString("id-ID")}
-                            </span>
-                          </div>
-
-                          <div className="flex justify-between text-xs pl-4">
-                            <span className="text-blue-700">
-                              └─ Midtrans Processing Fee
-                            </span>
-                            <span className="text-red-600">
-                              - IDR{" "}
-                              {selectedBooking.payment_fee.toLocaleString(
-                                "id-ID"
-                              )}
-                            </span>
-                          </div>
-                        </div>
-
-                        <Separator className="bg-blue-200" />
-
-                        <div className="flex justify-between font-semibold text-green-700 bg-green-50 p-2 rounded">
-                          <span>You Received (Net):</span>
-                          <span>
-                            IDR{" "}
-                            {(
-                              selectedBooking.total_amount -
-                              selectedBooking.payment_fee
-                            ).toLocaleString("id-ID")}
-                          </span>
-                        </div>
-                      </div>
-
-                      <Separator />
-
-                      {/* TOTAL REVENUE */}
-                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-lg p-4">
-                        <div className="flex justify-between items-center">
-                          <p className="text-sm text-green-800 font-medium">
-                            Total Business Revenue
-                          </p>
-                          <span className="text-2xl font-bold text-green-700">
-                            IDR{" "}
-                            {selectedBooking.subtotal.toLocaleString("id-ID")}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Fee absorbed note */}
-                      <div className="bg-gray-50 p-3 rounded text-xs text-gray-600 border-l-4 border-gray-400">
-                        <strong>ℹ️ Note:</strong> Midtrans fee (IDR{" "}
-                        {selectedBooking.payment_fee.toLocaleString("id-ID")})
-                        was absorbed by your business to provide better customer
-                        experience.
-                      </div>
-                    </>
-                  )}
-
-                  {/* Payment method info */}
-                  <div className="flex items-center justify-between text-xs bg-gray-50 p-2 rounded">
-                    <span className="text-muted-foreground">
-                      Payment Method:
-                    </span>
-                    <span className="font-medium uppercase">
-                      {selectedBooking.payment_method || "N/A"}
-                    </span>
-                  </div>
-
-                  {selectedBooking.paid_at && (
-                    <div className="flex items-center justify-between text-xs bg-gray-50 p-2 rounded">
-                      <span className="text-muted-foreground">Paid At:</span>
-                      <span className="font-medium">
-                        {new Date(selectedBooking.paid_at).toLocaleString(
-                          "id-ID"
-                        )}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {selectedBooking.notes && (
-                <>
-                  <Separator />
-                  <div>
-                    <h3 className="font-semibold mb-2">Notes</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {selectedBooking.notes}
-                    </p>
-                  </div>
-                </>
-              )}
-
-              {/* Actions */}
-              <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => setDetailsOpen(false)}
-                >
-                  Close
-                </Button>
-                {selectedBooking.status === "PAID" && (
-                  <Button variant="destructive" className="flex-1">
-                    Cancel Booking
-                  </Button>
-                )}
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

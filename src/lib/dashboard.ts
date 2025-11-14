@@ -5,11 +5,17 @@ import {
   Clock,
   FileText,
   Settings,
+  TrendingUp,
 } from "lucide-react";
 
 export const navigation = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { name: "Bookings", href: "/admin/bookings", icon: Calendar },
+  {
+    name: "Financial Reports",
+    href: "/admin/reports",
+    icon: TrendingUp,
+  },
   { name: "Courts", href: "/admin/courts", icon: Building2 },
   { name: "Time Slots", href: "/admin/time-slots", icon: Clock },
   { name: "Content", href: "/admin/content", icon: FileText },
@@ -19,6 +25,7 @@ export const navigation = [
 export const pageTitles: Record<string, string> = {
   "/admin": "Dashboard",
   "/admin/bookings": "Bookings Management",
+  "/admin/reports": "Financial Reports",
   "/admin/courts": "Courts Management",
   "/admin/time-slots": "Time Slots Management",
   "/admin/content": "Content Management",

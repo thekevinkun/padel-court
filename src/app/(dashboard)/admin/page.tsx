@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Calendar, DollarSign, Users, Clock, CheckCircle } from "lucide-react";
+import Link from "next/link";
+import { Calendar, DollarSign, Clock, CheckCircle, Wallet } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/lib/supabase/client";
 
 export default function DashboardPage() {
@@ -14,6 +16,8 @@ export default function DashboardPage() {
     todayNetRevenue: 0,
     totalBookings: 0,
     availableSlots: 0,
+    pendingVenuePayments: 0,
+    pendingVenueAmount: 0,
   });
   const [recentBookings, setRecentBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,9 +28,7 @@ export default function DashboardPage() {
 
   const fetchDashboardData = async () => {
     try {
-      // Get today's date
       const today = new Date().toLocaleDateString("en-CA");
-      console.log("Today's date:", today);
 
       // Fetch today's bookings
       const { data: todayData } = await supabase
@@ -36,7 +38,6 @@ export default function DashboardPage() {
         )
         .eq("date", today);
 
-      // Calculate today's stats
       const todayBookings = todayData?.length || 0;
 
       // Revenue = actual booking revenue (excluding payment fees)
@@ -44,31 +45,20 @@ export default function DashboardPage() {
         todayData
           ?.filter((b) => b.status === "PAID")
           .reduce((sum, b) => {
-            // If deposit booking, count only the deposit amount paid
-            // If full payment, count the subtotal
             const bookingRevenue = b.require_deposit
               ? b.deposit_amount
               : b.subtotal;
             return sum + bookingRevenue;
           }, 0) || 0;
 
-      // Also calculate net revenue (what you actually received)
+      // Net revenue (what you actually received after Midtrans fees)
       const todayNetRevenue =
         todayData
           ?.filter((b) => b.status === "PAID")
           .reduce((sum, b) => {
-            // Net = what customer paid minus Midtrans fee
             const netAmount = b.total_amount - b.payment_fee;
             return sum + netAmount;
           }, 0) || 0;
-
-      console.log("💰 Revenue breakdown:", {
-        gross: todayData
-          ?.filter((b) => b.status === "PAID")
-          .reduce((sum, b) => sum + b.total_amount, 0),
-        booking: todayRevenue,
-        net: todayNetRevenue,
-      });
 
       // Fetch total bookings
       const { count: totalBookings } = await supabase
@@ -82,15 +72,23 @@ export default function DashboardPage() {
         .eq("date", today)
         .eq("available", true);
 
+      // Fetch pending venue payments (all bookings, not just today)
+      const { data: pendingPayments } = await supabase
+        .from("bookings")
+        .select("remaining_balance")
+        .eq("status", "PAID")
+        .eq("require_deposit", true)
+        .eq("venue_payment_received", false)
+        .gt("remaining_balance", 0);
+
+      const pendingVenuePayments = pendingPayments?.length || 0;
+      const pendingVenueAmount =
+        pendingPayments?.reduce((sum, b) => sum + b.remaining_balance, 0) || 0;
+
       // Fetch recent bookings
       const { data: recent } = await supabase
         .from("bookings")
-        .select(
-          `
-          *,
-          courts (name)
-        `
-        )
+        .select(`*, courts (name)`)
         .order("created_at", { ascending: false })
         .limit(5);
 
@@ -100,8 +98,9 @@ export default function DashboardPage() {
         todayNetRevenue,
         totalBookings: totalBookings || 0,
         availableSlots: availableSlots || 0,
+        pendingVenuePayments,
+        pendingVenueAmount,
       });
-
       setRecentBookings(recent || []);
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
@@ -161,11 +160,47 @@ export default function DashboardPage() {
         animate={{ opacity: 1, y: 0 }}
         className="bg-gradient-to-r from-forest to-forest-dark text-white rounded-lg p-6"
       >
-        <h2 className="text-2xl font-bold mb-2">Welcome back! 👋</h2>
+        <h2 className="text-2xl font-bold mb-2">Welcome back!</h2>
         <p className="text-white/80">
           Here's what's happening with your padel courts today.
         </p>
       </motion.div>
+
+      {/* Pending Venue Payments Alert */}
+      {stats.pendingVenuePayments > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <Alert className="bg-orange-50 border-orange-200">
+            <AlertDescription>
+              <div className="flex items-center justify-between gap-5">
+                <div>
+                  <strong className="text-orange-900">
+                    ⚠️ {stats.pendingVenuePayments} Booking
+                    {stats.pendingVenuePayments > 1 ? "s" : ""} Awaiting Venue
+                    Payment
+                  </strong>
+                  <p className="text-sm text-orange-700 mt-1">
+                    Total to collect: IDR{" "}
+                    {stats.pendingVenueAmount.toLocaleString("id-ID")}
+                  </p>
+                </div>
+                <Link href="/admin/bookings">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-orange-300 hover:bg-orange-100"
+                  >
+                    View All
+                  </Button>
+                </Link>
+              </div>
+            </AlertDescription>
+          </Alert>
+        </motion.div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -216,58 +251,60 @@ export default function DashboardPage() {
               </p>
             ) : (
               recentBookings.map((booking) => (
-                <div
+                <Link
                   key={booking.id}
-                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                  href={`/admin/bookings/${booking.id}`}
+                  className="block"
                 >
-                  <div className="flex items-center gap-4">
-                    <div
-                      className={`p-2 rounded-full ${
-                        booking.status === "PAID"
-                          ? "bg-green-100"
-                          : "bg-yellow-100"
-                      }`}
-                    >
-                      {booking.status === "PAID" ? (
-                        <CheckCircle className="h-5 w-5 text-green-600" />
-                      ) : (
-                        <Clock className="h-5 w-5 text-yellow-600" />
-                      )}
+                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div className="flex items-center gap-4">
+                      <div
+                        className={`p-2 rounded-full ${
+                          booking.status === "PAID"
+                            ? "bg-green-100"
+                            : "bg-yellow-100"
+                        }`}
+                      >
+                        {booking.status === "PAID" ? (
+                          <CheckCircle className="h-5 w-5 text-green-600" />
+                        ) : (
+                          <Clock className="h-5 w-5 text-yellow-600" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-medium">{booking.customer_name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {booking.courts?.name} • {booking.time}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium">{booking.customer_name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {booking.courts?.name} • {booking.time}
+                    <div className="text-right">
+                      <p className="font-medium">
+                        IDR{" "}
+                        {(booking.require_deposit
+                          ? booking.deposit_amount
+                          : booking.subtotal
+                        ).toLocaleString("id-ID")}
+                      </p>
+                      {booking.require_deposit &&
+                        booking.remaining_balance > 0 && (
+                          <p className="text-xs text-orange-600">
+                            +{booking.remaining_balance.toLocaleString("id-ID")}{" "}
+                            at venue
+                          </p>
+                        )}
+                      <p
+                        className={`text-sm ${
+                          booking.status === "PAID"
+                            ? "text-green-600"
+                            : "text-yellow-600"
+                        }`}
+                      >
+                        {booking.status}
                       </p>
                     </div>
                   </div>
-
-                  <div className="text-right">
-                    {/* SHOW BOOKING REVENUE, NOT TOTAL WITH FEE */}
-                    <p className="font-medium">
-                      IDR{" "}
-                      {(booking.require_deposit
-                        ? booking.deposit_amount
-                        : booking.subtotal
-                      ).toLocaleString("id-ID")}
-                    </p>
-                    {booking.require_deposit && (
-                      <p className="text-xs text-orange-600">
-                        +{booking.remaining_balance.toLocaleString("id-ID")} at
-                        venue
-                      </p>
-                    )}
-                    <p
-                      className={`text-sm ${
-                        booking.status === "PAID"
-                          ? "text-green-600"
-                          : "text-yellow-600"
-                      }`}
-                    >
-                      {booking.status}
-                    </p>
-                  </div>
-                </div>
+                </Link>
               ))
             )}
           </div>
