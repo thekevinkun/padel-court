@@ -1,6 +1,3 @@
-// /src/types/reports.ts
-// Create this new file
-
 export interface VenuePayment {
   id: string;
   booking_id: string;
@@ -21,6 +18,12 @@ export interface RevenueData {
   feesAbsorbed: number;
 }
 
+export interface CourtData {
+  courtName: string;
+  bookings: number;
+  revenue: number;
+}
+
 export interface PaymentMethodBreakdown {
   method: string;
   count: number;
@@ -28,7 +31,7 @@ export interface PaymentMethodBreakdown {
   percentage: number;
 }
 
-export interface FinancialSummary {
+interface FinancialSummary {
   totalRevenue: number;
   onlineRevenue: number;
   venueRevenue: number;
@@ -47,11 +50,7 @@ export interface AnalyticsData {
   summary: FinancialSummary;
   revenueTimeline: RevenueData[];
   paymentMethods: PaymentMethodBreakdown[];
-  topCourts: Array<{
-    courtName: string;
-    bookings: number;
-    revenue: number;
-  }>;
+  topCourts: CourtData[];
   peakHours: Array<{
     hour: string;
     bookings: number;

@@ -12,7 +12,7 @@ export const navigation = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { name: "Bookings", href: "/admin/bookings", icon: Calendar },
   {
-    name: "Financial Reports",
+    name: "Reports",
     href: "/admin/reports",
     icon: TrendingUp,
   },

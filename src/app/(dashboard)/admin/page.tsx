@@ -3,17 +3,18 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { Calendar, DollarSign, Clock, CheckCircle, Wallet } from "lucide-react";
+import { Calendar, DollarSign, Clock, CheckCircle, Users, Wallet } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+
+import { DashboardStats } from "@/types";
 import { supabase } from "@/lib/supabase/client";
 
 export default function DashboardPage() {
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<DashboardStats>({
     todayBookings: 0,
     todayRevenue: 0,
-    todayNetRevenue: 0,
     totalBookings: 0,
     availableSlots: 0,
     pendingVenuePayments: 0,
@@ -51,15 +52,6 @@ export default function DashboardPage() {
             return sum + bookingRevenue;
           }, 0) || 0;
 
-      // Net revenue (what you actually received after Midtrans fees)
-      const todayNetRevenue =
-        todayData
-          ?.filter((b) => b.status === "PAID")
-          .reduce((sum, b) => {
-            const netAmount = b.total_amount - b.payment_fee;
-            return sum + netAmount;
-          }, 0) || 0;
-
       // Fetch total bookings
       const { count: totalBookings } = await supabase
         .from("bookings")
@@ -95,7 +87,6 @@ export default function DashboardPage() {
       setStats({
         todayBookings,
         todayRevenue,
-        todayNetRevenue,
         totalBookings: totalBookings || 0,
         availableSlots: availableSlots || 0,
         pendingVenuePayments,
@@ -127,12 +118,11 @@ export default function DashboardPage() {
       subtitle: "Total booking value (excl. fees)",
     },
     {
-      title: "Net Received",
-      value: `IDR ${stats.todayNetRevenue.toLocaleString("id-ID")}`,
-      icon: DollarSign,
-      color: "text-emerald-600",
-      bgColor: "bg-emerald-100",
-      subtitle: "After Midtrans fees",
+      title: "Total Bookings",
+      value: stats.totalBookings,
+      icon: Users,
+      color: "text-purple-600",
+      bgColor: "bg-purple-100",
     },
     {
       title: "Available Slots",
