@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
-import { generateSiteMetadata, defaultMetadata } from "@/lib/metadata";
 import StructuredData from "@/components/StructuredData";
+import { generateSiteMetadata, defaultMetadata } from "@/lib/metadata";
 import "./globals.css";
 
 const inter = Inter({

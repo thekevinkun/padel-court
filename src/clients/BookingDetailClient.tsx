@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -41,6 +42,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+
 import { supabase } from "@/lib/supabase/client";
 
 const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {

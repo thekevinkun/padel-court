@@ -11,8 +11,8 @@ import {
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-import { fadeInDown, drawerVariants, backdropVariants } from "@/lib/animations";
 import { navLinks } from "@/lib/constants";
+import { fadeInDown, drawerVariants, backdropVariants } from "@/lib/animations";
 
 const Navbar = ({ onBookNowClick }: { onBookNowClick: () => void }) => {
   const [isScrolled, setIsScrolled] = useState(false);

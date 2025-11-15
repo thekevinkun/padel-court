@@ -1,42 +1,3 @@
-import { VenuePayment } from "./reports";
-
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-  phone?: string;
-  role: "user" | "admin";
-  created_at: string;
-}
-
-export interface Booking {
-  id: string;
-  user_id: string;
-  court_id: string;
-  booking_date: string;
-  start_time: string;
-  end_time: string;
-  total_price: number;
-  status: "pending" | "confirmed" | "cancelled" | "completed";
-  payment_status: "pending" | "paid" | "refunded";
-  created_at: string;
-}
-
-export interface BookingWithVenuePayment {
-  id: string;
-  booking_ref: string;
-  customer_name: string;
-  customer_email: string;
-  subtotal: number;
-  deposit_amount: number;
-  remaining_balance: number;
-  venue_payment_received: boolean;
-  venue_payment_amount: number;
-  venue_payment_date: string | null;
-  venue_payment_method: string | null;
-  venue_payments?: VenuePayment[];
-}
-
 export interface DashboardStats {
   todayBookings: number;
   todayRevenue: number;
@@ -44,6 +5,10 @@ export interface DashboardStats {
   availableSlots: number;
   pendingVenuePayments: number;
   pendingVenueAmount: number;
+  // NEW: Session stats
+  inProgressSessions?: number;
+  upcomingSessions?: number;
+  completedToday?: number;
 }
 
 export interface Court {
@@ -64,20 +29,6 @@ export interface TimeSlot {
   period: "peak" | "off-peak";
   price_per_person: number;
   available: boolean;
-}
-
-export interface BookingFormData {
-  courtId?: string;
-  slotId?: string;
-  date?: Date;
-  numberOfPlayers?: number;
-  name?: string;
-  email?: string;
-  phone?: string;
-  whatsapp?: string;
-  notes?: string;
-  paymentMethod?: string;
-  agreeTerms?: boolean;
 }
 
 interface CTA {

@@ -43,7 +43,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 
 import { useSettings } from "@/hooks/useSettings";
-import { BookingFormData } from "@/types";
+import { BookingFormData } from "@/types/booking";
 import { supabase } from "@/lib/supabase/client";
 
 interface BookingDialogProps {

@@ -1,7 +1,5 @@
-// /src/clients/BookingsPageClient.tsx
-// UPDATED VERSION - Replace your existing file
-
 "use client";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -35,6 +33,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
+
 import { supabase } from "@/lib/supabase/client";
 
 const BookingsPageClient = () => {
