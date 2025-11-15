@@ -22,6 +22,7 @@ export async function POST(request: NextRequest) {
       requireDeposit,
       depositAmount,
       fullAmount,
+      paymentChoice,
     } = body;
 
     console.log("bookings-create body: ", body);
@@ -67,10 +68,31 @@ export async function POST(request: NextRequest) {
     // Generate unique booking reference
     const bookingRef = `BAP${Date.now().toString().slice(-8)}`;
 
-    // Calculate remaining balance
-    const remainingBalance = requireDeposit
-      ? (fullAmount || subtotal) - totalAmount
-      : 0;
+    // Determine actual payment structure based on choice
+    let actualDepositAmount = 0;
+    let actualRemainingBalance = 0;
+    let actualRequireDeposit = false;
+    let actualCustomerPaymentChoice = null;
+
+    if (paymentChoice === "FULL") {
+      // Customer chose full payment - no venue payment needed
+      actualDepositAmount = 0;
+      actualRemainingBalance = 0;
+      actualRequireDeposit = false;
+      actualCustomerPaymentChoice = "FULL";
+    } else if (paymentChoice === "DEPOSIT" && requireDeposit) {
+      // Customer chose deposit payment
+      actualDepositAmount = depositAmount;
+      actualRemainingBalance = (fullAmount || subtotal) - totalAmount;
+      actualRequireDeposit = true;
+      actualCustomerPaymentChoice = "DEPOSIT";
+    } else {
+      // No deposit option available - full payment only
+      actualDepositAmount = 0;
+      actualRemainingBalance = 0;
+      actualRequireDeposit = false;
+      actualCustomerPaymentChoice = "FULL";
+    }
 
     // Create booking
     const { data: booking, error: bookingError } = await supabase
@@ -92,15 +114,18 @@ export async function POST(request: NextRequest) {
         payment_method: paymentMethod,
         notes: notes || null,
         status: "PENDING", // Payment not done yet
-        require_deposit: requireDeposit || false,
-        deposit_amount: depositAmount || 0,
+        require_deposit: actualRequireDeposit,
+        deposit_amount: actualDepositAmount,
         full_amount: fullAmount || subtotal,
-        remaining_balance: remainingBalance,
+        remaining_balance: actualRemainingBalance,
+        customer_payment_choice: actualCustomerPaymentChoice,
+        session_status: "UPCOMING", // Default session status
+        venue_payment_expired: false,
       })
       .select()
       .single();
 
-    if (bookingError) {
+   if (bookingError) {
       console.error("Error creating booking:", bookingError);
       return NextResponse.json(
         { error: "Failed to create booking" },
@@ -115,11 +140,13 @@ export async function POST(request: NextRequest) {
       .eq("id", timeSlotId);
 
     // Create admin notification
-    const notificationMessage = requireDeposit
+    const notificationMessage = actualRequireDeposit
       ? `Booking ${bookingRef} created. Customer: ${customerName}. Deposit: IDR ${totalAmount.toLocaleString(
           "id-ID"
-        )}. Balance: IDR ${remainingBalance.toLocaleString("id-ID")}.`
-      : `Booking ${bookingRef} created. Customer: ${customerName}. Waiting for payment.`;
+        )}. Balance: IDR ${actualRemainingBalance.toLocaleString("id-ID")}.`
+      : `Booking ${bookingRef} created. Customer: ${customerName}. Full payment: IDR ${totalAmount.toLocaleString(
+          "id-ID"
+        )}.`;
 
     await supabase.from("admin_notifications").insert({
       booking_id: booking.id,
@@ -138,6 +165,7 @@ export async function POST(request: NextRequest) {
         requireDeposit: booking.require_deposit,
         depositAmount: booking.deposit_amount,
         remainingBalance: booking.remaining_balance,
+        paymentChoice: booking.customer_payment_choice,
       },
     });
   } catch (error) {
