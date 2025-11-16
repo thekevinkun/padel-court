@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   Search,
   Download,
@@ -9,10 +10,10 @@ import {
   CheckCircle,
   Clock,
   XCircle,
-  Info,
-  DollarSign,
-  Wallet,
+  PlayCircle,
+  Trophy,
   AlertCircle,
+  Wallet,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -33,16 +34,19 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-
 import { supabase } from "@/lib/supabase/client";
 
 const BookingsPageClient = () => {
+  const searchParams = useSearchParams();
   const [bookings, setBookings] = useState<any[]>([]);
   const [filteredBookings, setFilteredBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
-  const [venuePaymentFilter, setVenuePaymentFilter] = useState("ALL"); // NEW
+  const [venuePaymentFilter, setVenuePaymentFilter] = useState(
+    searchParams.get("filter") === "venue_pending" ? "PENDING" : "ALL"
+  );
+  const [sessionFilter, setSessionFilter] = useState("ALL"); // NEW
 
   useEffect(() => {
     fetchBookings();
@@ -50,7 +54,7 @@ const BookingsPageClient = () => {
 
   useEffect(() => {
     filterBookings();
-  }, [searchQuery, statusFilter, venuePaymentFilter, bookings]);
+  }, [searchQuery, statusFilter, venuePaymentFilter, sessionFilter, bookings]);
 
   const fetchBookings = async () => {
     try {
@@ -78,24 +82,32 @@ const BookingsPageClient = () => {
   const filterBookings = () => {
     let filtered = [...bookings];
 
-    // Filter by status
+    // Filter by payment status
     if (statusFilter !== "ALL") {
       filtered = filtered.filter((b) => b.status === statusFilter);
     }
 
-    // NEW: Filter by venue payment status
+    // Filter by venue payment status
     if (venuePaymentFilter === "PENDING") {
       filtered = filtered.filter(
         (b) =>
           b.status === "PAID" &&
           b.require_deposit &&
           !b.venue_payment_received &&
+          !b.venue_payment_expired &&
           b.remaining_balance > 0
       );
     } else if (venuePaymentFilter === "COMPLETED") {
       filtered = filtered.filter(
         (b) => b.venue_payment_received || !b.require_deposit
       );
+    } else if (venuePaymentFilter === "EXPIRED") {
+      filtered = filtered.filter((b) => b.venue_payment_expired);
+    }
+
+    // NEW: Filter by session status
+    if (sessionFilter !== "ALL") {
+      filtered = filtered.filter((b) => b.session_status === sessionFilter);
     }
 
     // Filter by search query
@@ -122,12 +134,13 @@ const BookingsPageClient = () => {
       "Date",
       "Time",
       "Players",
-      "Deposit Required",
+      "Payment Choice",
       "Deposit Amount",
       "Total Paid",
       "Venue Payment",
       "Remaining Balance",
-      "Status",
+      "Payment Status",
+      "Session Status",
       "Created At",
     ];
 
@@ -140,12 +153,17 @@ const BookingsPageClient = () => {
       b.date,
       b.time,
       b.number_of_players,
-      b.require_deposit ? "Yes" : "No",
+      b.customer_payment_choice || "N/A",
       b.deposit_amount || 0,
       b.total_amount,
-      b.venue_payment_received ? "Received" : "Pending",
+      b.venue_payment_received
+        ? "Received"
+        : b.venue_payment_expired
+        ? "Expired"
+        : "Pending",
       b.remaining_balance || 0,
       b.status,
+      b.session_status,
       new Date(b.created_at).toLocaleString("id-ID"),
     ]);
 
@@ -181,7 +199,32 @@ const BookingsPageClient = () => {
     );
   };
 
-  // NEW: Get venue payment status badge
+  // NEW: Session status badge
+  const getSessionBadge = (sessionStatus: string) => {
+    const styles = {
+      UPCOMING: "bg-blue-100 text-blue-800",
+      IN_PROGRESS: "bg-green-100 text-green-800",
+      COMPLETED: "bg-gray-100 text-gray-800",
+    };
+    const icons = {
+      UPCOMING: Clock,
+      IN_PROGRESS: PlayCircle,
+      COMPLETED: Trophy,
+    };
+    const Icon = icons[sessionStatus as keyof typeof icons] || Clock;
+    const label = sessionStatus.replace("_", " ");
+
+    return (
+      <Badge
+        className={`${styles[sessionStatus as keyof typeof styles]} text-xs`}
+      >
+        <Icon className="w-3 h-3 mr-1" />
+        {label}
+      </Badge>
+    );
+  };
+
+  // NEW: Venue payment badge with expired state
   const getVenuePaymentBadge = (booking: any) => {
     if (!booking.require_deposit) {
       return (
@@ -197,6 +240,15 @@ const BookingsPageClient = () => {
         <Badge className="bg-green-100 text-green-800 text-xs">
           <CheckCircle className="w-3 h-3 mr-1" />
           Completed
+        </Badge>
+      );
+    }
+
+    if (booking.venue_payment_expired) {
+      return (
+        <Badge className="bg-gray-100 text-gray-800 text-xs">
+          <XCircle className="w-3 h-3 mr-1" />
+          Expired
         </Badge>
       );
     }
@@ -221,12 +273,13 @@ const BookingsPageClient = () => {
     );
   }
 
-  // NEW: Calculate pending venue payments
+  // Calculate pending venue payments (non-expired only)
   const pendingVenuePayments = bookings.filter(
     (b) =>
       b.status === "PAID" &&
       b.require_deposit &&
       !b.venue_payment_received &&
+      !b.venue_payment_expired &&
       b.remaining_balance > 0
   ).length;
 
@@ -277,13 +330,13 @@ const BookingsPageClient = () => {
               </div>
             </div>
 
-            {/* Status Filter */}
+            {/* Payment Status Filter */}
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-full lg:w-48">
-                <SelectValue placeholder="Filter by status" />
+                <SelectValue placeholder="Payment status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ALL">All Status</SelectItem>
+                <SelectItem value="ALL">All Payments</SelectItem>
                 <SelectItem value="PAID">Paid</SelectItem>
                 <SelectItem value="PENDING">Pending</SelectItem>
                 <SelectItem value="CANCELLED">Cancelled</SelectItem>
@@ -291,7 +344,7 @@ const BookingsPageClient = () => {
               </SelectContent>
             </Select>
 
-            {/* NEW: Venue Payment Filter */}
+            {/* Venue Payment Filter */}
             <Select
               value={venuePaymentFilter}
               onValueChange={setVenuePaymentFilter}
@@ -300,9 +353,23 @@ const BookingsPageClient = () => {
                 <SelectValue placeholder="Venue payment" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ALL">All Payments</SelectItem>
-                <SelectItem value="PENDING">⏳ Pending Venue</SelectItem>
+                <SelectItem value="ALL">All Venue</SelectItem>
+                <SelectItem value="PENDING">💵 Pending</SelectItem>
                 <SelectItem value="COMPLETED">✓ Completed</SelectItem>
+                <SelectItem value="EXPIRED">⏰ Expired</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* NEW: Session Status Filter */}
+            <Select value={sessionFilter} onValueChange={setSessionFilter}>
+              <SelectTrigger className="w-full lg:w-48">
+                <SelectValue placeholder="Session status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All Sessions</SelectItem>
+                <SelectItem value="UPCOMING">⏳ Upcoming</SelectItem>
+                <SelectItem value="IN_PROGRESS">🎾 In Progress</SelectItem>
+                <SelectItem value="COMPLETED">🏁 Completed</SelectItem>
               </SelectContent>
             </Select>
 
@@ -334,10 +401,10 @@ const BookingsPageClient = () => {
                   <TableHead className="font-medium">Booking Ref</TableHead>
                   <TableHead className="font-medium">Customer</TableHead>
                   <TableHead className="font-medium">Court</TableHead>
-                  <TableHead className="font-medium">Date</TableHead>
-                  <TableHead className="font-medium">Time</TableHead>
+                  <TableHead className="font-medium">Date & Time</TableHead>
                   <TableHead className="font-medium">Amount</TableHead>
                   <TableHead className="font-medium">Venue Payment</TableHead>
+                  <TableHead className="font-medium">Session</TableHead>
                   <TableHead className="font-medium">Status</TableHead>
                   <TableHead className="font-medium">Actions</TableHead>
                 </TableRow>
@@ -354,7 +421,7 @@ const BookingsPageClient = () => {
                     <TableRow key={booking.id}>
                       <TableCell className="font-mono text-sm font-medium">
                         {booking.booking_ref}
-                        {booking.require_deposit && (
+                        {booking.customer_payment_choice === "DEPOSIT" && (
                           <Badge variant="outline" className="ml-2 text-xs">
                             Deposit
                           </Badge>
@@ -374,15 +441,20 @@ const BookingsPageClient = () => {
                         {booking.courts.name}
                       </TableCell>
                       <TableCell className="text-sm">
-                        {new Date(booking.date).toLocaleDateString("id-ID")}
+                        <div>
+                          {new Date(booking.date).toLocaleDateString("id-ID")}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {booking.time}
+                        </div>
                       </TableCell>
-                      <TableCell className="text-sm">{booking.time}</TableCell>
                       <TableCell>
                         <div className="font-medium">
                           IDR {booking.total_amount.toLocaleString("id-ID")}
                         </div>
                         {booking.require_deposit &&
-                          booking.remaining_balance > 0 && (
+                          booking.remaining_balance > 0 &&
+                          !booking.venue_payment_expired && (
                             <div className="text-xs text-orange-600 mt-1">
                               Balance: IDR{" "}
                               {booking.remaining_balance.toLocaleString(
@@ -391,8 +463,10 @@ const BookingsPageClient = () => {
                             </div>
                           )}
                       </TableCell>
-                      {/* NEW: Venue Payment Status Column */}
                       <TableCell>{getVenuePaymentBadge(booking)}</TableCell>
+                      <TableCell>
+                        {getSessionBadge(booking.session_status)}
+                      </TableCell>
                       <TableCell>{getStatusBadge(booking.status)}</TableCell>
                       <TableCell>
                         <Link href={`/admin/bookings/${booking.id}`}>

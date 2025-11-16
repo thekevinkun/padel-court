@@ -3,7 +3,16 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { Calendar, DollarSign, Clock, CheckCircle, Users, Wallet } from "lucide-react";
+import {
+  Calendar,
+  DollarSign,
+  Clock,
+  CheckCircle,
+  Users,
+  Wallet,
+  PlayCircle,
+  Trophy,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -19,6 +28,9 @@ export default function DashboardPage() {
     availableSlots: 0,
     pendingVenuePayments: 0,
     pendingVenueAmount: 0,
+    inProgressSessions: 0,
+    upcomingSessions: 0,
+    completedToday: 0,
   });
   const [recentBookings, setRecentBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,7 +47,7 @@ export default function DashboardPage() {
       const { data: todayData } = await supabase
         .from("bookings")
         .select(
-          "total_amount, status, require_deposit, deposit_amount, subtotal, payment_fee"
+          "total_amount, status, require_deposit, deposit_amount, subtotal, payment_fee, session_status"
         )
         .eq("date", today);
 
@@ -64,18 +76,38 @@ export default function DashboardPage() {
         .eq("date", today)
         .eq("available", true);
 
-      // Fetch pending venue payments (all bookings, not just today)
+      // Fetch pending venue payments (NOT EXPIRED)
       const { data: pendingPayments } = await supabase
         .from("bookings")
         .select("remaining_balance")
         .eq("status", "PAID")
         .eq("require_deposit", true)
         .eq("venue_payment_received", false)
+        .eq("venue_payment_expired", false)
         .gt("remaining_balance", 0);
 
       const pendingVenuePayments = pendingPayments?.length || 0;
       const pendingVenueAmount =
         pendingPayments?.reduce((sum, b) => sum + b.remaining_balance, 0) || 0;
+
+      // Fetch session stats
+      const { count: inProgressSessions } = await supabase
+        .from("bookings")
+        .select("*", { count: "exact", head: true })
+        .eq("session_status", "IN_PROGRESS");
+
+      const { count: upcomingSessions } = await supabase
+        .from("bookings")
+        .select("*", { count: "exact", head: true })
+        .eq("session_status", "UPCOMING")
+        .eq("status", "PAID")
+        .eq("date", today);
+
+      const { count: completedToday } = await supabase
+        .from("bookings")
+        .select("*", { count: "exact", head: true })
+        .eq("session_status", "COMPLETED")
+        .eq("date", today);
 
       // Fetch recent bookings
       const { data: recent } = await supabase
@@ -91,6 +123,9 @@ export default function DashboardPage() {
         availableSlots: availableSlots || 0,
         pendingVenuePayments,
         pendingVenueAmount,
+        inProgressSessions: inProgressSessions || 0,
+        upcomingSessions: upcomingSessions || 0,
+        completedToday: completedToday || 0,
       });
       setRecentBookings(recent || []);
     } catch (error) {
@@ -118,18 +153,35 @@ export default function DashboardPage() {
       subtitle: "Total booking value (excl. fees)",
     },
     {
-      title: "Total Bookings",
-      value: stats.totalBookings,
-      icon: Users,
+      title: "In Progress",
+      value: stats.inProgressSessions,
+      icon: PlayCircle,
+      color: "text-emerald-600",
+      bgColor: "bg-emerald-100",
+      subtitle: "Currently playing",
+    },
+    {
+      title: "Upcoming Today",
+      value: stats.upcomingSessions,
+      icon: Clock,
+      color: "text-orange-600",
+      bgColor: "bg-orange-100",
+      subtitle: "Waiting to check-in",
+    },
+    {
+      title: "Completed Today",
+      value: stats.completedToday,
+      icon: Trophy,
       color: "text-purple-600",
       bgColor: "bg-purple-100",
+      subtitle: "Sessions finished",
     },
     {
       title: "Available Slots",
       value: stats.availableSlots,
-      icon: Clock,
-      color: "text-orange-600",
-      bgColor: "bg-orange-100",
+      icon: Calendar,
+      color: "text-gray-600",
+      bgColor: "bg-gray-100",
       subtitle: "Remaining today",
     },
   ];
@@ -168,7 +220,7 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between gap-5">
                 <div>
                   <strong className="text-orange-900">
-                    ⚠️ {stats.pendingVenuePayments} Booking
+                    {stats.pendingVenuePayments} Booking
                     {stats.pendingVenuePayments > 1 ? "s" : ""} Awaiting Venue
                     Payment
                   </strong>
@@ -177,7 +229,7 @@ export default function DashboardPage() {
                     {stats.pendingVenueAmount.toLocaleString("id-ID")}
                   </p>
                 </div>
-                <Link href="/admin/bookings">
+                <Link href="/admin/bookings?filter=venue_pending">
                   <Button
                     variant="outline"
                     size="sm"
@@ -193,7 +245,7 @@ export default function DashboardPage() {
       )}
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {statCards.map((stat, index) => {
           const Icon = stat.icon;
           return (
@@ -250,13 +302,21 @@ export default function DashboardPage() {
                     <div className="flex items-center gap-4">
                       <div
                         className={`p-2 rounded-full ${
-                          booking.status === "PAID"
+                          booking.session_status === "IN_PROGRESS"
                             ? "bg-green-100"
+                            : booking.session_status === "COMPLETED"
+                            ? "bg-gray-100"
+                            : booking.status === "PAID"
+                            ? "bg-blue-100"
                             : "bg-yellow-100"
                         }`}
                       >
-                        {booking.status === "PAID" ? (
-                          <CheckCircle className="h-5 w-5 text-green-600" />
+                        {booking.session_status === "IN_PROGRESS" ? (
+                          <PlayCircle className="h-5 w-5 text-green-600" />
+                        ) : booking.session_status === "COMPLETED" ? (
+                          <CheckCircle className="h-5 w-5 text-gray-600" />
+                        ) : booking.status === "PAID" ? (
+                          <CheckCircle className="h-5 w-5 text-blue-600" />
                         ) : (
                           <Clock className="h-5 w-5 text-yellow-600" />
                         )}
@@ -277,20 +337,15 @@ export default function DashboardPage() {
                         ).toLocaleString("id-ID")}
                       </p>
                       {booking.require_deposit &&
-                        booking.remaining_balance > 0 && (
+                        booking.remaining_balance > 0 &&
+                        !booking.venue_payment_expired && (
                           <p className="text-xs text-orange-600">
                             +{booking.remaining_balance.toLocaleString("id-ID")}{" "}
                             at venue
                           </p>
                         )}
-                      <p
-                        className={`text-sm ${
-                          booking.status === "PAID"
-                            ? "text-green-600"
-                            : "text-yellow-600"
-                        }`}
-                      >
-                        {booking.status}
+                      <p className="text-sm text-muted-foreground">
+                        {booking.session_status.replace("_", " ")}
                       </p>
                     </div>
                   </div>
