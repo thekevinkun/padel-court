@@ -1,4 +1,3 @@
-// /src/clients/BookingDetailClient.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -9,7 +8,6 @@ import {
   Clock,
   XCircle,
   DollarSign,
-  Wallet,
   Calendar,
   MapPin,
   Users,
@@ -34,7 +32,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -45,7 +42,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+
 import { supabase } from "@/lib/supabase/client";
+import { getDisplayStatus, getDisplayStatusStyle } from "@/lib/booking";
 
 const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
   const router = useRouter();
@@ -63,6 +62,10 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
   const [checkOutDialogOpen, setCheckOutDialogOpen] = useState(false);
   const [sessionNotes, setSessionNotes] = useState("");
   const [processing, setProcessing] = useState(false);
+
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     fetchBooking();
@@ -140,7 +143,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
     }
   };
 
-  // NEW: Handle check-in
+  // Handle check-in
   const handleCheckIn = async () => {
     if (!booking) return;
     setProcessing(true);
@@ -153,6 +156,26 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
 
       if (!response.ok) {
         const errorData = await response.json();
+
+        // Handle specific error codes
+        if (errorData.code === "VENUE_PAYMENT_REQUIRED") {
+          alert(
+            `❌ ${errorData.error}\n\nPlease record the venue payment first before checking in the customer.`
+          );
+          setCheckInDialogOpen(false);
+          // Optionally open payment dialog
+          setPaymentDialogOpen(true);
+          return;
+        }
+
+        if (errorData.code === "VENUE_PAYMENT_EXPIRED") {
+          alert(
+            `⏰ ${errorData.error}\n\nThe booking time has passed and venue payment was not collected.`
+          );
+          setCheckInDialogOpen(false);
+          return;
+        }
+
         throw new Error(errorData.error || "Failed to check in");
       }
 
@@ -168,7 +191,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
     }
   };
 
-  // NEW: Handle check-out
+  // Handle check-out
   const handleCheckOut = async () => {
     if (!booking) return;
     setProcessing(true);
@@ -196,39 +219,47 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const styles = {
-      PAID: "bg-green-100 text-green-800",
-      PENDING: "bg-yellow-100 text-yellow-800",
-      CANCELLED: "bg-red-100 text-red-800",
-      EXPIRED: "bg-gray-100 text-gray-800",
-    };
-    const icons = {
-      PAID: CheckCircle,
-      PENDING: Clock,
-      CANCELLED: XCircle,
-      EXPIRED: XCircle,
-    };
-    const Icon = icons[status as keyof typeof icons] || Clock;
-    return (
-      <Badge className={`${styles[status as keyof typeof styles]} text-sm`}>
-        <Icon className="w-4 h-4 mr-1" />
-        {status}
-      </Badge>
-    );
+  // Handle cancel booking
+  const handleCancelBooking = async () => {
+    if (!booking) return;
+    setCancelling(true);
+    try {
+      const response = await fetch(`/api/bookings/${bookingId}/cancel`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: cancelReason }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to cancel booking");
+      }
+
+      await fetchBooking();
+      setCancelDialogOpen(false);
+      setCancelReason("");
+      alert("❌ Booking cancelled successfully!");
+    } catch (error: any) {
+      console.error("Error cancelling booking:", error);
+      alert(`❌ Error: ${error.message}`);
+    } finally {
+      setCancelling(false);
+    }
   };
 
-  // NEW: Session status badge
+  // Session status badge
   const getSessionBadge = (sessionStatus: string) => {
     const styles = {
       UPCOMING: "bg-blue-100 text-blue-800",
       IN_PROGRESS: "bg-green-100 text-green-800",
       COMPLETED: "bg-gray-100 text-gray-800",
+      CANCELLED: "bg-red-100 text-red-800",
     };
     const icons = {
       UPCOMING: Clock,
       IN_PROGRESS: PlayCircle,
       COMPLETED: Trophy,
+      CANCELLED: XCircle,
     };
     const Icon = icons[sessionStatus as keyof typeof icons] || Clock;
     const label = sessionStatus.replace("_", " ");
@@ -283,8 +314,14 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
     !booking.venue_payment_received &&
     booking.venue_payment_expired;
 
+  const displayStatus = getDisplayStatus(booking);
+
   const canCheckIn =
-    booking.status === "PAID" && booking.session_status === "UPCOMING";
+    booking.session_status === "UPCOMING" &&
+    (displayStatus === "PAID" || displayStatus === "DEPOSIT PAID");
+
+  const needsVenuePaymentForCheckIn =
+    canCheckIn && displayStatus === "DEPOSIT PAID";
 
   const canCheckOut = booking.session_status === "IN_PROGRESS";
 
@@ -309,17 +346,47 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
           </div>
         </div>
         <div className="flex gap-2">
-          {getStatusBadge(booking.status)}
+          {(() => {
+            const displayStatus = getDisplayStatus(booking);
+            const style = getDisplayStatusStyle(displayStatus);
+            const icons: Record<string, any> = {
+              PAID: CheckCircle,
+              "DEPOSIT PAID": Clock,
+              "PAYMENT EXPIRED": AlertCircle,
+              PENDING: Clock,
+              CANCELLED: XCircle,
+              EXPIRED: XCircle,
+            };
+            const Icon = icons[displayStatus] || Clock;
+
+            return (
+              <Badge className={`${style} text-sm`}>
+                <Icon className="w-4 h-4 mr-1" />
+                {displayStatus}
+              </Badge>
+            );
+          })()}
           {getSessionBadge(booking.session_status)}
         </div>
       </div>
 
       {/* Session Action Buttons */}
-      {(canCheckIn || canCheckOut) && (
+      {(canCheckIn || canCheckOut || displayStatus === "PAYMENT EXPIRED") && (
         <Card className="bg-blue-50 border-blue-200">
           <CardContent className="p-4">
             <div className="flex items-center justify-between gap-5">
-              <div>
+              <div className="flex-1">
+                {displayStatus === "PAYMENT EXPIRED" && (
+                  <>
+                    <strong className="text-red-900">
+                      ❌ Payment Window Expired
+                    </strong>
+                    <p className="text-sm text-red-700 mt-1">
+                      Booking time passed without venue payment. Session
+                      cancelled.
+                    </p>
+                  </>
+                )}
                 {canCheckIn && (
                   <>
                     <strong className="text-blue-900">
@@ -328,6 +395,13 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                     <p className="text-sm text-blue-700 mt-1">
                       Customer is ready to start their session
                     </p>
+                    {needsVenuePaymentForCheckIn && (
+                      <p className="text-sm text-orange-600 mt-2 font-semibold">
+                        ⚠️ Warning: Customer must pay IDR{" "}
+                        {booking.remaining_balance.toLocaleString("id-ID")} at
+                        venue first
+                      </p>
+                    )}
                   </>
                 )}
                 {canCheckOut && (
@@ -341,15 +415,22 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                   </>
                 )}
               </div>
+
               {canCheckIn && (
                 <Button
                   onClick={() => setCheckInDialogOpen(true)}
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className={`bg-blue-600 hover:bg-blue-700 ${
+                    needsVenuePaymentForCheckIn
+                      ? "opacity-50 pointer-events-none"
+                      : ""
+                  }`}
+                  disabled={needsVenuePaymentForCheckIn}
                 >
                   <PlayCircle className="w-4 h-4 mr-2" />
                   Check In
                 </Button>
               )}
+
               {canCheckOut && (
                 <Button
                   onClick={() => setCheckOutDialogOpen(true)}
@@ -367,11 +448,10 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
       {/* Venue Payment Alert */}
       {needsVenuePayment && (
         <Alert className="bg-orange-50 border-orange-200">
-          <Wallet className="h-4 w-4 text-orange-600" />
           <AlertDescription className="text-orange-800">
             <div className="flex items-center justify-between gap-5">
               <div>
-                <strong>💵 Awaiting Venue Payment</strong>
+                <strong>Awaiting Venue Payment</strong>
                 <p className="text-sm mt-1">
                   Customer needs to pay IDR{" "}
                   {booking.remaining_balance.toLocaleString("id-ID")} at venue
@@ -553,6 +633,34 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
               )}
             </CardContent>
           </Card>
+
+          {/* Cancel Booking Button */}
+          {booking.session_status === "UPCOMING" &&
+            booking.status !== "CANCELLED" && (
+              <Card className="border-red-200 bg-red-50">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="font-semibold text-red-900 text-sm">
+                        Cancel This Booking
+                      </p>
+                      <p className="text-xs text-red-700 mt-1">
+                        Customer can't make it or didn't show up
+                      </p>
+                    </div>
+                    <Button
+                      onClick={() => setCancelDialogOpen(true)}
+                      variant="outline"
+                      size="sm"
+                      className="border-red-300 text-red-700 hover:bg-red-100"
+                    >
+                      <XCircle className="w-4 h-4 mr-2" />
+                      Cancel Booking
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
         </div>
 
         {/* Right Column - Payment Summary */}
@@ -569,9 +677,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
               {/* Court Booking */}
               <div className="bg-gray-50 p-3 rounded-lg">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">
-                    💰 Court Booking
-                  </span>
+                  <span className="text-muted-foreground">Court Booking</span>
                   <span className="font-medium">
                     IDR {booking.subtotal.toLocaleString("id-ID")}
                   </span>
@@ -990,6 +1096,71 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                   <>
                     <StopCircle className="w-4 h-4 mr-2" />
                     Check Out
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Booking Dialog */}
+      <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cancel Booking</DialogTitle>
+            <DialogDescription>
+              Cancel booking {booking.booking_ref} for {booking.customer_name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Alert className="bg-red-50 border-red-200">
+              <AlertCircle className="h-4 w-4 text-red-600" />
+              <AlertDescription className="text-red-800 text-sm">
+                <strong>Warning:</strong> This will cancel the session and mark
+                it as CANCELLED. The time slot will be released. This action
+                cannot be undone.
+              </AlertDescription>
+            </Alert>
+
+            <div>
+              <Label htmlFor="cancelReason">Cancellation Reason *</Label>
+              <Textarea
+                id="cancelReason"
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                placeholder="Why is this booking being cancelled? (e.g., Customer no-show, Customer requested cancellation, etc.)"
+                className="mt-2"
+                rows={3}
+              />
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  setCancelDialogOpen(false);
+                  setCancelReason("");
+                }}
+                disabled={cancelling}
+              >
+                Keep Booking
+              </Button>
+              <Button
+                className="flex-1 bg-red-600 hover:bg-red-700"
+                onClick={handleCancelBooking}
+                disabled={cancelling || !cancelReason.trim()}
+              >
+                {cancelling ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Cancelling...
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="w-4 h-4 mr-2" />
+                    Cancel Booking
                   </>
                 )}
               </Button>

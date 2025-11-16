@@ -9,10 +9,14 @@
         └── 📁(dashboard)
             └── 📁admin
                 └── 📁bookings
+                    └── 📁[id]
+                        ├── page.tsx
                     ├── page.tsx
                 └── 📁content
                     ├── page.tsx
                 └── 📁courts
+                    ├── page.tsx
+                └── 📁reports
                     ├── page.tsx
                 └── 📁settings
                     ├── page.tsx
@@ -22,9 +26,18 @@
                 ├── page.tsx
         └── 📁api
             └── 📁bookings
+                └── 📁[id]
+                    └── 📁check-in
+                        ├── route.ts
+                    └── 📁check-out
+                        ├── route.ts
+                    └── 📁venue-payment
+                        ├── route.ts
                 └── 📁available-slots
                     ├── route.ts
                 └── 📁create
+                    ├── route.ts
+                └── 📁update-statuses
                     ├── route.ts
             └── 📁content
                 └── 📁revalidate
@@ -34,6 +47,14 @@
                 └── 📁create
                     ├── route.ts
                 └── 📁webhook
+                    ├── route.ts
+            └── 📁reports
+                └── 📁analytics
+                    ├── route.ts
+            └── 📁settings
+                ├── route.ts
+            └── 📁time-slots
+                └── 📁generate
                     ├── route.ts
         └── 📁booking
             └── 📁failed
@@ -47,11 +68,14 @@
         ├── globals.css
         ├── layout.tsx
         ├── page.tsx
+        ├── viewport.ts
     └── 📁clients
+        ├── BookingDetailClient.tsx
         ├── BookingsPageClient.tsx
         ├── ContentPageClient.tsx
         ├── CourtsPageClient.tsx
         ├── DashboardLayoutClient.tsx
+        ├── ReportsPageClient.tsx
         ├── SettingsPageClient.tsx
         ├── TimeSlotsPageClient.tsx
     └── 📁components
@@ -61,23 +85,22 @@
             ├── DashboardHeader.tsx
             ├── FeaturesGridSection.tsx
             ├── HeroSection.tsx
+            ├── PaymentMethodChart.tsx
             ├── PricingSection.tsx
+            ├── RevenueChart.tsx
             ├── SectionOrderManager.tsx
             ├── Sidebar.tsx
+            ├── TopCourtsChart.tsx
             ├── VersionHistoryDialog.tsx
             ├── WelcomeSection.tsx
         └── 📁home
             ├── FeaturesGrid.tsx
             ├── Hero.tsx
-            ├── HowItWorks.tsx
             ├── Pricing.tsx
             ├── Welcome.tsx
         └── 📁layout
             ├── Footer.tsx
             ├── Navbar.tsx
-        └── 📁shared
-            ├── ErrorMessage.tsx
-            ├── LoadingSpinner.tsx
         └── 📁ui
             ├── accordion.tsx
             ├── alert.tsx
@@ -102,28 +125,32 @@
             ├── table.tsx
             ├── tabs.tsx
             ├── textarea.tsx
+        ├── StructuredData.tsx
     └── 📁hooks
         ├── useAuth.ts
-        ├── useBooking.ts
-        ├── useToast.ts
+        ├── useSettings.ts
     └── 📁lib
         └── 📁supabase
+            ├── auth-server.ts
             ├── client.ts
             ├── server.ts
-        └── 📁validations
-            ├── auth.ts
-            ├── booking.ts
         ├── animations.ts
+        ├── booking.ts
         ├── constants.ts
         ├── content.ts
         ├── dashboard.ts
+        ├── metadata.ts
         ├── pdf-generator.ts
+        ├── upload.ts
         ├── utils.ts
         ├── whatsapp.ts
     └── 📁types
         ├── booking.ts
         ├── home.ts
         ├── index.ts
+        ├── reports.ts
+        ├── settings.ts
         ├── user.ts
-    └── folder-structure.md
+    ├── folder-structure.md
+    └── middleware.ts
 ```

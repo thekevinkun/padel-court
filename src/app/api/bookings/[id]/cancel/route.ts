@@ -9,9 +9,9 @@ export async function POST(
   try {
     const bookingId = params.id;
     const body = await request.json();
-    const { notes } = body; // Optional notes from admin
+    const { reason } = body;
 
-    console.log("Checking in booking:", bookingId);
+    console.log("❌ Cancelling booking:", bookingId);
 
     // Authenticate admin
     const authSupabase = await createAuthClient();
@@ -40,7 +40,7 @@ export async function POST(
     // Get booking details
     const { data: booking, error: bookingError } = await supabase
       .from("bookings")
-      .select("*")
+      .select("*, time_slots(id)")
       .eq("id", bookingId)
       .single();
 
@@ -48,92 +48,69 @@ export async function POST(
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
     }
 
-    // Validate booking can be checked in
-    if (booking.status !== "PAID") {
+    // Validate can be cancelled
+    if (booking.session_status === "COMPLETED") {
       return NextResponse.json(
-        { error: "Booking must be paid before check-in" },
+        { error: "Cannot cancel a completed session" },
         { status: 400 }
       );
     }
 
-    if (booking.session_status === "IN_PROGRESS") {
+    if (booking.session_status === "CANCELLED") {
       return NextResponse.json(
-        { error: "Booking already checked in" },
+        { error: "Booking is already cancelled" },
         { status: 409 }
       );
     }
 
-    if (booking.session_status === "COMPLETED") {
-      return NextResponse.json(
-        { error: "Booking session already completed" },
-        { status: 410 }
-      );
-    }
-
-    // Check venue payment for deposit bookings
-    if (booking.require_deposit && !booking.venue_payment_received) {
-      // Check if venue payment has expired
-      if (booking.venue_payment_expired) {
-        return NextResponse.json(
-          { 
-            error: "Venue payment window has expired. Cannot check in.",
-            code: "VENUE_PAYMENT_EXPIRED"
-          },
-          { status: 410 }
-        );
-      }
-      
-      // Venue payment still pending
-      return NextResponse.json(
-        { 
-          error: `Customer must pay remaining balance of IDR ${booking.remaining_balance.toLocaleString(
-            "id-ID"
-          )} before check-in.`,
-          code: "VENUE_PAYMENT_REQUIRED",
-          remainingBalance: booking.remaining_balance
-        },
-        { status: 402 } // 402 Payment Required
-      );
-    }
-
-    // Update booking to IN_PROGRESS
+    // Cancel booking
     const { data: updatedBooking, error: updateError } = await supabase
       .from("bookings")
       .update({
-        session_status: "IN_PROGRESS",
-        checked_in_at: new Date().toISOString(),
-        session_notes: notes || booking.session_notes,
+        session_status: "CANCELLED",
+        status: booking.status === "PAID" ? "PAID" : "CANCELLED", // Keep payment status as PAID if already paid
+        session_notes: reason || booking.session_notes,
       })
       .eq("id", bookingId)
       .select()
       .single();
 
     if (updateError) {
-      console.error("Error checking in:", updateError);
+      console.error("Error cancelling booking:", updateError);
       return NextResponse.json(
-        { error: "Failed to check in" },
+        { error: "Failed to cancel booking" },
         { status: 500 }
       );
+    }
+
+    // Release time slot
+    if (booking.time_slots?.id) {
+      await supabase
+        .from("time_slots")
+        .update({ available: true })
+        .eq("id", booking.time_slots.id);
     }
 
     // Create notification
     await supabase.from("admin_notifications").insert({
       booking_id: bookingId,
-      type: "CHECK_IN",
-      title: "Customer Checked In",
-      message: `Booking ${booking.booking_ref} - ${booking.customer_name} checked in for ${booking.time}`,
+      type: "CANCELLATION",
+      title: "🚫 Booking Cancelled",
+      message: `Booking ${booking.booking_ref} cancelled by admin. Reason: ${
+        reason || "No reason provided"
+      }`,
       read: false,
     });
 
-    console.log(`Check-in successful: ${booking.booking_ref}`);
+    console.log(`✅ Booking cancelled: ${booking.booking_ref}`);
 
     return NextResponse.json({
       success: true,
       booking: updatedBooking,
-      message: "Customer checked in successfully",
+      message: "Booking cancelled successfully",
     });
   } catch (error) {
-    console.error("Unexpected error in check-in:", error);
+    console.error("💥 Unexpected error in cancel booking:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

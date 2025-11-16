@@ -1,12 +1,12 @@
 import { VenuePayment } from "./reports";
 
-export type BookingStatus = 'PENDING' | 'PAID' | 'CANCELLED' | 'EXPIRED';
+export type BookingStatus = "PENDING" | "PAID" | "CANCELLED" | "EXPIRED";
 
-export type SessionStatus = 'UPCOMING' | 'IN_PROGRESS' | 'COMPLETED';
+export type SessionStatus = 'UPCOMING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
 
-export type PaymentChoice = 'DEPOSIT' | 'FULL';
+export type PaymentChoice = "DEPOSIT" | "FULL";
 
-export type VenuePaymentStatus = 'PENDING' | 'COMPLETED' | 'EXPIRED';
+export type VenuePaymentStatus = "PENDING" | "COMPLETED" | "EXPIRED";
 
 export interface Booking {
   // Existing fields

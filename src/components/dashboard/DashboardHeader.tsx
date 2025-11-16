@@ -10,6 +10,13 @@ import { pageTitles } from "@/lib/dashboard";
 const DashboardHeader = () => {
   const pathname = usePathname();
   const pageTitle = pageTitles[pathname] || "Admin Panel";
+  const today = new Date().toLocaleDateString("en-CA", {
+    timeZone: "Asia/Makassar",
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 
   return (
     <header className="bg-white px-4 lg:px-8 py-4 sticky top-0 shadow-md z-10">
@@ -19,14 +26,7 @@ const DashboardHeader = () => {
           <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
             {pageTitle}
           </h1>
-          <p className="text-sm text-accent-foreground mt-1">
-            {new Date().toLocaleDateString("en-US", {
-              weekday: "long",
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
-          </p>
+          <p className="text-sm text-accent-foreground mt-1">{today}</p>
         </div>
 
         {/* Actions */}
@@ -45,6 +45,6 @@ const DashboardHeader = () => {
       </div>
     </header>
   );
-}
+};
 
 export default DashboardHeader;

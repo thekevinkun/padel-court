@@ -19,6 +19,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 
 import { DashboardStats } from "@/types";
 import { supabase } from "@/lib/supabase/client";
+import { getDisplayStatus, getDisplayStatusStyle } from "@/lib/booking";
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats>({
@@ -37,11 +38,16 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchDashboardData();
+    triggerStatusUpdate();
   }, []);
 
   const fetchDashboardData = async () => {
     try {
-      const today = new Date().toLocaleDateString("en-CA");
+      const now = new Date();
+      const options = { timeZone: "Asia/Makassar" };
+      const today = now.toLocaleDateString("en-CA", options);
+
+      // console.log("Today's date:", today);
 
       // Fetch today's bookings
       const { data: todayData } = await supabase
@@ -132,6 +138,18 @@ export default function DashboardPage() {
       console.error("Error fetching dashboard data:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const triggerStatusUpdate = async () => {
+    try {
+      const response = await fetch("/api/bookings/update-statuses", {
+        method: "POST",
+      });
+      const data = await response.json();
+      console.log("Status update:", data);
+    } catch (error) {
+      console.error("Status update failed:", error);
     }
   };
 
@@ -306,8 +324,12 @@ export default function DashboardPage() {
                             ? "bg-green-100"
                             : booking.session_status === "COMPLETED"
                             ? "bg-gray-100"
-                            : booking.status === "PAID"
+                            : booking.session_status === "CANCELLED"
+                            ? "bg-red-100"
+                            : getDisplayStatus(booking) === "PAID"
                             ? "bg-blue-100"
+                            : getDisplayStatus(booking) === "DEPOSIT PAID"
+                            ? "bg-orange-100"
                             : "bg-yellow-100"
                         }`}
                       >
@@ -315,8 +337,12 @@ export default function DashboardPage() {
                           <PlayCircle className="h-5 w-5 text-green-600" />
                         ) : booking.session_status === "COMPLETED" ? (
                           <CheckCircle className="h-5 w-5 text-gray-600" />
-                        ) : booking.status === "PAID" ? (
+                        ) : booking.session_status === "CANCELLED" ? (
+                          <CheckCircle className="h-5 w-5 text-red-600" />
+                        ) : getDisplayStatus(booking) === "PAID" ? (
                           <CheckCircle className="h-5 w-5 text-blue-600" />
+                        ) : getDisplayStatus(booking) === "DEPOSIT PAID" ? (
+                          <Clock className="h-5 w-5 text-orange-600" />
                         ) : (
                           <Clock className="h-5 w-5 text-yellow-600" />
                         )}
@@ -336,15 +362,14 @@ export default function DashboardPage() {
                           : booking.subtotal
                         ).toLocaleString("id-ID")}
                       </p>
-                      {booking.require_deposit &&
-                        booking.remaining_balance > 0 &&
-                        !booking.venue_payment_expired && (
-                          <p className="text-xs text-orange-600">
-                            +{booking.remaining_balance.toLocaleString("id-ID")}{" "}
-                            at venue
-                          </p>
-                        )}
+                      {getDisplayStatus(booking) === "DEPOSIT PAID" && (
+                        <p className="text-xs text-orange-600">
+                          +{booking.remaining_balance.toLocaleString("id-ID")}{" "}
+                          at venue
+                        </p>
+                      )}
                       <p className="text-sm text-muted-foreground">
+                        {getDisplayStatus(booking)} •{" "}
                         {booking.session_status.replace("_", " ")}
                       </p>
                     </div>
