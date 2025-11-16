@@ -101,7 +101,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
     if (!formData.courtId || !formData.date) return;
 
     setLoadingSlots(true);
-    const dateStr = formData.date.toISOString().split("T")[0];
+    const dateStr = formData.date.toLocaleDateString("en-CA");
 
     const { data, error } = await supabase
       .from("time_slots")
@@ -174,7 +174,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
         body: JSON.stringify({
           courtId: formData.courtId,
           timeSlotId: formData.slotId,
-          date: formData.date?.toISOString().split("T")[0],
+          date: formData.date?.toLocaleDateString("en-CA"),
           time: selectedSlot!.time,
           customerName: formData.name,
           customerEmail: formData.email,
@@ -371,16 +371,14 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                 )}
                 <Input
                   type="date"
-                  value={formData.date?.toISOString().split("T")[0]}
+                  value={formData.date?.toLocaleDateString("en-CA")}
                   onChange={(e) =>
                     setFormData({ ...formData, date: new Date(e.target.value) })
                   }
-                  min={new Date().toISOString().split("T")[0]}
+                  min={new Date().toLocaleDateString("en-CA")}
                   max={
                     settings
-                      ? addDays(new Date(), settings.max_advance_booking)
-                          .toISOString()
-                          .split("T")[0]
+                      ? addDays(new Date(), settings.max_advance_booking).toLocaleDateString("en-CA")
                       : undefined
                   }
                   className="mt-2"
@@ -695,7 +693,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Date:</span>
                     <span className="font-medium">
-                      {formData.date?.toLocaleDateString("id-ID")}
+                      {formData.date?.toLocaleDateString("en-CA")}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
