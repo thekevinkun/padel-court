@@ -5,10 +5,29 @@ export interface DashboardStats {
   availableSlots: number;
   pendingVenuePayments: number;
   pendingVenueAmount: number;
-  // NEW: Session stats
   inProgressSessions?: number;
   upcomingSessions?: number;
   completedToday?: number;
+}
+
+export interface AdminNotification {
+  id: string;
+  booking_id: string | null;
+  type: "NEW_BOOKING" | "PAYMENT_RECEIVED" | "PAYMENT_FAILED" | "CANCELLATION";
+  title: string;
+  message: string;
+  read: boolean;
+  created_at: string;
+}
+
+export interface NotificationsContextType {
+  notifications: AdminNotification[];
+  unreadCount: number;
+  loading: boolean;
+  markAsRead: (id: string) => Promise<void>;
+  markAllAsRead: () => Promise<void>;
+  deleteNotification: (id: string) => Promise<void>;
+  refetch: () => Promise<void>;
 }
 
 export interface Court {

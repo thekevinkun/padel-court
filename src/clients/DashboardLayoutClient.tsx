@@ -2,7 +2,9 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { Toaster } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { NotificationsProvider } from "@/contexts/NotificationsContext";
 import Sidebar from "@/components/dashboard/Sidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 
@@ -44,18 +46,29 @@ export default function DashboardLayoutClient({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Sidebar */}
-      <Sidebar />
+    <NotificationsProvider>
+      <div className="min-h-screen bg-gray-50">
+        {/* Toast Notifications */}
+        <Toaster
+          position="bottom-right"
+          closeButton
+          richColors
+          expand={false}
+          duration={Infinity}
+        />
 
-      {/* Main Content */}
-      <div className="lg:pl-64 min-h-screen">
-        {/* Header */}
-        <DashboardHeader />
+        {/* Sidebar */}
+        <Sidebar />
 
-        {/* Page Content */}
-        <main className="p-4 lg:p-8 pt-4">{children}</main>
+        {/* Main Content */}
+        <div className="lg:pl-64 min-h-screen">
+          {/* Header */}
+          <DashboardHeader />
+
+          {/* Page Content */}
+          <main className="p-4 lg:p-8 pt-4">{children}</main>
+        </div>
       </div>
-    </div>
+    </NotificationsProvider>
   );
 }

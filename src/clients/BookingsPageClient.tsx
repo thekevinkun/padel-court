@@ -13,7 +13,6 @@ import {
   PlayCircle,
   Trophy,
   AlertCircle,
-  Wallet,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,12 +34,20 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 
+import { Booking } from "@/types/booking";
+import { useRealtimeBookings } from "@/hooks/useRealTimeBookings";
 import { supabase } from "@/lib/supabase/client";
 import { getDisplayStatus, getDisplayStatusStyle } from "@/lib/booking";
 
 const BookingsPageClient = () => {
   const searchParams = useSearchParams();
-  const [bookings, setBookings] = useState<any[]>([]);
+
+  // Original bookings from fetch
+  const [fetchedBookings, setFetchedBookings] = useState<Booking[]>([]);
+
+  // Real-time bookings (synced automatically)
+  const { bookings, isSubscribed } = useRealtimeBookings(fetchedBookings);
+
   const [filteredBookings, setFilteredBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -68,7 +75,7 @@ const BookingsPageClient = () => {
         .order("created_at", { ascending: false });
 
       if (!error && data) {
-        setBookings(data);
+        setFetchedBookings(data || []);
         setFilteredBookings(data);
       }
     } catch (error) {

@@ -16,6 +16,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
+import RealtimeDiagnostic from "@/components/dashboard/RealTimeDiagnostics";
+
 import { DashboardStats } from "@/types";
 import { supabase } from "@/lib/supabase/client";
 import { getDisplayStatus, getDisplayStatusStyle } from "@/lib/booking";
@@ -401,6 +403,9 @@ export default function DashboardPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Real-time Diagnostics */}
+      <RealtimeDiagnostic />
     </div>
   );
 }

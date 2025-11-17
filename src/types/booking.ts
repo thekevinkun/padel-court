@@ -2,7 +2,7 @@ import { VenuePayment } from "./reports";
 
 export type BookingStatus = "PENDING" | "PAID" | "CANCELLED" | "EXPIRED";
 
-export type SessionStatus = 'UPCOMING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+export type SessionStatus = "UPCOMING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
 
 export type PaymentChoice = "DEPOSIT" | "FULL";
 

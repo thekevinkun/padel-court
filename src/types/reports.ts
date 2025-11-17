@@ -2,7 +2,7 @@ export interface VenuePayment {
   id: string;
   booking_id: string;
   amount: number;
-  payment_method: 'CASH' | 'DEBIT_CARD' | 'BANK_TRANSFER' | 'QRIS';
+  payment_method: "CASH" | "DEBIT_CARD" | "BANK_TRANSFER" | "QRIS";
   notes: string | null;
   received_by: string | null;
   created_at: string;
