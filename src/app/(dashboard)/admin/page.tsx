@@ -8,8 +8,7 @@ import {
   DollarSign,
   Clock,
   CheckCircle,
-  Users,
-  Wallet,
+  RefreshCw,
   PlayCircle,
   Trophy,
 } from "lucide-react";
@@ -35,10 +34,15 @@ export default function DashboardPage() {
   });
   const [recentBookings, setRecentBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingRefresh, setLoadingRefresh] = useState(true);
 
   useEffect(() => {
-    fetchDashboardData();
-    triggerStatusUpdate();
+    const initializeDashboard = async () => {
+      await triggerStatusUpdate(); // Wait for status update first
+      await fetchDashboardData();  // Then fetch fresh data
+    };
+    
+    initializeDashboard();
   }, []);
 
   const fetchDashboardData = async () => {
@@ -138,6 +142,7 @@ export default function DashboardPage() {
       console.error("Error fetching dashboard data:", error);
     } finally {
       setLoading(false);
+      setLoadingRefresh(false);
     }
   };
 
@@ -220,10 +225,26 @@ export default function DashboardPage() {
         animate={{ opacity: 1, y: 0 }}
         className="bg-gradient-to-r from-forest to-forest-dark text-white rounded-lg p-6"
       >
-        <h2 className="text-2xl font-bold mb-2">Welcome back!</h2>
-        <p className="text-white/80">
-          Here's what's happening with your padel courts today.
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold mb-2">Welcome back!</h2>
+            <p className="text-white/80">
+              Here's what's happening with your padel courts today.
+            </p>
+          </div>
+          <Button
+            onClick={async () => {
+              setLoadingRefresh(true);
+              await triggerStatusUpdate();
+              await fetchDashboardData();
+            }}
+            variant="outline"
+            className="hover:bg-gray-300"
+            disabled={loadingRefresh}
+          >
+            <RefreshCw className={`text-accent-foreground !w-4.5 !h-4.5 ${loadingRefresh ? "animate-spin" : ""}`} />
+          </Button>
+        </div>
       </motion.div>
 
       {/* Pending Venue Payments Alert */}
