@@ -6,7 +6,6 @@ const midtransClient = require("midtrans-client");
 export async function POST(request: NextRequest) {
   try {
     const notification = await request.json();
-
     console.log("📩 Webhook received:", notification);
 
     // Initialize Midtrans API client
@@ -48,18 +47,34 @@ export async function POST(request: NextRequest) {
 
     // Determine payment status for our database
     let paymentStatus = "PENDING";
+    let shouldUpdateBooking = false;
+    let newBookingStatus: string | null = null;
+
+    // SUCCESS CASES
     if (transactionStatus === "capture" || transactionStatus === "settlement") {
       if (fraudStatus === "accept" || transactionStatus === "settlement") {
         paymentStatus = "SUCCESS";
+        shouldUpdateBooking = true;
+        newBookingStatus = "PAID";
       }
-    } else if (transactionStatus === "pending") {
+    }
+    // PENDING CASES
+    else if (transactionStatus === "pending") {
       paymentStatus = "PENDING";
-    } else if (
+      // Keep booking as PENDING, don't update
+    }
+    // FAILURE CASES - EXPANDED
+    else if (
       transactionStatus === "deny" ||
       transactionStatus === "cancel" ||
-      transactionStatus === "expire"
+      transactionStatus === "expire" ||
+      transactionStatus === "failure" || // explicit failure status
+      fraudStatus === "deny" || // fraud denial
+      fraudStatus === "challenge" // fraud challenge (treat as failed)
     ) {
       paymentStatus = "FAILED";
+      shouldUpdateBooking = true;
+      newBookingStatus = "CANCELLED";
     }
 
     // Update payment record
@@ -82,81 +97,81 @@ export async function POST(request: NextRequest) {
       .update(updateData)
       .eq("midtrans_order_id", orderId);
 
-    // Handle different payment statuses
-    if (transactionStatus === "capture" || transactionStatus === "settlement") {
-      // Payment successful!
-      if (fraudStatus === "accept" || transactionStatus === "settlement") {
-        console.log("✅ Payment SUCCESS for booking:", bookingRef);
+    // Handle SUCCESS
+    if (paymentStatus === "SUCCESS" && newBookingStatus === "PAID") {
+      console.log("✅ Payment SUCCESS for booking:", bookingRef);
 
-        // Calculate actual fee (for records only)
-        let midtransFee = 0;
-        if (paymentType === "credit_card") {
-          midtransFee = Math.round(booking.total_amount * 0.029 + 2000); // 2.9% + 2000
-        } else if (
-          paymentType === "gopay" ||
-          paymentType === "shopeepay" ||
-          paymentType === "dana"
-        ) {
-          midtransFee = Math.round(booking.total_amount * 0.02); // 2%
-        } else if (paymentType === "qris" || paymentType === "other_qris") {
-          midtransFee = Math.round(booking.total_amount * 0.007); // 0.7%
-        } else if (
-          paymentType.includes("va") ||
-          paymentType.includes("bank_transfer")
-        ) {
-          midtransFee = 4000; // Flat fee
-        }
-
-        // Update booking status to PAID and its Payment Method
-        await supabase
-          .from("bookings")
-          .update({
-            status: "PAID",
-            paid_at: new Date().toISOString(),
-            payment_method: paymentType,
-            payment_fee: midtransFee,
-          })
-          .eq("id", booking.id);
-
-        // Confirm time slot is locked
-        await supabase
-          .from("time_slots")
-          .update({ available: false })
-          .eq("id", booking.time_slot_id);
-
-        // Notification already created by trigger, just update it
-        await supabase.from("admin_notifications").insert({
-          booking_id: booking.id,
-          type: "PAYMENT_RECEIVED",
-          title: "💰 Payment Received",
-          message: `Booking ${bookingRef} paid ${booking.total_amount.toLocaleString(
-            "id-ID"
-          )} via ${paymentType}`,
-          read: false,
-        });
-
-        console.log("✅ Booking updated to PAID");
+      // Calculate actual fee (for records only)
+      let midtransFee = 0;
+      if (paymentType === "credit_card") {
+        midtransFee = Math.round(booking.total_amount * 0.029 + 2000); // 2.9% + 2000
+      } else if (
+        paymentType === "gopay" ||
+        paymentType === "shopeepay" ||
+        paymentType === "dana"
+      ) {
+        midtransFee = Math.round(booking.total_amount * 0.02); // 2%
+      } else if (paymentType === "qris" || paymentType === "other_qris") {
+        midtransFee = Math.round(booking.total_amount * 0.007); // 0.7%
+      } else if (
+        paymentType.includes("va") ||
+        paymentType.includes("bank_transfer")
+      ) {
+        midtransFee = 4000; // Flat fee
       }
-    } else if (transactionStatus === "pending") {
-      // Payment pending (e.g., bank transfer)
+
+      // Update booking status to PAID
+      await supabase
+        .from("bookings")
+        .update({
+          status: "PAID",
+          paid_at: new Date().toISOString(),
+          payment_method: paymentType,
+          payment_fee: midtransFee,
+        })
+        .eq("id", booking.id);
+
+      // Confirm time slot is locked
+      await supabase
+        .from("time_slots")
+        .update({ available: false })
+        .eq("id", booking.time_slot_id);
+
+      // Create success notification
+      await supabase.from("admin_notifications").insert({
+        booking_id: booking.id,
+        type: "PAYMENT_RECEIVED",
+        title: "💰 Payment Received",
+        message: `Booking ${bookingRef} paid ${booking.total_amount.toLocaleString(
+          "id-ID"
+        )} via ${paymentType}`,
+        read: false,
+      });
+
+      console.log("✅ Booking updated to PAID");
+    }
+    // Handle PENDING
+    else if (paymentStatus === "PENDING") {
       console.log("⏳ Payment PENDING for booking:", bookingRef);
 
+      // Keep booking as PENDING (no status change needed)
       await supabase
         .from("bookings")
         .update({ status: "PENDING" })
         .eq("id", booking.id);
-    } else if (
-      transactionStatus === "deny" ||
-      transactionStatus === "cancel" ||
-      transactionStatus === "expire"
-    ) {
-      // Payment failed/cancelled
-      console.log("❌ Payment FAILED/CANCELLED for booking:", bookingRef);
+    }
+    // Handle FAILURE
+    else if (paymentStatus === "FAILED" && newBookingStatus === "CANCELLED") {
+      console.log("❌ Payment FAILED for booking:", bookingRef);
 
+      // Update booking to CANCELLED
       // Update booking to CANCELLED
       await supabase
         .from("bookings")
-        .update({ status: "CANCELLED" })
+        .update({ 
+          status: "CANCELLED",
+          session_status: "CANCELLED"  // ← ADD THIS LINE
+        })
         .eq("id", booking.id);
 
       // Release time slot
@@ -165,7 +180,7 @@ export async function POST(request: NextRequest) {
         .update({ available: true })
         .eq("id", booking.time_slot_id);
 
-      // Notify admin
+      // Create failure notification
       await supabase.from("admin_notifications").insert({
         booking_id: booking.id,
         type: "PAYMENT_FAILED",
@@ -173,13 +188,38 @@ export async function POST(request: NextRequest) {
         message: `Booking ${bookingRef} payment ${transactionStatus}. Slot released.`,
         read: false,
       });
+
+      console.log("✅ Booking cancelled, slot released");
     }
 
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
     console.error("❌ Webhook error:", error);
+
+    // Log the full error for debugging
+    console.error("Error details:", {
+      message: error.message,
+      stack: error.stack,
+      response: error.ApiResponse,
+    });
+
+    // If it's a Midtrans API error, we still return 200 to prevent retries
+    // The failed page will handle the cancellation
+    if (error.httpStatusCode || error.ApiResponse) {
+      console.log(
+        "⚠️ Midtrans API error - returning success to prevent webhook retry"
+      );
+      return NextResponse.json({
+        success: true,
+        note: "Midtrans API error - handled by client-side cancellation",
+      });
+    }
+
     return NextResponse.json(
-      { error: "Webhook processing failed" },
+      {
+        error: "Webhook processing failed",
+        details: error.message,
+      },
       { status: 500 }
     );
   }

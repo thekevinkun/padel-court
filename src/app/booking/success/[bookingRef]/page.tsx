@@ -23,15 +23,66 @@ export default function BookingSuccessPage() {
   const params = useParams();
   const router = useRouter();
   const bookingRef = params.bookingRef as string;
-  console.log(bookingRef);
 
   const [booking, setBooking] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
+  const [statusVerified, setStatusVerified] = useState(false);
 
   useEffect(() => {
     fetchBooking();
   }, [bookingRef]);
+
+  // Verify payment status after fetching booking
+  useEffect(() => {
+    if (booking && !statusVerified) {
+      verifyPaymentStatus();
+    }
+  }, [booking, statusVerified]);
+
+  // Function to verify payment status
+  const verifyPaymentStatus = async () => {
+    try {
+      // If booking is already PAID, no need to check
+      if (booking.status === "PAID") {
+        setStatusVerified(true);
+        return;
+      }
+
+      // If booking is PENDING, check with Midtrans
+      if (booking.status === "PENDING") {
+        console.log("🔍 Booking still PENDING, checking with Midtrans...");
+
+        const response = await fetch("/api/payments/check-status", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ bookingRef }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+
+          // If payment actually failed, redirect to failed page
+          if (data.status === "CANCELLED") {
+            console.log("❌ Payment verification failed, redirecting...");
+            router.push(`/booking/failed?order_id=BOOKING-${bookingRef}`);
+            return;
+          }
+
+          // If payment succeeded, refresh booking data
+          if (data.status === "PAID") {
+            console.log("✅ Payment verified as PAID, refreshing...");
+            await fetchBooking();
+          }
+        }
+      }
+
+      setStatusVerified(true);
+    } catch (error) {
+      console.error("Error verifying payment:", error);
+      setStatusVerified(true);
+    }
+  };
 
   const fetchBooking = async () => {
     try {
@@ -135,7 +186,7 @@ export default function BookingSuccessPage() {
     }
   };
 
-  if (loading) {
+  if (loading || !statusVerified) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-forest"></div>

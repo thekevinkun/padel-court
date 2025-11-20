@@ -16,9 +16,7 @@ export async function POST(request: NextRequest) {
     );
     console.log("📅 Today date:", today);
 
-    // ====================
     // EXPIRE VENUE PAYMENTS & CANCEL SESSIONS
-    // ====================
     const { data: bookingsToExpire, error: fetchError } = await supabase
       .from("bookings")
       .select("id, booking_ref, date, time, remaining_balance")
@@ -57,10 +55,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // ====================
     // AUTO-START SESSIONS (UPCOMING → IN_PROGRESS)
     // Also auto-complete bookings that were never started but time passed
-    // ====================
     const { data: bookingsToStart, error: startFetchError } = await supabase
       .from("bookings")
       .select(
@@ -148,9 +144,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // ====================
     // AUTO-COMPLETE SESSIONS (IN_PROGRESS → COMPLETED)
-    // ====================
     const { data: bookingsToComplete, error: completeFetchError } =
       await supabase
         .from("bookings")
@@ -188,9 +182,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // ====================
     // SUMMARY
-    // ====================
     const totalCompleted = completedCount + autoCompletedFromUpcoming;
     const summary = {
       timestamp: now.toISOString(),
