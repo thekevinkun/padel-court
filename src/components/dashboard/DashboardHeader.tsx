@@ -2,19 +2,33 @@
 
 import { useState } from "react";
 import { usePathname } from "next/navigation";
-import { Bell } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Bell, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { pageTitles } from "@/lib/dashboard";
-import NotificationPanel from "@/components/dashboard/NotificationPanel";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+
 import { useNotifications } from "@/contexts/NotificationsContext";
+import { useSoundSettings } from "@/contexts/SoundSettingsContext";
+
+import NotificationPanel from "@/components/dashboard/NotificationPanel";
+import SoundSettingsPanel from "@/components/dashboard/SoundSettingsPanel";
+
+import { pageTitles } from "@/lib/dashboard";
 
 const DashboardHeader = () => {
   const pathname = usePathname();
   const pageTitle = pageTitles[pathname] || "Admin Panel";
-  const [isPanelOpen, setIsPanelOpen] = useState(false);
+
   const { unreadCount } = useNotifications();
+  const { soundEnabled } = useSoundSettings();
+
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [soundOpen, setSoundOpen] = useState(false);
 
   const today = new Date().toLocaleDateString("en-CA", {
     timeZone: "Asia/Makassar",
@@ -38,6 +52,27 @@ const DashboardHeader = () => {
 
           {/* Actions */}
           <div className="flex items-center gap-3">
+            {/* Sound Settings Button */}
+            <Popover open={soundOpen} onOpenChange={setSoundOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="relative"
+                  aria-label="Sound settings"
+                >
+                  {soundEnabled ? (
+                    <Volume2 className="h-5 w-5 text-forest" />
+                  ) : (
+                    <VolumeX className="h-5 w-5 text-muted-foreground" />
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="p-0 w-auto">
+                <SoundSettingsPanel />
+              </PopoverContent>
+            </Popover>
+
             {/* Notifications Bell */}
             <Button
               variant="outline"

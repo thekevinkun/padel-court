@@ -9,14 +9,19 @@ import {
   Clock,
   CheckCircle,
   RefreshCw,
+  XCircle,
   PlayCircle,
   Trophy,
+  Wifi,
+  WifiOff,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 import RealtimeDiagnostic from "@/components/dashboard/RealTimeDiagnostics";
+
+import { useRealtimeDashboardStats } from "@/hooks/userRealTimeDashboardStats";
 
 import { DashboardStats } from "@/types";
 import { supabase } from "@/lib/supabase/client";
@@ -38,12 +43,18 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [loadingRefresh, setLoadingRefresh] = useState(true);
 
+  // Real-time stats + recent bookings subscription
+  const { isSubscribed } = useRealtimeDashboardStats(
+    stats,
+    (newStats) => setStats(newStats),
+    (newBookings) => setRecentBookings(newBookings) // Pass recent bookings updater
+  );
+
   useEffect(() => {
     const initializeDashboard = async () => {
-      await triggerStatusUpdate(); // Wait for status update first
-      await fetchDashboardData();  // Then fetch fresh data
+      await triggerStatusUpdate();
+      await fetchDashboardData();
     };
-    
     initializeDashboard();
   }, []);
 
@@ -53,19 +64,17 @@ export default function DashboardPage() {
       const options = { timeZone: "Asia/Makassar" };
       const today = now.toLocaleDateString("en-CA", options);
 
-      // console.log("Today's date:", today);
-
-      // Fetch today's bookings
+      // Fetch today's bookings (EXCLUDE CANCELLED)
       const { data: todayData } = await supabase
         .from("bookings")
         .select(
           "total_amount, status, require_deposit, deposit_amount, subtotal, payment_fee, session_status"
         )
-        .eq("date", today);
+        .eq("date", today)
+        .neq("status", "CANCELLED"); // Exclude cancelled bookings
 
       const todayBookings = todayData?.length || 0;
 
-      // Revenue = actual booking revenue (excluding payment fees)
       const todayRevenue =
         todayData
           ?.filter((b) => b.status === "PAID")
@@ -76,10 +85,11 @@ export default function DashboardPage() {
             return sum + bookingRevenue;
           }, 0) || 0;
 
-      // Fetch total bookings
+      // Fetch total bookings (EXCLUDE CANCELLED)
       const { count: totalBookings } = await supabase
         .from("bookings")
-        .select("*", { count: "exact", head: true });
+        .select("*", { count: "exact", head: true })
+        .neq("status", "CANCELLED"); // Exclude cancelled bookings
 
       // Fetch available slots for today
       const { count: availableSlots } = await supabase
@@ -88,7 +98,7 @@ export default function DashboardPage() {
         .eq("date", today)
         .eq("available", true);
 
-      // Fetch pending venue payments (NOT EXPIRED)
+      // Fetch pending venue payments
       const { data: pendingPayments } = await supabase
         .from("bookings")
         .select("remaining_balance")
@@ -102,11 +112,12 @@ export default function DashboardPage() {
       const pendingVenueAmount =
         pendingPayments?.reduce((sum, b) => sum + b.remaining_balance, 0) || 0;
 
-      // Fetch session stats
+      // Fetch session stats (EXCLUDE CANCELLED)
       const { count: inProgressSessions } = await supabase
         .from("bookings")
         .select("*", { count: "exact", head: true })
-        .eq("session_status", "IN_PROGRESS");
+        .eq("session_status", "IN_PROGRESS")
+        .neq("status", "CANCELLED");
 
       const { count: upcomingSessions } = await supabase
         .from("bookings")
@@ -119,7 +130,8 @@ export default function DashboardPage() {
         .from("bookings")
         .select("*", { count: "exact", head: true })
         .eq("session_status", "COMPLETED")
-        .eq("date", today);
+        .eq("date", today)
+        .neq("status", "CANCELLED");
 
       // Fetch recent bookings
       const { data: recent } = await supabase
@@ -221,7 +233,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Welcome Message */}
+      {/* Welcome Message with Real-time Indicator */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -233,6 +245,21 @@ export default function DashboardPage() {
             <p className="text-white/80">
               Here's what's happening with your padel courts today.
             </p>
+            <div className="flex items-center gap-2 mt-3">
+              {isSubscribed ? (
+                <>
+                  <Wifi className="w-4 h-4 text-green-300" />
+                  <span className="text-xs text-green-300">
+                    Live updates active
+                  </span>
+                </>
+              ) : (
+                <>
+                  <WifiOff className="w-4 h-4 text-yellow-300" />
+                  <span className="text-xs text-yellow-300">Connecting...</span>
+                </>
+              )}
+            </div>
           </div>
           <Button
             onClick={async () => {
@@ -244,7 +271,11 @@ export default function DashboardPage() {
             className="hover:bg-gray-300"
             disabled={loadingRefresh}
           >
-            <RefreshCw className={`text-accent-foreground !w-4.5 !h-4.5 ${loadingRefresh ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`text-accent-foreground !w-4.5 !h-4.5 ${
+                loadingRefresh ? "animate-spin" : ""
+              }`}
+            />
           </Button>
         </div>
       </motion.div>
@@ -285,7 +316,7 @@ export default function DashboardPage() {
         </motion.div>
       )}
 
-      {/* Stats Cards */}
+      {/* Stats Cards - Now with real-time updates! */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {statCards.map((stat, index) => {
           const Icon = stat.icon;
@@ -321,7 +352,7 @@ export default function DashboardPage() {
         })}
       </div>
 
-      {/* Recent Bookings */}
+      {/* Recent Bookings - Now updates in real-time! */}
       <Card>
         <CardHeader>
           <CardTitle>Recent Bookings</CardTitle>
@@ -361,7 +392,7 @@ export default function DashboardPage() {
                         ) : booking.session_status === "COMPLETED" ? (
                           <CheckCircle className="h-5 w-5 text-gray-600" />
                         ) : booking.session_status === "CANCELLED" ? (
-                          <CheckCircle className="h-5 w-5 text-red-600" />
+                          <XCircle className="h-5 w-5 text-red-600" />
                         ) : getDisplayStatus(booking) === "PAID" ? (
                           <CheckCircle className="h-5 w-5 text-blue-600" />
                         ) : getDisplayStatus(booking) === "DEPOSIT PAID" ? (
@@ -405,7 +436,7 @@ export default function DashboardPage() {
       </Card>
 
       {/* Real-time Diagnostics */}
-      <RealtimeDiagnostic />
+      {/* <RealtimeDiagnostic /> */}
     </div>
   );
 }

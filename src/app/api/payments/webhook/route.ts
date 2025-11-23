@@ -141,14 +141,12 @@ export async function POST(request: NextRequest) {
       await supabase.from("admin_notifications").insert({
         booking_id: booking.id,
         type: "PAYMENT_RECEIVED",
-        title: "💰 Payment Received",
-        message: `Booking ${bookingRef} paid ${booking.total_amount.toLocaleString(
+        title: "New Payment Received",
+        message: `Booking ${bookingRef} has been paid. Total: IDR ${booking.total_amount.toLocaleString(
           "id-ID"
-        )} via ${paymentType}`,
+        )} via ${paymentType}. Customer: ${booking.customer_name}.`,
         read: false,
       });
-
-      console.log("✅ Booking updated to PAID");
     }
     // Handle PENDING
     else if (paymentStatus === "PENDING") {
@@ -164,7 +162,6 @@ export async function POST(request: NextRequest) {
     else if (paymentStatus === "FAILED" && newBookingStatus === "CANCELLED") {
       console.log("❌ Payment FAILED for booking:", bookingRef);
 
-      // Update booking to CANCELLED
       // Update booking to CANCELLED
       await supabase
         .from("bookings")

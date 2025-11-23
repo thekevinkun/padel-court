@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
         email: booking.customer_email,
         phone: booking.customer_phone,
       },
-      item_details: itemDetails, // ⭐ Use conditional items
+      item_details: itemDetails, // Use conditional items
       callbacks: {
         finish: `${process.env.NEXT_PUBLIC_SITE_URL}/booking/success/${booking.booking_ref}`,
         error: `${process.env.NEXT_PUBLIC_SITE_URL}/booking/failed`,

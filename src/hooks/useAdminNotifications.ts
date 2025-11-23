@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
+import { useSoundSettings } from "@/contexts/SoundSettingsContext";
 import { AdminNotification } from "@/types";
 import { supabase } from "@/lib/supabase/client";
 
@@ -7,6 +8,9 @@ export function useAdminNotifications() {
   const [notifications, setNotifications] = useState<AdminNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  // Get sound playback function
+  const { playSound } = useSoundSettings();
 
   // Fetch notifications
   const fetchNotifications = useCallback(async () => {
@@ -115,7 +119,10 @@ export function useAdminNotifications() {
         (payload) => {
           const newNotification = payload.new as AdminNotification;
 
-          console.log("🔔 New notification received:", newNotification);
+          console.log("New notification received:", newNotification);
+
+          // Play sound based on notification type
+          playSound(newNotification.type);
 
           // Add to state
           setNotifications((prev) => [newNotification, ...prev]);
@@ -146,7 +153,7 @@ export function useAdminNotifications() {
         (payload) => {
           const updated = payload.new as AdminNotification;
 
-          console.log("🔔 Notification updated:", updated);
+          console.log("Notification updated:", updated);
 
           setNotifications((prev) =>
             prev.map((n) => (n.id === updated.id ? updated : n))
@@ -175,14 +182,14 @@ export function useAdminNotifications() {
         }
       )
       .subscribe((status) => {
-        console.log("🔔 Notification subscription status:", status);
+        console.log("Notification subscription status:", status);
       });
 
     // Cleanup
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [playSound]);
 
   return {
     notifications,

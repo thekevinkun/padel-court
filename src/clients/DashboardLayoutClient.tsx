@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { Toaster } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { NotificationsProvider } from "@/contexts/NotificationsContext";
+import { SoundSettingsProvider } from "@/contexts/SoundSettingsContext";
+
 import Sidebar from "@/components/dashboard/Sidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 
@@ -46,29 +48,31 @@ export default function DashboardLayoutClient({
   }
 
   return (
-    <NotificationsProvider>
-      <div className="min-h-screen bg-gray-50">
-        {/* Toast Notifications */}
-        <Toaster
-          position="bottom-right"
-          closeButton
-          richColors
-          expand={false}
-          duration={Infinity}
-        />
+    <SoundSettingsProvider>
+      <NotificationsProvider>
+        <div className="min-h-screen bg-gray-50">
+          {/* Toast Notifications */}
+          <Toaster
+            position="bottom-right"
+            closeButton
+            richColors
+            expand={false}
+            duration={Infinity}
+          />
 
-        {/* Sidebar */}
-        <Sidebar />
+          {/* Sidebar */}
+          <Sidebar />
 
-        {/* Main Content */}
-        <div className="lg:pl-64 min-h-screen">
-          {/* Header */}
-          <DashboardHeader />
+          {/* Main Content */}
+          <div className="lg:pl-64 min-h-screen">
+            {/* Header */}
+            <DashboardHeader />
 
-          {/* Page Content */}
-          <main className="p-4 lg:p-8 pt-4">{children}</main>
+            {/* Page Content */}
+            <main className="p-4 lg:p-8 pt-4">{children}</main>
+          </div>
         </div>
-      </div>
-    </NotificationsProvider>
+      </NotificationsProvider>
+    </SoundSettingsProvider>
   );
 }
