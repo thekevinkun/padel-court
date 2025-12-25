@@ -3,7 +3,7 @@
 import { createContext, useContext, ReactNode } from "react";
 import { useAdminNotifications } from "@/hooks/useAdminNotifications";
 
-import { NotificationsContextType } from "@/types";
+import { NotificationsContextType } from "@/types/notifications";
 
 const NotificationsContext = createContext<
   NotificationsContextType | undefined

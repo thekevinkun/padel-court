@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
 import { useSoundSettings } from "@/contexts/SoundSettingsContext";
-import { AdminNotification } from "@/types";
+import { AdminNotification } from "@/types/notifications";
 import { supabase } from "@/lib/supabase/client";
 
 export function useAdminNotifications() {

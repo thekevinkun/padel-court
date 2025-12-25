@@ -47,6 +47,34 @@ export function isBookingActive(booking: Booking): boolean {
   return now >= startTime && now <= endTime;
 }
 
+// Helper Format date relative to today
+export const formatRelativeDate = (dateStr: string): string => {
+  const bookingDate = new Date(dateStr);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  bookingDate.setHours(0, 0, 0, 0);
+
+  if (bookingDate.getTime() === today.getTime()) {
+    return "today";
+  } else if (bookingDate.getTime() === tomorrow.getTime()) {
+    return "tomorrow";
+  } else {
+    // Return formatted date for all other days
+    return `on ${bookingDate.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year:
+        bookingDate.getFullYear() !== today.getFullYear()
+          ? "numeric"
+          : undefined,
+    })}`;
+  }
+};
+
 // Helper to get session status badge color
 export function getSessionStatusColor(status: SessionStatus): string {
   switch (status) {

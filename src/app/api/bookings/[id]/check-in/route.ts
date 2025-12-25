@@ -95,7 +95,7 @@ export async function POST(
         { status: 402 } // 402 Payment Required
       );
     }
-
+    
     // Update booking to IN_PROGRESS
     const { data: updatedBooking, error: updateError } = await supabase
       .from("bookings")
@@ -119,7 +119,7 @@ export async function POST(
     // Create notification
     await supabase.from("admin_notifications").insert({
       booking_id: bookingId,
-      type: "CHECK_IN",
+      type: "SESSION_STARTED",
       title: "Customer Checked In",
       message: `Booking ${booking.booking_ref} - ${booking.customer_name} checked in for ${booking.time}`,
       read: false,

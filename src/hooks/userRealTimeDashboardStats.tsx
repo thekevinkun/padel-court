@@ -1,6 +1,5 @@
 import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
-import { useSoundSettings } from "@/contexts/SoundSettingsContext";
 import { DashboardStats } from "@/types";
 import { supabase } from "@/lib/supabase/client";
 
@@ -11,7 +10,6 @@ export function useRealtimeDashboardStats(
 ) {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const lastEventRef = useRef<{ id: string; timestamp: number } | null>(null);
-  const { playSound } = useSoundSettings();
 
   useEffect(() => {
     console.log("📊 Setting up real-time dashboard stats subscription...");
@@ -28,7 +26,7 @@ export function useRealtimeDashboardStats(
         async (payload) => {
           console.log("📊 Booking change detected:", payload.eventType);
 
-          // Prevent duplicate events (debounce within 500ms)
+          // Prevent duplicate events (debounce within 1 second)
           const now = Date.now();
           const bookingId =
             (payload.new as any)?.id || (payload.old as any)?.id;
@@ -36,7 +34,7 @@ export function useRealtimeDashboardStats(
           if (
             lastEventRef.current &&
             lastEventRef.current.id === bookingId &&
-            now - lastEventRef.current.timestamp < 500
+            now - lastEventRef.current.timestamp < 1000
           ) {
             console.log("📊 Duplicate event ignored (debounced)");
             return;
@@ -89,8 +87,7 @@ export function useRealtimeDashboardStats(
                 oldBooking.session_status === "UPCOMING" &&
                 updatedBooking.session_status === "IN_PROGRESS"
               ) {
-                playSound("PAYMENT_RECEIVED");
-                toast.info("✅ Customer Checked In", {
+                toast.info(`✅ ${updatedBooking.customer_name} Checked In`, {
                   description: `${oldStatus} → ${newStatus}`,
                   duration: Infinity,
                 });
@@ -100,8 +97,7 @@ export function useRealtimeDashboardStats(
                 oldBooking.session_status === "IN_PROGRESS" &&
                 updatedBooking.session_status === "COMPLETED"
               ) {
-                playSound("PAYMENT_RECEIVED");
-                toast.success("🏁 Session Completed", {
+                toast.success(`🏁 ${updatedBooking.customer_name} Session's Completed`, {
                   description: `${oldStatus} → ${newStatus}`,
                   duration: Infinity,
                 });

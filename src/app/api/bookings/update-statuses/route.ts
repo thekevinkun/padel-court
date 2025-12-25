@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     // EXPIRE VENUE PAYMENTS & CANCEL SESSIONS
     const { data: bookingsToExpire, error: fetchError } = await supabase
       .from("bookings")
-      .select("id, booking_ref, date, time, remaining_balance")
+      .select("id, booking_ref, customer_name, date, time, remaining_balance")
       .eq("status", "PAID")
       .eq("require_deposit", true)
       .eq("venue_payment_received", false)
@@ -47,6 +47,19 @@ export async function POST(request: NextRequest) {
             })
             .eq("id", booking.id);
 
+          // Create notification for expired venue payment
+          await supabase.from("admin_notifications").insert({
+            booking_id: booking.id,
+            type: "CANCELLATION",
+            title: "⏰ Venue Payment Expired",
+            message: `Booking ${booking.booking_ref} - ${
+              booking.customer_name
+            } failed to pay IDR ${booking.remaining_balance.toLocaleString(
+              "id-ID"
+            )} remaining balance. Session cancelled automatically.`,
+            read: false,
+          });
+
           expiredCount++;
           console.log(
             `⏰ Expired venue payment & cancelled session: ${booking.booking_ref}`
@@ -56,15 +69,13 @@ export async function POST(request: NextRequest) {
     }
 
     // AUTO-START SESSIONS (UPCOMING → IN_PROGRESS)
-    // Also auto-complete bookings that were never started but time passed
     const { data: bookingsToStart, error: startFetchError } = await supabase
       .from("bookings")
       .select(
-        "id, booking_ref, date, time, require_deposit, venue_payment_received"
+        "id, booking_ref, customer_name, date, time, require_deposit, venue_payment_received"
       )
       .eq("status", "PAID")
       .eq("session_status", "UPCOMING");
-    // Removed .eq("date", today) to check ALL upcoming bookings
 
     if (startFetchError) {
       console.error("Error fetching bookings to start:", startFetchError);
@@ -113,11 +124,20 @@ export async function POST(request: NextRequest) {
             })
             .eq("id", booking.id);
 
+          // Create notification for auto-completed session
+          await supabase.from("admin_notifications").insert({
+            booking_id: booking.id,
+            type: "SESSION_COMPLETED",
+            title: "🏁 Session Auto-Completed",
+            message: `Booking ${booking.booking_ref} - ${booking.customer_name}'s session at ${booking.time} was automatically completed (customer never checked in).`,
+            read: false,
+          });
+
           autoCompletedFromUpcoming++;
           console.log(
             `🏁 Auto-completed (from UPCOMING): ${booking.booking_ref}`
           );
-          continue; // Skip to next booking
+          continue;
         }
 
         // Check if current time is within booking window
@@ -138,6 +158,15 @@ export async function POST(request: NextRequest) {
             })
             .eq("id", booking.id);
 
+          // Create notification for auto-started session
+          await supabase.from("admin_notifications").insert({
+            booking_id: booking.id,
+            type: "SESSION_STARTED",
+            title: "🎾 Session Auto-Started",
+            message: `Booking ${booking.booking_ref} - ${booking.customer_name}'s session at ${booking.time} started automatically.`,
+            read: false,
+          });
+
           startedCount++;
           console.log(`🎾 Auto-started session: ${booking.booking_ref}`);
         }
@@ -148,7 +177,7 @@ export async function POST(request: NextRequest) {
     const { data: bookingsToComplete, error: completeFetchError } =
       await supabase
         .from("bookings")
-        .select("id, booking_ref, date, time")
+        .select("id, booking_ref, customer_name, date, time")
         .eq("session_status", "IN_PROGRESS");
 
     if (completeFetchError) {
@@ -173,6 +202,15 @@ export async function POST(request: NextRequest) {
               checked_out_at: now.toISOString(),
             })
             .eq("id", booking.id);
+
+          // Create notification for auto-completed session
+          await supabase.from("admin_notifications").insert({
+            booking_id: booking.id,
+            type: "SESSION_COMPLETED",
+            title: "🏁 Session Auto-Completed",
+            message: `Booking ${booking.booking_ref} - ${booking.customer_name}'s session at ${booking.time} ended automatically.`,
+            read: false,
+          });
 
           completedCount++;
           console.log(

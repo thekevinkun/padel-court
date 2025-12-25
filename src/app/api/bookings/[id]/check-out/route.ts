@@ -86,7 +86,7 @@ export async function POST(
     // Create notification
     await supabase.from("admin_notifications").insert({
       booking_id: bookingId,
-      type: "CHECK_OUT",
+      type: "SESSION_COMPLETED",
       title: "Customer Checked Out",
       message: `Booking ${booking.booking_ref} - ${booking.customer_name} completed session`,
       read: false,

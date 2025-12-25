@@ -1,4 +1,4 @@
-import { AdminNotification } from "@/types";
+import { AdminNotification } from "@/types/notifications";
 
 // Group notifications by date
 export function groupByDate(notifications: AdminNotification[]) {

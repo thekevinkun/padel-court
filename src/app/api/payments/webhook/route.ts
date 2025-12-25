@@ -137,14 +137,29 @@ export async function POST(request: NextRequest) {
         .update({ available: false })
         .eq("id", booking.time_slot_id);
 
+      // Check if its deposit
+      // If total_amount is less than subtotal, it's a deposit payment
+      const isDepositPayment = booking.total_amount < booking.subtotal;
+
+      // Create admin notification
+      const notificationMessage = isDepositPayment
+        ? `Booking ${bookingRef} has been paid. Total: IDR ${booking.total_amount.toLocaleString(
+            "id-ID"
+          )} via ${paymentType}. Type: Deposit. Customer: ${
+            booking.customer_name
+          }.`
+        : `Booking ${bookingRef} has been paid. Total: IDR ${booking.total_amount.toLocaleString(
+            "id-ID"
+          )} via ${paymentType}. Type: Full Payment. Customer: ${
+            booking.customer_name
+          }.`;
+
       // Create success notification
       await supabase.from("admin_notifications").insert({
         booking_id: booking.id,
         type: "PAYMENT_RECEIVED",
         title: "New Payment Received",
-        message: `Booking ${bookingRef} has been paid. Total: IDR ${booking.total_amount.toLocaleString(
-          "id-ID"
-        )} via ${paymentType}. Customer: ${booking.customer_name}.`,
+        message: notificationMessage,
         read: false,
       });
     }
@@ -165,9 +180,9 @@ export async function POST(request: NextRequest) {
       // Update booking to CANCELLED
       await supabase
         .from("bookings")
-        .update({ 
+        .update({
           status: "CANCELLED",
-          session_status: "CANCELLED"  // ← ADD THIS LINE
+          session_status: "CANCELLED", // ← ADD THIS LINE
         })
         .eq("id", booking.id);
 

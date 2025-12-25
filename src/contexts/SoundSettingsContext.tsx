@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { AdminNotification } from "@/types";
 import { NotificationSoundType, SoundSettings, SoundSettingsContextType } from "@/types/notifications";
 
 const SoundSettingsContext = createContext<SoundSettingsContextType | undefined>(undefined);
@@ -9,6 +8,8 @@ const SOUND_FILES: Record<NotificationSoundType, string> = {
   PAYMENT_RECEIVED: "/sounds/payment-success.mp3",
   PAYMENT_FAILED: "/sounds/payment-failed.mp3",
   CANCELLATION: "/sounds/cancellation.mp3",
+  SESSION_STARTED: "/sounds/session-started.mp3",
+  SESSION_COMPLETED: "/sounds/session-completed.mp3",
 };
 
 const STORAGE_KEY = "admin_sound_settings";
