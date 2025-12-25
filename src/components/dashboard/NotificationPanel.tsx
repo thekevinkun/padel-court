@@ -5,12 +5,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Check, CheckCheck, Trash2, ExternalLink } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
 
 import { useNotifications } from "@/contexts/NotificationsContext";
 
-import { AdminNotification } from "@/types";
+import { AdminNotification } from "@/types/notifications";
 import { groupByDate, formatTimeAgo } from "@/lib/notification";
 
 interface NotificationPanelProps {
@@ -69,6 +67,10 @@ const NotificationPanel = ({ isOpen, onClose }: NotificationPanelProps) => {
         return "bg-red-100 text-red-600";
       case "CANCELLATION":
         return "bg-orange-100 text-orange-600";
+      case "SESSION_STARTED":
+        return "bg-forest-100 text-forest-600";
+      case "SESSION_COMPLETED":
+        return "bg-purple-100 text-purple-600";
       default:
         return "bg-gray-100 text-gray-600";
     }
@@ -105,7 +107,7 @@ const NotificationPanel = ({ isOpen, onClose }: NotificationPanelProps) => {
               <div>
                 <h2 className="text-xl font-bold">Notifications</h2>
                 <p className="text-sm text-muted-foreground">
-                  {unreadCount > 0 ? `${unreadCount} unread` : "All caught up!"}
+                  {unreadCount > 0 ? `${unreadCount} unread` : "No new notifications"}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -185,6 +187,8 @@ const NotificationPanel = ({ isOpen, onClose }: NotificationPanelProps) => {
                                   "💰"}
                                 {notification.type === "PAYMENT_FAILED" && "❌"}
                                 {notification.type === "CANCELLATION" && "🚫"}
+                                {notification.type === "SESSION_STARTED" && "🎾"}
+                                {notification.type === "SESSION_COMPLETED" && "🏁"}
                               </div>
 
                               {/* Content */}

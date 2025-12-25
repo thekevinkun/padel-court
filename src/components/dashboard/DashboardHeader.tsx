@@ -93,7 +93,7 @@ const DashboardHeader = () => {
                   >
                     <Badge
                       variant="destructive"
-                      className="h-5 min-w-5 flex items-center justify-center p-0 text-xs px-1"
+                      className="h-5 min-w-5 flex items-center justify-center p-0 text-xs text-muted-foreground px-1"
                     >
                       {unreadCount > 99 ? "99+" : unreadCount}
                     </Badge>

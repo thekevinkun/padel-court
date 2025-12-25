@@ -419,7 +419,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
               {canCheckIn && (
                 <Button
                   onClick={() => setCheckInDialogOpen(true)}
-                  className={`bg-blue-600 hover:bg-blue-700 ${
+                  className={`bg-blue-600 hover:border-blue-600 ${
                     needsVenuePaymentForCheckIn
                       ? "opacity-50 pointer-events-none"
                       : ""
@@ -434,7 +434,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
               {canCheckOut && (
                 <Button
                   onClick={() => setCheckOutDialogOpen(true)}
-                  className="bg-green-600 hover:bg-green-700"
+                  className="bg-green-600 hover:border-green-700"
                 >
                   <StopCircle className="w-4 h-4 mr-2" />
                   Check Out
@@ -652,7 +652,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                       onClick={() => setCancelDialogOpen(true)}
                       variant="outline"
                       size="sm"
-                      className="border-red-300 text-red-700 hover:bg-red-100"
+                      className="border-red-300 text-red-700 hover:bg-red-700 hover:text-white"
                     >
                       <XCircle className="w-4 h-4 mr-2" />
                       Cancel Booking
@@ -948,7 +948,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                 Cancel
               </Button>
               <Button
-                className="flex-1 bg-green-600 hover:bg-green-700"
+                className="flex-1"
                 onClick={handleRecordPayment}
                 disabled={recording}
               >
@@ -1083,7 +1083,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                 Cancel
               </Button>
               <Button
-                className="flex-1 bg-green-600 hover:bg-green-700"
+                className="flex-1 bg-orange-700 hover:border-orange-700"
                 onClick={handleCheckOut}
                 disabled={processing}
               >
