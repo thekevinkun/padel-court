@@ -1,7 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Lock, Unlock, Edit2, Loader2, Plus, RefreshCw } from "lucide-react";
+import {
+  Lock,
+  Unlock,
+  Edit2,
+  Loader2,
+  Plus,
+  RefreshCw,
+  Wifi,
+} from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -21,39 +30,45 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 
-import { TimeSlot } from "@/types";
+// import TimeSlotsRealtimeDiagnostic from "@/components/dashboard/TimeSlotsRealtimeDiagnostic";
+
+import { useRealtimeTimeSlots } from "@/hooks/useRealtimeTimeSlots";
 import { supabase } from "@/lib/supabase/client";
 
 const TimeSlotsPageClient = () => {
   const [courts, setCourts] = useState<{ id: string; name: string }[]>([]);
-  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingCourts, setLoadingCourts] = useState(true);
   const [selectedCourt, setSelectedCourt] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState(
-    new Date().toISOString().split("T")[0]
+    new Date().toLocaleDateString("en-CA").split("T")[0]
   );
-  const [editingSlot, setEditingSlot] = useState<TimeSlot | null>(null);
+
+  // Use real-time hook
+  const { timeSlots, loading, isSubscribed, refetch } = useRealtimeTimeSlots({
+    courtId: selectedCourt,
+    date: selectedDate,
+    enabled: !!selectedCourt && !!selectedDate,
+  });
+
+  // Edit dialog state
+  const [editingSlot, setEditingSlot] = useState<any | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-
-  // Edit form
   const [editPrice, setEditPrice] = useState<number>(0);
   const [editAvailable, setEditAvailable] = useState(true);
 
-  // Generate time slots
+  // Generate dialog state
   const [generating, setGenerating] = useState(false);
   const [generateDays, setGenerateDays] = useState(30);
   const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
 
+  // Bulk action loading states
+  const [blockingAll, setBlockingAll] = useState(false);
+  const [unblockingAll, setUnblockingAll] = useState(false);
+
   useEffect(() => {
     fetchCourts();
   }, []);
-
-  useEffect(() => {
-    if (selectedCourt) {
-      fetchTimeSlots();
-    }
-  }, [selectedCourt, selectedDate]);
 
   const fetchCourts = async () => {
     try {
@@ -63,75 +78,42 @@ const TimeSlotsPageClient = () => {
         .eq("available", true)
         .order("name");
 
-      if (!error && data) {
+      if (error) throw error;
+
+      if (data && data.length > 0) {
         setCourts(data);
-        if (data.length > 0) {
-          setSelectedCourt(data[0].id);
-        }
+        setSelectedCourt(data[0].id);
       }
     } catch (error) {
       console.error("Error fetching courts:", error);
+      toast.error("Failed to load courts");
     } finally {
-      setLoading(false);
+      setLoadingCourts(false);
     }
   };
 
-  const fetchTimeSlots = async () => {
+  const toggleSlotAvailability = async (slot: any) => {
     try {
-      const { data, error } = await supabase
-        .from("time_slots")
-        .select("*")
-        .eq("court_id", selectedCourt)
-        .eq("date", selectedDate)
-        .order("time_start");
+      const newAvailability = !slot.available;
 
-      if (!error && data) {
-        setTimeSlots(data);
-      }
-
-      // Check if we need more slots
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      const { data: futureSlotsCheck } = await supabase
-        .from("time_slots")
-        .select("date")
-        .gte("date", today.toISOString().split("T")[0])
-        .order("date", { ascending: false })
-        .limit(1);
-
-      if (futureSlotsCheck && futureSlotsCheck.length > 0) {
-        const lastSlotDate = new Date(futureSlotsCheck[0].date);
-        const daysRemaining = Math.floor(
-          (lastSlotDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
-        );
-
-        if (daysRemaining < 7) {
-          console.warn(`⚠️ Only ${daysRemaining} days of slots remaining!`);
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching time slots:", error);
-    }
-  };
-
-  const toggleSlotAvailability = async (slot: TimeSlot) => {
-    try {
       const { error } = await supabase
         .from("time_slots")
-        .update({ available: !slot.available })
+        .update({ available: newAvailability })
         .eq("id", slot.id);
 
       if (error) throw error;
 
-      await fetchTimeSlots();
+      // Don't show toast here - real-time hook will handle it
+      console.log(
+        `✅ Toggled slot ${slot.id} availability to ${newAvailability}`
+      );
     } catch (error) {
-      console.error("Error updating slot:", error);
-      alert("Error updating slot");
+      console.error("Error toggling slot:", error);
+      toast.error("Failed to update slot");
     }
   };
 
-  const handleEditSlot = (slot: TimeSlot) => {
+  const handleEditSlot = (slot: any) => {
     setEditingSlot(slot);
     setEditPrice(slot.price_per_person);
     setEditAvailable(slot.available);
@@ -142,7 +124,6 @@ const TimeSlotsPageClient = () => {
     if (!editingSlot) return;
 
     setSaving(true);
-
     try {
       const { error } = await supabase
         .from("time_slots")
@@ -154,52 +135,71 @@ const TimeSlotsPageClient = () => {
 
       if (error) throw error;
 
-      await fetchTimeSlots();
+      // Don't show toast here - real-time hook will handle it
+      console.log("✅ Successfully saved edit");
       setEditDialogOpen(false);
       setEditingSlot(null);
     } catch (error) {
       console.error("Error saving slot:", error);
-      alert("Error saving slot");
+      toast.error("Failed to save changes");
     } finally {
       setSaving(false);
     }
   };
 
   const blockAllSlotsForDate = async () => {
-    if (!confirm("Block all slots for this date?")) return;
+    if (!confirm(`Block all slots for ${selectedDate}?`)) return;
 
+    setBlockingAll(true);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("time_slots")
         .update({ available: false })
         .eq("court_id", selectedCourt)
-        .eq("date", selectedDate);
+        .eq("date", selectedDate)
+        .eq("available", true)
+        .select();
 
       if (error) throw error;
 
-      await fetchTimeSlots();
+      // Show summary toast (real-time hook will show individual toasts)
+      const count = data?.length || 0;
+      if (count > 0) {
+        toast.success(`Blocked ${count} slot${count > 1 ? "s" : ""}`);
+      }
     } catch (error) {
       console.error("Error blocking slots:", error);
-      alert("Error blocking slots");
+      toast.error("Failed to block slots");
+    } finally {
+      setBlockingAll(false);
     }
   };
 
   const unblockAllSlotsForDate = async () => {
-    if (!confirm("Unblock all slots for this date?")) return;
+    if (!confirm(`Unblock all slots for ${selectedDate}?`)) return;
 
+    setUnblockingAll(true);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("time_slots")
         .update({ available: true })
         .eq("court_id", selectedCourt)
-        .eq("date", selectedDate);
+        .eq("date", selectedDate)
+        .eq("available", false)
+        .select();
 
       if (error) throw error;
 
-      await fetchTimeSlots();
+      // Show summary toast (real-time hook will show individual toasts)
+      const count = data?.length || 0;
+      if (count > 0) {
+        toast.success(`Unblocked ${count} slot${count > 1 ? "s" : ""}`);
+      }
     } catch (error) {
       console.error("Error unblocking slots:", error);
-      alert("Error unblocking slots");
+      toast.error("Failed to unblock slots");
+    } finally {
+      setUnblockingAll(false);
     }
   };
 
@@ -225,22 +225,21 @@ const TimeSlotsPageClient = () => {
 
       const data = await response.json();
 
-      alert(
-        `✅ Success!\n\nGenerated: ${data.generated} slots\nSkipped: ${data.skipped} existing slots\nDate Range: ${data.startDate} to ${data.endDate}`
-      );
+      toast.success("Time slots generated successfully", {
+        description: `Generated: ${data.generated} slots | Skipped: ${data.skipped} existing`,
+      });
 
-      // Refresh current view
-      await fetchTimeSlots();
+      await refetch();
       setGenerateDialogOpen(false);
     } catch (error) {
       console.error("Error generating slots:", error);
-      alert("Failed to generate time slots. Please try again.");
+      toast.error("Failed to generate time slots");
     } finally {
       setGenerating(false);
     }
   };
 
-  if (loading || courts.length === 0) {
+  if (loadingCourts || courts.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-forest"></div>
@@ -303,21 +302,49 @@ const TimeSlotsPageClient = () => {
               <Button
                 variant="outline"
                 onClick={blockAllSlotsForDate}
+                disabled={blockingAll || timeSlots.length === 0}
                 className="w-full lg:w-auto"
               >
-                <Lock className="w-4 h-4 mr-2" />
-                Block All
+                {blockingAll ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Blocking...
+                  </>
+                ) : (
+                  <>
+                    <Lock className="w-4 h-4 mr-2" />
+                    Block All
+                  </>
+                )}
               </Button>
               <Button
                 variant="outline"
                 onClick={unblockAllSlotsForDate}
+                disabled={unblockingAll || timeSlots.length === 0}
                 className="w-full lg:w-auto"
               >
-                <Unlock className="w-4 h-4 mr-2" />
-                Unblock All
+                {unblockingAll ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Unblocking...
+                  </>
+                ) : (
+                  <>
+                    <Unlock className="w-4 h-4 mr-2" />
+                    Unblock All
+                  </>
+                )}
               </Button>
             </div>
           </div>
+
+          {/* Real-time Connection Indicator */}
+          {/* {isSubscribed && (
+            <div className="mt-4 flex items-center gap-2 text-sm text-green-600">
+              <Wifi className="w-4 h-4" />
+              <span>Live updates active</span>
+            </div>
+          )} */}
 
           {/* Stats */}
           <div className="mt-4 grid grid-cols-3 gap-4">
@@ -345,7 +372,11 @@ const TimeSlotsPageClient = () => {
 
       {/* Time Slots Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {timeSlots.length === 0 ? (
+        {loading ? (
+          <div className="col-span-full flex justify-center py-8">
+            <Loader2 className="w-8 h-8 animate-spin text-forest" />
+          </div>
+        ) : timeSlots.length === 0 ? (
           <p className="col-span-full text-center text-muted-foreground py-8">
             No time slots for this date
           </p>
@@ -428,7 +459,6 @@ const TimeSlotsPageClient = () => {
           <DialogHeader>
             <DialogTitle>Edit Time Slot</DialogTitle>
           </DialogHeader>
-
           {editingSlot && (
             <div className="space-y-4">
               <div className="p-3 bg-gray-50 rounded">
@@ -456,6 +486,7 @@ const TimeSlotsPageClient = () => {
                   id="available"
                   checked={editAvailable}
                   onChange={(e) => setEditAvailable(e.target.checked)}
+                  className="cursor-pointer"
                 />
                 <Label htmlFor="available" className="cursor-pointer">
                   Available for booking
@@ -472,7 +503,7 @@ const TimeSlotsPageClient = () => {
                   Cancel
                 </Button>
                 <Button
-                  className="flex-1"
+                  className="flex-1 bg-forest"
                   onClick={handleSaveEdit}
                   disabled={saving}
                 >
@@ -482,7 +513,7 @@ const TimeSlotsPageClient = () => {
                       Saving...
                     </>
                   ) : (
-                    "Save"
+                    "Save Changes"
                   )}
                 </Button>
               </div>
@@ -497,7 +528,6 @@ const TimeSlotsPageClient = () => {
           <DialogHeader>
             <DialogTitle>Generate Time Slots</DialogTitle>
           </DialogHeader>
-
           <div className="space-y-4">
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm text-blue-800">
@@ -568,6 +598,13 @@ const TimeSlotsPageClient = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Real-time Diagnostics */}
+      {/* <TimeSlotsRealtimeDiagnostic 
+        isSubscribed={isSubscribed}
+        courtId={selectedCourt}
+        date={selectedDate}
+      /> */}
     </div>
   );
 };
