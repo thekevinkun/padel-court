@@ -1,18 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 
+// Debounce to prevent duplicate calls
+let lastRunTimestamp = 0;
+const DEBOUNCE_MS = 3000; // 3 seconds
+
 export async function POST(request: NextRequest) {
   try {
+    // Prevent duplicate calls within 3 seconds
+    const now = Date.now();
+    if (now - lastRunTimestamp < DEBOUNCE_MS) {
+      console.log("⏭️ Skipping duplicate update-statuses call (debounced)");
+      return NextResponse.json({
+        success: true,
+        message: "Status update skipped (debounced)",
+        debounced: true,
+      });
+    }
+    lastRunTimestamp = now;
+
     console.log("🔄 Starting automatic status update...");
 
     const supabase = createServerClient();
-    const now = new Date();
+    const nowDate = new Date();
     const options = { timeZone: "Asia/Makassar" };
-    const today = now.toLocaleDateString("en-CA", options);
+    const today = nowDate.toLocaleDateString("en-CA", options);
 
     console.log(
       "🕐 Current time (WITA):",
-      now.toLocaleString("id-ID", options)
+      nowDate.toLocaleString("id-ID", options)
     );
     console.log("📅 Today date:", today);
 
@@ -38,7 +54,7 @@ export async function POST(request: NextRequest) {
         const [hours, minutes] = timeEnd.split(":").map(Number);
         bookingDate.setHours(hours, minutes, 0, 0);
 
-        if (now > bookingDate) {
+        if (nowDate > bookingDate) {
           await supabase
             .from("bookings")
             .update({
@@ -107,11 +123,13 @@ export async function POST(request: NextRequest) {
         console.log(`   Start: ${startTime.toLocaleString("id-ID")}`);
         console.log(`   End: ${endTime.toLocaleString("id-ID")}`);
         console.log(`   Now: ${now.toLocaleString("id-ID")}`);
-        console.log(`   Is active? ${now >= startTime && now <= endTime}`);
-        console.log(`   Has passed? ${now > endTime}`);
+        console.log(
+          `   Is active? ${nowDate >= startTime && nowDate <= endTime}`
+        );
+        console.log(`   Has passed? ${nowDate > endTime}`);
 
         // If booking time has completely passed, auto-complete it
-        if (now > endTime) {
+        if (nowDate > endTime) {
           console.log(
             `⏩ Booking time passed, auto-completing: ${booking.booking_ref}`
           );
@@ -120,7 +138,7 @@ export async function POST(request: NextRequest) {
             .from("bookings")
             .update({
               session_status: "COMPLETED",
-              checked_out_at: now.toISOString(),
+              checked_out_at: nowDate.toISOString(),
             })
             .eq("id", booking.id);
 
@@ -141,7 +159,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Check if current time is within booking window
-        if (now >= startTime && now <= endTime) {
+        if (nowDate >= startTime && nowDate <= endTime) {
           // Skip if deposit booking without venue payment
           if (booking.require_deposit && !booking.venue_payment_received) {
             console.log(
@@ -154,7 +172,7 @@ export async function POST(request: NextRequest) {
             .from("bookings")
             .update({
               session_status: "IN_PROGRESS",
-              checked_in_at: now.toISOString(),
+              checked_in_at: nowDate.toISOString(),
             })
             .eq("id", booking.id);
 
@@ -194,12 +212,12 @@ export async function POST(request: NextRequest) {
         const endTime = new Date(bookingDate);
         endTime.setHours(hours, minutes, 0, 0);
 
-        if (now > endTime) {
+        if (nowDate > endTime) {
           await supabase
             .from("bookings")
             .update({
               session_status: "COMPLETED",
-              checked_out_at: now.toISOString(),
+              checked_out_at: nowDate.toISOString(),
             })
             .eq("id", booking.id);
 
@@ -223,7 +241,7 @@ export async function POST(request: NextRequest) {
     // SUMMARY
     const totalCompleted = completedCount + autoCompletedFromUpcoming;
     const summary = {
-      timestamp: now.toISOString(),
+      timestamp: nowDate.toISOString(),
       venuePaymentsExpired: expiredCount,
       sessionsStarted: startedCount,
       sessionsCompleted: totalCompleted,
