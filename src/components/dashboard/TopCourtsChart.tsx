@@ -59,10 +59,11 @@ const TopCourtsChart = ({ data }: { data: CourtData[] }) => {
 
   return (
     <div className="w-full">
-      <ResponsiveContainer width="100%" height={400}>
+      <div className="h-[500px] w-full">
+      <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={chartData}
-          margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+          margin={{ top: 20, right: 30, left: 20, bottom: 100 }}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
           <XAxis
@@ -72,6 +73,7 @@ const TopCourtsChart = ({ data }: { data: CourtData[] }) => {
             angle={-45}
             textAnchor="end"
             height={100}
+            interval={0}
           />
           <YAxis
             yAxisId="left"
@@ -84,6 +86,7 @@ const TopCourtsChart = ({ data }: { data: CourtData[] }) => {
               position: "insideLeft",
               style: { fontSize: "12px", fill: "#3b82f6" },
             }}
+            width={60}
           />
           <YAxis
             yAxisId="right"
@@ -97,6 +100,7 @@ const TopCourtsChart = ({ data }: { data: CourtData[] }) => {
               position: "insideRight",
               style: { fontSize: "12px", fill: "#10b981" },
             }}
+            width={80}
           />
           <Tooltip content={<CustomTooltip />} />
           <Legend wrapperStyle={{ paddingTop: "20px" }} />
@@ -133,6 +137,7 @@ const TopCourtsChart = ({ data }: { data: CourtData[] }) => {
           </Bar>
         </BarChart>
       </ResponsiveContainer>
+      </div>
 
       {/* Court Rankings */}
       <div className="mt-6 space-y-3">

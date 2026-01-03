@@ -128,36 +128,42 @@ const PaymentMethodChart = ({ data }: { data: PaymentMethodBreakdown[] }) => {
 
   return (
     <div className="w-full">
-      <ResponsiveContainer width="100%" height={400}>
-        <PieChart>
-          <Pie
-            data={chartData}
-            cx="50%"
-            cy="50%"
-            labelLine={false}
-            label={renderLabel}
-            outerRadius={140}
-            innerRadius={80}
-            fill="#8884d8"
-            dataKey="value"
-            paddingAngle={2}
-          >
-            {chartData.map((entry, index) => (
-              <Cell
-                key={`cell-${index}`}
-                fill={COLORS[index % COLORS.length]}
-                stroke="#fff"
-                strokeWidth={2}
-              />
-            ))}
-          </Pie>
-          <Tooltip content={<CustomTooltip />} />
-          <Legend content={renderLegend} />
-        </PieChart>
-      </ResponsiveContainer>
+      <div className="h-[500px] w-full flex items-center justify-center">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={chartData}
+              cx="50%"
+              cy="50%"
+              labelLine={false}
+              label={renderLabel}
+              outerRadius={140}
+              innerRadius={80}
+              fill="#8884d8"
+              dataKey="value"
+              paddingAngle={2}
+            >
+              {chartData.map((entry, index) => (
+                <Cell
+                  key={`cell-${index}`}
+                  fill={COLORS[index % COLORS.length]}
+                  stroke="#fff"
+                  strokeWidth={2}
+                />
+              ))}
+            </Pie>
+            <Tooltip content={<CustomTooltip />} />
+            <Legend
+              content={renderLegend}
+              verticalAlign="bottom"
+              wrapperStyle={{ paddingBottom: "10px" }}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
 
       {/* Summary Stats */}
-      <div className="mt-6 grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
+      <div className="mt-4 grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
         <div className="text-center">
           <p className="text-2xl font-bold text-gray-900">
             {data.reduce((sum, item) => sum + item.count, 0)}

@@ -61,7 +61,7 @@ const RevenueChart = ({ data }: { data: RevenueData[] }) => {
       <ResponsiveContainer width="100%" height={400}>
         <AreaChart
           data={chartData}
-          margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+          margin={{ top: 20, right: 30, left: 0, bottom: 20 }}
         >
           <defs>
             <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
@@ -73,8 +73,8 @@ const RevenueChart = ({ data }: { data: RevenueData[] }) => {
               <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
             </linearGradient>
             <linearGradient id="colorVenue" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
-              <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+              <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} />
+              <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
             </linearGradient>
             <linearGradient id="colorNet" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="#059669" stopOpacity={0.3} />
@@ -82,21 +82,31 @@ const RevenueChart = ({ data }: { data: RevenueData[] }) => {
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-          <XAxis dataKey="date" stroke="#6b7280" style={{ fontSize: "12px" }} />
+          <XAxis
+            dataKey="date"
+            stroke="#6b7280"
+            style={{ fontSize: "12px" }}
+            height={60}
+          />
           <YAxis
             stroke="#6b7280"
             style={{ fontSize: "12px" }}
             tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+            width={80}
           />
           <Tooltip content={<CustomTooltip />} />
-          <Legend wrapperStyle={{ paddingTop: "20px" }} iconType="circle" />
+          {/* <Legend
+            wrapperStyle={{ paddingTop: "10px", paddingBottom: "10px",  }}
+            iconType="circle"
+            verticalAlign="bottom"
+          /> */}
 
           {/* Total Revenue - Green */}
           <Area
             type="monotone"
             dataKey="Total Revenue"
             stroke="#10b981"
-            strokeWidth={3}
+            strokeWidth={2}
             fillOpacity={1}
             fill="url(#colorTotal)"
           />
@@ -111,30 +121,30 @@ const RevenueChart = ({ data }: { data: RevenueData[] }) => {
             fill="url(#colorOnline)"
           />
 
-          {/* Venue Revenue - Purple */}
+          {/* Venue Revenue - Amber */}
           <Area
             type="monotone"
             dataKey="Venue Revenue"
-            stroke="#8b5cf6"
+            stroke="#f59e0b"
             strokeWidth={2}
             fillOpacity={1}
             fill="url(#colorVenue)"
           />
 
-          {/* Net Revenue - Emerald (dotted) */}
+          {/* Net Revenue - Slate (dotted) */}
           <Line
             type="monotone"
             dataKey="Net Revenue"
-            stroke="#059669"
+            stroke="#64748b"
             strokeWidth={2}
             strokeDasharray="5 5"
-            dot={{ fill: "#059669", r: 4 }}
+            dot={{ fill: "#64748b", r: 4 }}
           />
         </AreaChart>
       </ResponsiveContainer>
 
       {/* Legend Info */}
-      <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-5 text-sm justify-items-center">
+      <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-5 text-sm justify-items-center">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-green-500"></div>
           <div>
@@ -150,14 +160,14 @@ const RevenueChart = ({ data }: { data: RevenueData[] }) => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+          <div className="w-3 h-3 rounded-full bg-amber-500"></div>
           <div>
             <p className="text-gray-600">Venue Revenue</p>
             <p className="text-xs text-gray-500">Cash collected</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-emerald-600"></div>
+          <div className="w-3 h-3 rounded-full bg-slate-500"></div>
           <div>
             <p className="text-gray-600">Net Revenue</p>
             <p className="text-xs text-gray-500">After fees</p>
