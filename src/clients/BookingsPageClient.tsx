@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import {
   Search,
   Download,
@@ -34,14 +33,12 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 
+import { useRealtimeBookings } from "@/hooks/useRealtimeBookings";
 import { Booking } from "@/types/booking";
-import { useRealtimeBookings } from "@/hooks/useRealTimeBookings";
 import { supabase } from "@/lib/supabase/client";
 import { getDisplayStatus, getDisplayStatusStyle } from "@/lib/booking";
 
 const BookingsPageClient = () => {
-  const searchParams = useSearchParams();
-
   // Original bookings from fetch
   const [fetchedBookings, setFetchedBookings] = useState<Booking[]>([]);
 

@@ -19,9 +19,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
-import RealtimeDiagnostic from "@/components/dashboard/RealTimeDiagnostics";
+// import RealtimeDiagnostic from "@/components/dashboard/RealTimeDiagnostics";
 
-import { useRealtimeDashboardStats } from "@/hooks/userRealTimeDashboardStats";
+import { useRealtimeDashboardStats } from "@/hooks/userRealtimeDashboardStats";
 
 import { DashboardStats } from "@/types";
 import { supabase } from "@/lib/supabase/client";

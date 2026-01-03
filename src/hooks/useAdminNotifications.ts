@@ -91,7 +91,7 @@ export function useAdminNotifications() {
         if (notification && !notification.read) {
           setUnreadCount((prev) => Math.max(0, prev - 1));
         }
-        toast.success("Notification deleted");
+        // toast.success("Notification deleted");
       } catch (error) {
         console.error("Error deleting notification:", error);
         toast.error("Failed to delete notification");
