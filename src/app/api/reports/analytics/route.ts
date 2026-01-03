@@ -6,7 +6,6 @@ export async function GET(request: NextRequest) {
   try {
     // Authenticate admin
     const authSupabase = await createAuthClient();
-
     const {
       data: { user },
       error: authError,
@@ -31,20 +30,24 @@ export async function GET(request: NextRequest) {
 
     // Get date range from query params
     const { searchParams } = new URL(request.url);
-    const startDate = searchParams.get("startDate") || new Date().toISOString().split("T")[0];
-    const endDate = searchParams.get("endDate") || new Date().toISOString().split("T")[0];
-    const period = searchParams.get("period") || "day"; // day, week, month, year
+    const startDate =
+      searchParams.get("startDate") || new Date().toISOString().split("T")[0];
+    const endDate =
+      searchParams.get("endDate") || new Date().toISOString().split("T")[0];
+    const period = searchParams.get("period") || "day";
 
     console.log("📊 Analytics request:", { startDate, endDate, period });
 
     // Fetch all bookings in date range
     const { data: bookings, error: bookingsError } = await supabase
       .from("bookings")
-      .select(`
+      .select(
+        `
         *,
         courts (name),
         venue_payments (*)
-      `)
+      `
+      )
       .gte("date", startDate)
       .lte("date", endDate)
       .eq("status", "PAID");
@@ -57,9 +60,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    console.log("📊 Found bookings:", bookings.length);
+
     // Calculate Summary Statistics
     const totalBookings = bookings.length;
-    
+
     // Online revenue (deposits + full payments, excluding fees)
     const onlineRevenue = bookings.reduce((sum, b) => {
       return sum + (b.require_deposit ? b.deposit_amount : b.subtotal);
@@ -81,13 +86,17 @@ export async function GET(request: NextRequest) {
     }, 0);
 
     // Total fees absorbed
-    const totalFeesAbsorbed = bookings.reduce((sum, b) => sum + b.payment_fee, 0);
+    const totalFeesAbsorbed = bookings.reduce(
+      (sum, b) => sum + b.payment_fee,
+      0
+    );
 
     // Average booking value
-    const averageBookingValue = totalBookings > 0 ? totalRevenue / totalBookings : 0;
+    const averageBookingValue =
+      totalBookings > 0 ? totalRevenue / totalBookings : 0;
 
     // Deposit vs Full payment bookings
-    const depositBookings = bookings.filter(b => b.require_deposit).length;
+    const depositBookings = bookings.filter((b) => b.require_deposit).length;
     const fullPaymentBookings = totalBookings - depositBookings;
 
     const summary = {
@@ -102,6 +111,8 @@ export async function GET(request: NextRequest) {
       fullPaymentBookings,
     };
 
+    console.log("📊 Summary calculated:", summary);
+
     // Revenue Timeline (group by date)
     const revenueByDate = bookings.reduce((acc: any, b) => {
       const date = b.date;
@@ -115,25 +126,25 @@ export async function GET(request: NextRequest) {
           feesAbsorbed: 0,
         };
       }
-      
+
       const online = b.require_deposit ? b.deposit_amount : b.subtotal;
       const venue = b.venue_payment_amount || 0;
       const onlineNet = b.total_amount - b.payment_fee;
-      
+
       acc[date].onlineRevenue += online;
       acc[date].venueRevenue += venue;
       acc[date].totalRevenue += b.subtotal;
       acc[date].netRevenue += onlineNet + venue;
       acc[date].feesAbsorbed += b.payment_fee;
-      
+
       return acc;
     }, {});
 
-    const revenueTimeline = Object.values(revenueByDate).sort((a: any, b: any) => 
-      a.date.localeCompare(b.date)
+    const revenueTimeline = Object.values(revenueByDate).sort(
+      (a: any, b: any) => a.date.localeCompare(b.date)
     );
 
-    // Payment Methods Breakdown
+    // Payment Methods Breakdown - FIXED VERSION
     const paymentMethodsMap = bookings.reduce((acc: any, b) => {
       // Online payment method
       const method = b.payment_method?.toUpperCase() || "UNKNOWN";
@@ -141,10 +152,12 @@ export async function GET(request: NextRequest) {
         acc[method] = { count: 0, amount: 0 };
       }
       acc[method].count += 1;
-      acc[method].amount += b.total_amount;
+      // Use the actual revenue (deposit or subtotal) NOT total_amount
+      const onlineAmount = b.require_deposit ? b.deposit_amount : b.subtotal;
+      acc[method].amount += onlineAmount;
 
       // Venue payment method (if exists)
-      if (b.venue_payment_method) {
+      if (b.venue_payment_method && b.venue_payment_amount > 0) {
         const venueMethod = `VENUE_${b.venue_payment_method}`;
         if (!acc[venueMethod]) {
           acc[venueMethod] = { count: 0, amount: 0 };
@@ -161,21 +174,30 @@ export async function GET(request: NextRequest) {
       0
     );
 
-    const paymentMethods = Object.entries(paymentMethodsMap).map(([method, data]: [string, any]) => ({
-      method,
-      count: data.count,
-      amount: data.amount,
-      percentage: totalAmount > 0 ? (data.amount / totalAmount) * 100 : 0,
-    }));
+    console.log("💳 Payment Methods Map:", paymentMethodsMap);
+    console.log("💳 Total Amount for percentages:", totalAmount);
+
+    const paymentMethods = Object.entries(paymentMethodsMap).map(
+      ([method, data]: [string, any]) => ({
+        method,
+        count: data.count,
+        amount: data.amount,
+        percentage: totalAmount > 0 ? (data.amount / totalAmount) * 100 : 0,
+      })
+    );
+
+    console.log("💳 Final Payment Methods:", paymentMethods);
 
     // Top Performing Courts
     const courtStats = bookings.reduce((acc: any, b) => {
       const courtName = b.courts?.name || "Unknown";
+
       if (!acc[courtName]) {
         acc[courtName] = { bookings: 0, revenue: 0 };
       }
       acc[courtName].bookings += 1;
       acc[courtName].revenue += b.subtotal;
+
       return acc;
     }, {});
 

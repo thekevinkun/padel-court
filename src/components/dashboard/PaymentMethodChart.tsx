@@ -90,7 +90,10 @@ const PaymentMethodChart = ({ data }: { data: PaymentMethodBreakdown[] }) => {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-6">
         {payload.map((entry: any, index: number) => {
-          const data = chartData[index];
+          // Find the matching data by name instead of using index
+          const data = chartData.find((item) => item.name === entry.value);
+          if (!data) return null;
+
           return (
             <div
               key={`legend-${index}`}

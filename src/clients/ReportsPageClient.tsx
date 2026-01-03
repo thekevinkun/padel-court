@@ -7,11 +7,11 @@ import {
   DollarSign,
   TrendingUp,
   Download,
-  Loader2,
   BarChart3,
-  PieChart as PieChartIcon,
   Clock,
   TrendingDown,
+  Wifi,
+  WifiOff,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,7 @@ import RevenueChart from "@/components/dashboard/RevenueChart";
 import TopCourtsChart from "@/components/dashboard/TopCourtsChart";
 import PaymentMethodChart from "@/components/dashboard/PaymentMethodChart";
 
+import { useRealtimeFinancials } from "@/hooks/useRealtimeFinancials";
 import { AnalyticsData } from "@/types/reports";
 
 const ReportsPageClient = () => {
@@ -42,14 +43,10 @@ const ReportsPageClient = () => {
   const [customStartDate, setCustomStartDate] = useState("");
   const [customEndDate, setCustomEndDate] = useState("");
 
-  useEffect(() => {
-    fetchAnalytics();
-  }, [dateRange, customStartDate, customEndDate]);
-
   const getDateRange = () => {
     const today = new Date();
     let startDate = "";
-    let endDate = today.toLocaleDateString("en-CA"); // en-CA gives YYYY-MM-DD in local timezone
+    let endDate = today.toLocaleDateString("en-CA");
 
     switch (dateRange) {
       case "today":
@@ -80,6 +77,25 @@ const ReportsPageClient = () => {
 
     return { startDate, endDate };
   };
+
+  const { startDate, endDate } = getDateRange();
+
+  // Real-time subscription
+  const { isSubscribed, lastUpdate } = useRealtimeFinancials({
+    startDate,
+    endDate,
+    period: dateRange,
+    enabled: !loading && !!analytics, // Only enable after initial load
+    onDataUpdate: (newData) => {
+      console.log("📊 ReportsPageClient: Received new data from hook");
+      console.log("📊 New summary:", newData.summary);
+      setAnalytics(newData);
+    },
+  });
+
+  useEffect(() => {
+    fetchAnalytics();
+  }, [dateRange, customStartDate, customEndDate]);
 
   const fetchAnalytics = async () => {
     try {
@@ -158,7 +174,6 @@ const ReportsPageClient = () => {
       color: "text-green-600",
       bgColor: "bg-green-100",
       subtitle: "Actual booking value",
-      change: "+12.5%",
     },
     {
       title: "Net Revenue",
@@ -167,7 +182,6 @@ const ReportsPageClient = () => {
       color: "text-emerald-600",
       bgColor: "bg-emerald-100",
       subtitle: "After payment fees",
-      change: "+8.3%",
     },
     {
       title: "Online Revenue",
@@ -176,7 +190,6 @@ const ReportsPageClient = () => {
       color: "text-blue-600",
       bgColor: "bg-blue-100",
       subtitle: "Deposits + full payments",
-      change: "+15.2%",
     },
     {
       title: "Venue Revenue",
@@ -185,7 +198,6 @@ const ReportsPageClient = () => {
       color: "text-purple-600",
       bgColor: "bg-purple-100",
       subtitle: "Cash collected at venue",
-      change: "+5.7%",
     },
     {
       title: "Total Bookings",
@@ -196,7 +208,6 @@ const ReportsPageClient = () => {
       subtitle: `Avg: IDR ${Math.round(
         analytics.summary.averageBookingValue
       ).toLocaleString("id-ID")}`,
-      change: "+22.1%",
     },
     {
       title: "Fees Absorbed",
@@ -207,12 +218,33 @@ const ReportsPageClient = () => {
       color: "text-red-600",
       bgColor: "bg-red-100",
       subtitle: "Midtrans processing fees",
-      change: "-3.2%",
     },
   ];
 
   return (
     <div className="space-y-6">
+      {/* Real-time Connection Indicator */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          {isSubscribed ? (
+            <>
+              <Wifi className="w-4 h-4 text-green-600" />
+              <span className="text-green-600">Live updates active</span>
+              {lastUpdate && (
+                <span className="text-xs">
+                  • Updated {lastUpdate.toLocaleTimeString()}
+                </span>
+              )}
+            </>
+          ) : (
+            <>
+              <WifiOff className="w-4 h-4 text-gray-400" />
+              <span>Real-time disconnected</span>
+            </>
+          )}
+        </div>
+      </div>
+
       {/* Date Range Picker */}
       <Card>
         <CardContent className="p-6">
@@ -324,7 +356,7 @@ const ReportsPageClient = () => {
           <TabsTrigger value="performance">Performance</TabsTrigger>
         </TabsList>
 
-        {/* Overview Tab - Revenue Timeline Chart */}
+        {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6 mt-6">
           <Card>
             <CardHeader>
@@ -336,7 +368,7 @@ const ReportsPageClient = () => {
           </Card>
         </TabsContent>
 
-        {/* Revenue Tab - Detailed Breakdown */}
+        {/* Revenue Tab */}
         <TabsContent value="revenue" className="space-y-6 mt-6">
           <Card>
             <CardHeader>
@@ -386,7 +418,7 @@ const ReportsPageClient = () => {
           </Card>
         </TabsContent>
 
-        {/* Payments Tab - Payment Methods Pie Chart */}
+        {/* Payments Tab */}
         <TabsContent value="payments" className="space-y-6 mt-6">
           <Card>
             <CardHeader>
@@ -398,9 +430,8 @@ const ReportsPageClient = () => {
           </Card>
         </TabsContent>
 
-        {/* Performance Tab - Top Courts & Peak Hours */}
+        {/* Performance Tab */}
         <TabsContent value="performance" className="space-y-6 mt-6">
-          {/* Top Courts Bar Chart */}
           <Card>
             <CardHeader>
               <CardTitle>Top Performing Courts</CardTitle>
