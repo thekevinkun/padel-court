@@ -11,20 +11,23 @@ import {
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+import { useBooking } from "@/contexts/BookingContext";
 import { navLinks } from "@/lib/constants";
 import { fadeInDown, drawerVariants, backdropVariants } from "@/lib/animations";
 
-const Navbar = ({ onBookNowClick }: { onBookNowClick: () => void }) => {
+const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { scrollY } = useScroll();
+
+  // Get booking functions from context
+  const { openBooking } = useBooking();
 
   // Change navbar background on scroll
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50);
     };
-
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
@@ -35,7 +38,6 @@ const Navbar = ({ onBookNowClick }: { onBookNowClick: () => void }) => {
     [0, 100],
     ["rgba(0, 0, 0, 0)", "rgba(233, 255, 0, 0.98)"]
   );
-
   const backdropBlur = useTransform(
     scrollY,
     [0, 100],
@@ -49,7 +51,7 @@ const Navbar = ({ onBookNowClick }: { onBookNowClick: () => void }) => {
     };
     if (isMobileMenuOpen) {
       document.addEventListener("keydown", handleEscape);
-      document.body.style.overflow = "hidden"; // Prevent body scroll
+      document.body.style.overflow = "hidden";
     }
     return () => {
       document.removeEventListener("keydown", handleEscape);
@@ -58,20 +60,19 @@ const Navbar = ({ onBookNowClick }: { onBookNowClick: () => void }) => {
   }, [isMobileMenuOpen]);
 
   const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
-
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
   const handleBookNowClick = () => {
     closeMobileMenu();
-    onBookNowClick();
+    openBooking();
   };
 
   return (
     <>
       <motion.nav
-        variants={fadeInDown}
-        initial="hidden"
-        animate="visible"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
         style={{
           backgroundColor,
           backdropFilter: backdropBlur,
@@ -93,7 +94,7 @@ const Navbar = ({ onBookNowClick }: { onBookNowClick: () => void }) => {
                 <div className="absolute inset-0 bg-primary rounded-lg blur-md opacity-50 group-hover:opacity-75 transition-opacity" />
                 <div className="relative bg-black p-2 rounded-lg">
                   <svg
-                    className={`transition-all duration-500 delay-200 ${
+                    className={`transition-all duration-300 delay-100 ${
                       isScrolled
                         ? "w-10 h-10 md:w-12 md:h-12"
                         : "w-8 h-8 md:w-10 md:h-10"
@@ -113,9 +114,8 @@ const Navbar = ({ onBookNowClick }: { onBookNowClick: () => void }) => {
                   </svg>
                 </div>
               </motion.div>
-
               <div
-                className={`logo text-sm md:text-base leading-tight transition-all duration-500 delay-200 ${
+                className={`logo text-sm md:text-base leading-tight transition-all duration-300 delay-100 ${
                   isScrolled
                     ? "text-accent-foreground text-lg md:text-xl"
                     : "text-accent"
@@ -133,7 +133,7 @@ const Navbar = ({ onBookNowClick }: { onBookNowClick: () => void }) => {
                   key={link.name}
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 * index }}
+                  transition={{ delay: 0.1 * index, duration: 0.3 }}
                 >
                   <Link
                     href={link.href}
@@ -158,11 +158,11 @@ const Navbar = ({ onBookNowClick }: { onBookNowClick: () => void }) => {
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.5 }}
+              transition={{ delay: 0.4, duration: 0.3 }}
               className="hidden lg:block"
             >
               <Button
-                onClick={onBookNowClick}
+                onClick={openBooking}
                 size="lg"
                 className={`rounded-full font-semibold hover:scale-105 hover:!text-accent transition-transform ${
                   isScrolled && "hover:!text-accent-foreground"
@@ -208,11 +208,11 @@ const Navbar = ({ onBookNowClick }: { onBookNowClick: () => void }) => {
 
             {/* Sidebar Menu */}
             <motion.div
-              variants={drawerVariants}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-              className="fixed left-0 top-0 h-screen w-4/5 max-w-sm z-50 bg-primary lg:hidden flex flex-col overflow-y-auto scrollbar-hide"
+              initial={{ opacity: 0, x: "-100%" }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: "-100%" }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="fixed left-0 top-0 h-dvh w-4/5 max-w-sm z-50 bg-primary lg:hidden flex flex-col overflow-y-auto scrollbar-hide"
             >
               {/* Header with Logo and Close Button */}
               <motion.div
@@ -220,7 +220,7 @@ const Navbar = ({ onBookNowClick }: { onBookNowClick: () => void }) => {
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
+                transition={{ duration: 0.2 }}
               >
                 <Link
                   href="/"
@@ -235,7 +235,7 @@ const Navbar = ({ onBookNowClick }: { onBookNowClick: () => void }) => {
                     <div className="absolute inset-0 bg-foreground rounded-lg blur-md opacity-50 group-hover:opacity-75 transition-opacity" />
                     <div className="relative bg-black p-2 rounded-lg">
                       <svg
-                        className="w-8 h-8"
+                        className="w-6 h-6"
                         viewBox="0 0 24 24"
                         fill="none"
                         xmlns="http://www.w3.org/2000/svg"
@@ -251,13 +251,11 @@ const Navbar = ({ onBookNowClick }: { onBookNowClick: () => void }) => {
                       </svg>
                     </div>
                   </motion.div>
-
                   <div className="logo text-base leading-tight">
                     <div>PADEL</div>
                     <div className="text-sm">BATU ALAM PERMAI</div>
                   </div>
                 </Link>
-
                 <Button
                   variant="ghost"
                   size="icon"
@@ -269,7 +267,7 @@ const Navbar = ({ onBookNowClick }: { onBookNowClick: () => void }) => {
               </motion.div>
 
               {/* Nav Links */}
-              <div className="flex-1 flex flex-col justify-center items-center gap-8 p-6">
+              <div className="flex-1 flex flex-col justify-center items-center gap-5 p-6">
                 {navLinks.map((link, index) => (
                   <motion.div
                     key={link.name}

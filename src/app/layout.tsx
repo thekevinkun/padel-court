@@ -1,7 +1,9 @@
+// /src/app/layout.tsx
 import type { Metadata } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
 import StructuredData from "@/components/StructuredData";
 import { generateSiteMetadata, defaultMetadata } from "@/lib/metadata";
+import { BookingProvider } from "@/contexts/BookingContext";
 import "./globals.css";
 
 const inter = Inter({
@@ -21,7 +23,9 @@ export async function generateMetadata(): Promise<Metadata> {
   try {
     // Fetch settings from API
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/settings`,
+      `${
+        process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+      }/api/settings`,
       {
         // Important: Don't cache during build, but cache at runtime
         next: { revalidate: 300 }, // Revalidate every 5 minutes
@@ -33,7 +37,6 @@ export async function generateMetadata(): Promise<Metadata> {
     }
 
     const data = await response.json();
-
     if (data.success && data.settings) {
       return generateSiteMetadata(data.settings);
     }
@@ -58,7 +61,8 @@ export default function RootLayout({
         <StructuredData />
       </head>
       <body>
-        {children}
+        {/* Wrap everything with booking context provider */}
+        <BookingProvider>{children}</BookingProvider>
       </body>
     </html>
   );

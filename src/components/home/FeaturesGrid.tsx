@@ -84,7 +84,7 @@ const FeaturesGrid = ({ content }: { content: FeaturesContent }) => {
                       {/* Icon */}
                       <motion.div
                         variants={fadeInUp}
-                        className="justify-items-center"
+                        className="flex justify-center"
                       >
                         <div className="w-12 h-12 md:w-14 md:h-14 bg-black/10 backdrop-blur-sm rounded-2xl flex items-center justify-center">
                           {(() => {

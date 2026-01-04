@@ -224,7 +224,7 @@ const ReportsPageClient = () => {
   return (
     <div className="space-y-6">
       {/* Real-time Connection Indicator */}
-      <div className="flex items-center justify-between">
+      {/* <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           {isSubscribed ? (
             <>
@@ -243,7 +243,7 @@ const ReportsPageClient = () => {
             </>
           )}
         </div>
-      </div>
+      </div> */}
 
       {/* Date Range Picker */}
       <Card>

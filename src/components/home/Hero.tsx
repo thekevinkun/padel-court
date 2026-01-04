@@ -1,3 +1,4 @@
+// /src/components/home/Hero.tsx
 "use client";
 
 import { motion } from "framer-motion";
@@ -6,10 +7,13 @@ import { ArrowRight, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
+import { useBooking } from "@/contexts/BookingContext";
 import { HeroContent } from "@/types";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
 
-const Hero = ({ content, onBookNowClick }: { content: HeroContent, onBookNowClick: () => void }) => {
+const Hero = ({ content }: { content: HeroContent }) => {
+  const { openBooking } = useBooking();
+
   return (
     <section className="relative h-screen w-full overflow-hidden">
       {/* Background Image */}
@@ -17,15 +21,14 @@ const Hero = ({ content, onBookNowClick }: { content: HeroContent, onBookNowClic
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
-            backgroundImage:
-              `url('${content.image_url}')`,
+            backgroundImage: `url('${content.image_url}')`,
           }}
         />
         <div className="absolute inset-0 bg-black/50" />
       </div>
 
       {/* Content */}
-      <div className="relative z-10 h-full flex items-center">
+      <div className="relative z-10 h-full flex items-center pt-18">
         <div className="container-custom">
           <motion.div
             variants={staggerContainer}
@@ -37,7 +40,7 @@ const Hero = ({ content, onBookNowClick }: { content: HeroContent, onBookNowClic
             <motion.div variants={fadeInUp} className="mb-6">
               <Badge
                 variant="outline"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-primary/20 backdrop-blur-sm border-primary/30 text-primary hover:bg-primary/30 text-sm font-medium"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-primary/20 backdrop-blur-sm border-primary/30 text-primary hover:bg-primary/30 text-xs md:text-sm font-medium"
               >
                 <span className="w-2 h-2 bg-primary rounded-full animate-pulse" />
                 {content.badge}
@@ -57,19 +60,18 @@ const Hero = ({ content, onBookNowClick }: { content: HeroContent, onBookNowClic
             {/* Tagline */}
             <motion.p
               variants={fadeInUp}
-              className="text-xl md:text-2xl text-gray-200 mb-10 max-w-2xl leading-relaxed"
+              className="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-200 mb-6 md:mb-10 max-w-2xl leading-relaxed"
             >
               {content.subtitle}
             </motion.p>
 
-            {/* CTA Buttons - Using customized shadcn Buttons */}
+            {/* CTA Buttons */}
             <motion.div
               variants={fadeInUp}
               className="flex flex-col sm:flex-row gap-4"
             >
-              {/* Primary Button - uses forest by default */}
               <Button
-                onClick={onBookNowClick}
+                onClick={openBooking}
                 size="lg"
                 className="w-fit rounded-full font-semibold hover:scale-105 hover:!text-accent transition-transform group"
               >
@@ -77,7 +79,6 @@ const Hero = ({ content, onBookNowClick }: { content: HeroContent, onBookNowClic
                 <ArrowRight className="group-hover:translate-x-1 transition-transform" />
               </Button>
 
-              {/* Secondary Button - outline variant */}
               <Button
                 asChild
                 size="lg"
@@ -92,13 +93,16 @@ const Hero = ({ content, onBookNowClick }: { content: HeroContent, onBookNowClic
             </motion.div>
 
             {/* Stats */}
-            <motion.div variants={fadeInUp} className="grid grid-cols-3 gap-6 md:gap-12 mt-16 pt-10 border-t border-white/20">
-              {content.stats.map((stat, i) => ( // Use content.stats
+            <motion.div
+              variants={fadeInUp}
+              className="grid grid-cols-3 gap-4 md:gap-6 lg:gap-12 mt-8 md:mt-16 pt-8 md:pt-10 border-t border-white/20"
+            >
+              {content.stats.map((stat, i) => (
                 <div key={i}>
-                  <div className="text-3xl md:text-4xl font-bold text-primary font-display">
+                  <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-primary font-display">
                     {stat.number}
                   </div>
-                  <div className="text-sm md:text-base text-gray-300 mt-1">
+                  <div className="text-xs sm:text-sm md:text-base text-gray-300 mt-1">
                     {stat.label}
                   </div>
                 </div>
@@ -107,34 +111,6 @@ const Hero = ({ content, onBookNowClick }: { content: HeroContent, onBookNowClic
           </motion.div>
         </div>
       </div>
-
-      {/* Scroll Indicator */}
-      {/* <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{
-          delay: 1.2,
-          duration: 0.6,
-          repeat: Infinity,
-          repeatType: "reverse",
-        }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10"
-      >
-        <div className="flex flex-col items-center gap-2 text-accent">
-          <span className="text-sm font-medium">Scroll to explore</span>
-          <svg
-            className="w-6 h-6 animate-bounce"
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
-          </svg>
-        </div>
-      </motion.div> */}
 
       {/* Gradient overlay at bottom */}
       <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent z-[5]" />

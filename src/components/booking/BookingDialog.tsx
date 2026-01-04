@@ -314,7 +314,10 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
 
   return (
     <Dialog open={open} onOpenChange={resetAndClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent 
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        className="max-w-4xl h-[100dvh] sm:h-[90dvh] overflow-y-auto"
+      >
         <DialogHeader>
           <DialogTitle className="text-2xl font-display">
             Book Your Court
@@ -322,10 +325,10 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
         </DialogHeader>
 
         {/* Progress Steps */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-center mb-8">
           {steps.map((step, index) => (
-            <div key={step.id} className="flex items-center flex-1">
-              <div className="flex flex-col items-center flex-1">
+            <div key={step.id} className="flex items-center">
+              <div className="flex flex-col items-center">
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
                     currentStep >= step.id
@@ -341,7 +344,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
               </div>
               {index < steps.length - 1 && (
                 <div
-                  className={`h-0.5 flex-1 mx-2 transition-all ${
+                  className={`h-0.5 w-6 sm:w-12 mx-3 transition-all ${
                     currentStep > step.id ? "bg-forest" : "bg-gray-300"
                   }`}
                 />
@@ -378,10 +381,14 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                   min={new Date().toLocaleDateString("en-CA")}
                   max={
                     settings
-                      ? addDays(new Date(), settings.max_advance_booking).toLocaleDateString("en-CA")
+                      ? addDays(
+                          new Date(),
+                          settings.max_advance_booking
+                        ).toLocaleDateString("en-CA")
                       : undefined
                   }
-                  className="mt-2"
+                  autoFocus={false}
+                  className="mt-2 w-full appearance-none max-w-full"
                 />
               </div>
 
@@ -398,6 +405,11 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                   {courts.map((court) => (
                     <Card
                       key={court.id}
+                      onClick={() => {
+                        if (court.available) {
+                          setFormData({ ...formData, courtId: court.id });
+                        }
+                      }}
                       className={`cursor-pointer transition-all ${
                         formData.courtId === court.id
                           ? "border-forest ring-2 ring-forest/20"
@@ -479,6 +491,11 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                       return (
                         <Card
                           key={slot.id}
+                          onClick={() => {
+                            if (isAllowed) {
+                              setFormData({ ...formData, slotId: slot.id });
+                            }
+                          }}
                           className={`cursor-pointer transition-all ${
                             formData.slotId === slot.id
                               ? "border-forest ring-2 ring-forest/20"
@@ -714,7 +731,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                     <span>IDR {calculateTotal().toLocaleString("id-ID")}</span>
                   </div>
 
-                  {/* NEW: Payment Choice Section */}
+                  {/* Payment Choice Section */}
                   {settings?.require_deposit ? (
                     <>
                       <Separator />
@@ -731,6 +748,12 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                         >
                           {/* Deposit Option */}
                           <Card
+                            onClick={() =>
+                              setFormData({
+                                ...formData,
+                                paymentChoice: "DEPOSIT",
+                              })
+                            }
                             className={`cursor-pointer transition-all ${
                               formData.paymentChoice === "DEPOSIT" ||
                               !formData.paymentChoice
@@ -788,6 +811,12 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
 
                           {/* Full Payment Option */}
                           <Card
+                            onClick={() =>
+                              setFormData({
+                                ...formData,
+                                paymentChoice: "FULL",
+                              })
+                            }
                             className={`cursor-pointer transition-all ${
                               formData.paymentChoice === "FULL"
                                 ? "border-forest ring-2 ring-forest/20"
@@ -842,7 +871,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
 
                       {/* Display chosen amount */}
                       <div className="bg-gradient-to-r from-forest/10 to-forest/5 p-4 rounded-lg">
-                        <div className="flex justify-between items-center">
+                        <div className="flex justify-between items-center gap-2">
                           <div>
                             <p className="text-sm text-muted-foreground">
                               {formData.paymentChoice === "FULL"
@@ -937,7 +966,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex justify-between gap-3 pt-4">
+              <div className="flex justify-between gap-1 sm:gap-3 pt-4">
                 <Button
                   onClick={() => setCurrentStep(2)}
                   variant="outline"

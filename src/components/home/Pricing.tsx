@@ -47,8 +47,8 @@ const Pricing = ({ content }: { content: PricingContent }) => {
             <Info className="h-4 w-4 text-primary" />
             <AlertDescription className="text-sm space-y-1">
               {content.notes.map((note, index) => (
-                <div key={index} className="flex items-start gap-2">
-                  <span className="text-primary mt-1">•</span>
+                <div key={index} className="flex items-baseline gap-2">
+                  <span className="text-forest-dark mt-1">•</span>
                   <span>{note}</span>
                 </div>
               ))}
@@ -68,7 +68,7 @@ const Pricing = ({ content }: { content: PricingContent }) => {
               transition={{ duration: 0.6, ease: "easeOut" }}
               className="mb-6"
             >
-              <div className="flex items-center gap-3 mb-2">
+              <div className="flex items-baseline gap-3 mb-2">
                 <div className="w-10 h-10 bg-forest/10 rounded-lg flex items-center justify-center">
                   <Clock className="w-5 h-5 text-forest" />
                 </div>
@@ -122,7 +122,7 @@ const Pricing = ({ content }: { content: PricingContent }) => {
               transition={{ duration: 0.6, ease: "easeOut" }}
               className="mb-6"
             >
-              <div className="flex items-center gap-3 mb-2">
+              <div className="flex items-baseline gap-3 mb-2">
                 <div className="w-10 h-10 bg-forest/10 rounded-lg flex items-center justify-center">
                   <Zap className="w-5 h-5 text-forest" />
                 </div>
@@ -180,7 +180,7 @@ const Pricing = ({ content }: { content: PricingContent }) => {
               transition={{ duration: 0.6, ease: "easeOut" }}
               className="mb-6"
             >
-              <div className="flex items-center gap-3 mb-2">
+              <div className="flex items-baseline gap-3 mb-2">
                 <div className="w-10 h-10 bg-forest/10 rounded-lg flex items-center justify-center">
                   <Trophy className="w-5 h-5 text-forest" />
                 </div>
@@ -240,9 +240,9 @@ const Pricing = ({ content }: { content: PricingContent }) => {
                 transition={{ duration: 0.6, ease: "easeOut" }}
                 className="mb-6"
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center">
-                    <Trophy className="w-5 h-5 text-primary" />
+                <div className="flex items-baseline gap-3">
+                  <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                    <Trophy className="w-5 h-5 text-foreground" />
                   </div>
                   <div>
                     <h3 className="heading-3 text-foreground">
@@ -292,9 +292,9 @@ const Pricing = ({ content }: { content: PricingContent }) => {
                 transition={{ duration: 0.6, ease: "easeOut" }}
                 className="mb-6"
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center">
-                    <Trophy className="w-5 h-5 text-primary" />
+                <div className="flex items-baseline gap-3">
+                  <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                    <Trophy className="w-5 h-5 text-foreground" />
                   </div>
                   <div>
                     <h3 className="heading-3 text-foreground">
