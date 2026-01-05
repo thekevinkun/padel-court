@@ -3,58 +3,75 @@ import {
   HeroContent,
   WelcomeContent,
   FeaturesContent,
+  Court,
   PricingContent,
   ContentSections,
 } from "@/types";
 
+// Update ContentSections type to include courts
+export interface ContentSectionsWithCourts extends ContentSections {
+  courts: Court[];
+}
+
 /**
- * Fetch all active content sections from database
- * Will runs on the server side only
+ * Fetch all active content sections + courts from database
+ * Runs on the server side only
  */
-export async function getContentSections(): Promise<ContentSections> {
+export async function getContentSections(): Promise<ContentSectionsWithCourts> {
   try {
     const supabase = createServerClient();
 
-    const { data: sections, error } = await supabase
+    // Fetch content sections
+    const { data: sections, error: sectionsError } = await supabase
       .from("content_sections")
       .select("section_type, content")
       .eq("is_active", true)
       .order("section_order", { ascending: true });
 
-    if (error) {
-      console.error("Error fetching content sections:", error);
-      return {
-        hero: null,
-        welcome: null,
-        features: null,
-        pricing: null,
-      };
+    // Fetch courts (only available ones)
+    const { data: courts, error: courtsError } = await supabase
+      .from("courts")
+      .select("*")
+      .eq("available", true)
+      .order("display_order", { ascending: true })
+      .order("created_at", { ascending: true });
+
+    if (sectionsError) {
+      console.error("Error fetching content sections:", sectionsError);
+    }
+
+    if (courtsError) {
+      console.error("Error fetching courts:", courtsError);
     }
 
     // Map sections to typed object
-    const content: ContentSections = {
+    const content: ContentSectionsWithCourts = {
       hero: null,
       welcome: null,
       features: null,
       pricing: null,
+      courts: courts || [], // Add courts array
     };
 
-    sections.forEach((section) => {
-      switch (section.section_type) {
-        case "hero":
-          content.hero = section.content as HeroContent;
-          break;
-        case "welcome":
-          content.welcome = section.content as WelcomeContent;
-          break;
-        case "features":
-          content.features = section.content as FeaturesContent;
-          break;
-        case "pricing":
-          content.pricing = section.content as PricingContent;
-          break;
-      }
-    });
+    // Map sections if they exist
+    if (sections) {
+      sections.forEach((section) => {
+        switch (section.section_type) {
+          case "hero":
+            content.hero = section.content as HeroContent;
+            break;
+          case "welcome":
+            content.welcome = section.content as WelcomeContent;
+            break;
+          case "features":
+            content.features = section.content as FeaturesContent;
+            break;
+          case "pricing":
+            content.pricing = section.content as PricingContent;
+            break;
+        }
+      });
+    }
 
     return content;
   } catch (error) {
@@ -64,6 +81,7 @@ export async function getContentSections(): Promise<ContentSections> {
       welcome: null,
       features: null,
       pricing: null,
+      courts: [],
     };
   }
 }
@@ -76,7 +94,6 @@ export async function getSectionContent<T>(
 ): Promise<T | null> {
   try {
     const supabase = createServerClient();
-
     const { data, error } = await supabase
       .from("content_sections")
       .select("content")

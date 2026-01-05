@@ -16,6 +16,8 @@ export interface Court {
   description: string;
   image_url: string | null;
   available: boolean;
+  features: string[];
+  display_order: number;
   created_at: string;
 }
 

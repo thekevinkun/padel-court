@@ -2,7 +2,34 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Plus, Edit, Trash2, Upload, X, Loader2 } from "lucide-react";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Upload,
+  X,
+  Loader2,
+  GripVertical,
+} from "lucide-react";
+
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,9 +42,69 @@ import {
 } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 
 import { Court } from "@/types";
 import { supabase } from "@/lib/supabase/client";
+import {
+  uploadImage,
+  validateImageFile,
+  deleteImage,
+  extractFilePathFromUrl,
+} from "@/lib/upload";
+
+// Sortable Feature Item Component
+function SortableFeatureItem({
+  id,
+  feature,
+  onRemove,
+}: {
+  id: string;
+  feature: string;
+  onRemove: () => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-2 p-2 bg-muted rounded group"
+    >
+      <button
+        type="button"
+        className="cursor-grab active:cursor-grabbing touch-none"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="w-4 h-4 text-muted-foreground" />
+      </button>
+      <span className="text-sm flex-1">{feature}</span>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={onRemove}
+        className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+      >
+        <X className="w-4 h-4" />
+      </Button>
+    </div>
+  );
+}
 
 const CourtsPageClient = () => {
   const [courts, setCourts] = useState<Court[]>([]);
@@ -31,9 +118,22 @@ const CourtsPageClient = () => {
     name: "",
     description: "",
     available: true,
+    features: [] as string[],
   });
+
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  // Feature input state
+  const [featureInput, setFeatureInput] = useState("");
+
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   useEffect(() => {
     fetchCourts();
@@ -44,7 +144,8 @@ const CourtsPageClient = () => {
       const { data, error } = await supabase
         .from("courts")
         .select("*")
-        .order("created_at");
+        .order("display_order", { ascending: true })
+        .order("created_at", { ascending: true }); // Fallback for same display_order
 
       if (!error && data) {
         setCourts(data);
@@ -58,33 +159,58 @@ const CourtsPageClient = () => {
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    // Validate file before setting
+    const validation = validateImageFile(file, 5); // Max 5MB
+    if (!validation.isValid) {
+      alert(validation.error);
+      return;
+    }
+
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Add feature to list
+  const handleAddFeature = () => {
+    if (featureInput.trim()) {
+      setFormData({
+        ...formData,
+        features: [...formData.features, featureInput.trim()],
+      });
+      setFeatureInput("");
     }
   };
 
-  const uploadImage = async (file: File): Promise<string | null> => {
-    try {
-      const filename = `${Date.now()}-${file.name}`;
-      const { error } = await supabase.storage
-        .from("courts")
-        .upload(filename, file);
+  // Remove feature from list
+  const handleRemoveFeature = (index: number) => {
+    setFormData({
+      ...formData,
+      features: formData.features.filter((_, i) => i !== index),
+    });
+  };
 
-      if (error) throw error;
+  // Handle drag end - reorder features
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
 
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("courts").getPublicUrl(filename);
+    if (over && active.id !== over.id) {
+      const oldIndex = formData.features.findIndex(
+        (_, i) => `feature-${i}` === active.id
+      );
+      const newIndex = formData.features.findIndex(
+        (_, i) => `feature-${i}` === over.id
+      );
 
-      return publicUrl;
-    } catch (error) {
-      console.error("Error uploading image:", error);
-      return null;
+      setFormData({
+        ...formData,
+        features: arrayMove(formData.features, oldIndex, newIndex),
+      });
     }
   };
 
@@ -95,13 +221,29 @@ const CourtsPageClient = () => {
     }
 
     setUploading(true);
-
     try {
       let imageUrl = editingCourt?.image_url || null;
 
       // Upload new image if selected
       if (imageFile) {
-        imageUrl = await uploadImage(imageFile);
+        // Delete old image if updating and old image exists
+        if (editingCourt?.image_url) {
+          const oldFilePath = extractFilePathFromUrl(
+            editingCourt.image_url,
+            "courts"
+          );
+          if (oldFilePath) {
+            await deleteImage("courts", oldFilePath);
+            console.log("🗑️ Old court image deleted");
+          }
+        }
+
+        // Upload new image to 'courts' bucket
+        const uploadedUrl = await uploadImage("courts", imageFile);
+        if (!uploadedUrl) {
+          throw new Error("Failed to upload image. Please try again.");
+        }
+        imageUrl = uploadedUrl;
       }
 
       if (editingCourt) {
@@ -113,34 +255,48 @@ const CourtsPageClient = () => {
             description: formData.description,
             image_url: imageUrl,
             available: formData.available,
+            features: formData.features,
           })
           .eq("id", editingCourt.id);
 
-        if (error) throw error;
+        if (error) {
+          console.error("Update error:", error);
+          throw error;
+        }
       } else {
-        // Create new court
+        // Create new court - set display_order as highest + 1
+        const maxOrder =
+          courts.length > 0
+            ? Math.max(...courts.map((c) => c.display_order || 0))
+            : 0;
+
         const { error } = await supabase.from("courts").insert({
           name: formData.name,
           description: formData.description,
           image_url: imageUrl,
           available: formData.available,
+          features: formData.features,
+          display_order: maxOrder + 1,
         });
 
-        if (error) throw error;
+        if (error) {
+          console.error("Insert error:", error);
+          throw error;
+        }
       }
 
       // Refresh courts list
       await fetchCourts();
 
       // Close dialog and reset form
-      setDialogOpen(false);
-      setEditingCourt(null);
-      setFormData({ name: "", description: "", available: true });
-      setImageFile(null);
-      setImagePreview(null);
+      handleCloseDialog();
     } catch (error) {
       console.error("Error saving court:", error);
-      alert("Error saving court");
+      alert(
+        `Error saving court: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     } finally {
       setUploading(false);
     }
@@ -152,6 +308,7 @@ const CourtsPageClient = () => {
       name: court.name,
       description: court.description,
       available: court.available,
+      features: court.features || [],
     });
     setImagePreview(court.image_url);
     setImageFile(null);
@@ -164,8 +321,23 @@ const CourtsPageClient = () => {
     }
 
     try {
-      const { error } = await supabase.from("courts").delete().eq("id", id);
+      // Find the court to get its image URL
+      const courtToDelete = courts.find((c) => c.id === id);
 
+      // Delete court image from storage if exists
+      if (courtToDelete?.image_url) {
+        const filePath = extractFilePathFromUrl(
+          courtToDelete.image_url,
+          "courts"
+        );
+        if (filePath) {
+          await deleteImage("courts", filePath);
+          console.log("🗑️ Court image deleted from storage");
+        }
+      }
+
+      // Delete court from database
+      const { error } = await supabase.from("courts").delete().eq("id", id);
       if (error) throw error;
 
       await fetchCourts();
@@ -178,9 +350,10 @@ const CourtsPageClient = () => {
   const handleCloseDialog = () => {
     setDialogOpen(false);
     setEditingCourt(null);
-    setFormData({ name: "", description: "", available: true });
+    setFormData({ name: "", description: "", available: true, features: [] });
     setImageFile(null);
     setImagePreview(null);
+    setFeatureInput("");
   };
 
   if (loading) {
@@ -242,9 +415,25 @@ const CourtsPageClient = () => {
               <CardContent className="flex-1 flex flex-col p-4">
                 <div className="flex-1">
                   <h3 className="font-semibold text-lg mb-1">{court.name}</h3>
-                  <p className="text-sm text-muted-foreground line-clamp-2">
+                  <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
                     {court.description}
                   </p>
+
+                  {/* Features Preview */}
+                  {court.features && court.features.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-3">
+                      {court.features.slice(0, 3).map((feature, idx) => (
+                        <Badge key={idx} variant="outline" className="text-xs">
+                          {feature}
+                        </Badge>
+                      ))}
+                      {court.features.length > 3 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{court.features.length - 3} more
+                        </Badge>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Status Badge */}
@@ -301,120 +490,185 @@ const CourtsPageClient = () => {
 
       {/* Add/Edit Court Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              {editingCourt ? "Edit Court" : "Add New Court"}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            {/* Image Upload */}
-            <div>
-              <Label>Court Image</Label>
-              <div className="mt-2">
-                {imagePreview ? (
-                  <div className="relative">
-                    <img
-                      src={imagePreview}
-                      alt="Preview"
-                      className="w-full aspect-video object-cover rounded-lg"
-                    />
-                    <button
-                      onClick={() => {
-                        setImagePreview(null);
-                        setImageFile(null);
-                      }}
-                      className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
+        <DialogContent className="max-w-4xl h-[100dvh] sm:h-[90dvh] overflow-hidden p-0">
+          <div className="h-full overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-primary [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-transparent">
+            <div className="p-6">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingCourt ? "Edit Court" : "Add New Court"}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                {/* Image Upload */}
+                <div className="mt-4 mb-10">
+                  <Label>Court Image</Label>
+                  <div className="mt-10">
+                    {imagePreview ? (
+                      <div className="relative">
+                        <img
+                          src={imagePreview}
+                          alt="Preview"
+                          className="w-full aspect-video object-cover rounded-lg"
+                        />
+                        <button
+                          onClick={() => {
+                            setImagePreview(null);
+                            setImageFile(null);
+                          }}
+                          className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-forest transition-colors">
+                        <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                        <p className="text-sm font-medium">Click to upload</p>
+                        <p className="text-xs text-muted-foreground">
+                          PNG, JPG, GIF up to 5MB
+                        </p>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageSelect}
+                          className="hidden"
+                        />
+                      </label>
+                    )}
                   </div>
-                ) : (
-                  <label className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-forest transition-colors">
-                    <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                    <p className="text-sm font-medium">Click to upload</p>
-                    <p className="text-xs text-muted-foreground">
-                      PNG, JPG, GIF up to 5MB
-                    </p>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageSelect}
-                      className="hidden"
+                </div>
+
+                {/* Court Name */}
+                <div>
+                  <Label htmlFor="name">Court Name *</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
+                    placeholder="e.g., Court 1 - Paradise"
+                    className="mt-1"
+                  />
+                </div>
+
+                {/* Description */}
+                <div>
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) =>
+                      setFormData({ ...formData, description: e.target.value })
+                    }
+                    placeholder="Describe your court..."
+                    className="mt-1"
+                    rows={3}
+                  />
+                </div>
+
+                {/* Features Management with Drag & Drop */}
+                <div>
+                  <Label>Court Features</Label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Add features and drag to reorder (top features show first)
+                  </p>
+
+                  {/* Add Feature Input */}
+                  <div className="flex gap-2 mb-3">
+                    <Input
+                      value={featureInput}
+                      onChange={(e) => setFeatureInput(e.target.value)}
+                      placeholder="e.g., Professional-grade surface"
+                      onKeyPress={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleAddFeature();
+                        }
+                      }}
                     />
-                  </label>
-                )}
+                    <Button
+                      type="button"
+                      onClick={handleAddFeature}
+                      disabled={!featureInput.trim()}
+                    >
+                      Add
+                    </Button>
+                  </div>
+
+                  {/* Sortable Features List */}
+                  {formData.features.length > 0 && (
+                    <div className="border rounded-lg p-3">
+                      <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEnd}
+                      >
+                        <SortableContext
+                          items={formData.features.map(
+                            (_, i) => `feature-${i}`
+                          )}
+                          strategy={verticalListSortingStrategy}
+                        >
+                          <div className="space-y-2">
+                            {formData.features.map((feature, index) => (
+                              <SortableFeatureItem
+                                key={`feature-${index}`}
+                                id={`feature-${index}`}
+                                feature={feature}
+                                onRemove={() => handleRemoveFeature(index)}
+                              />
+                            ))}
+                          </div>
+                        </SortableContext>
+                      </DndContext>
+                    </div>
+                  )}
+                </div>
+
+                {/* Available Toggle */}
+                <div className="flex items-center gap-3">
+                  <Checkbox
+                    id="available"
+                    checked={formData.available}
+                    onCheckedChange={(checked) =>
+                      setFormData({
+                        ...formData,
+                        available: checked as boolean,
+                      })
+                    }
+                  />
+                  <Label htmlFor="available" className="cursor-pointer">
+                    Court is available for booking
+                  </Label>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={handleCloseDialog}
+                    disabled={uploading}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    onClick={handleSubmit}
+                    disabled={uploading}
+                  >
+                    {uploading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>{editingCourt ? "Update" : "Add"} Court</>
+                    )}
+                  </Button>
+                </div>
               </div>
-            </div>
-
-            {/* Court Name */}
-            <div>
-              <Label htmlFor="name">Court Name *</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                placeholder="e.g., Court 1 - Paradise"
-                className="mt-1"
-              />
-            </div>
-
-            {/* Description */}
-            <div>
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                placeholder="Describe your court..."
-                className="mt-1"
-                rows={3}
-              />
-            </div>
-
-            {/* Available Toggle */}
-            <div className="flex items-center gap-3">
-              <Checkbox
-                id="available"
-                checked={formData.available}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, available: checked as boolean })
-                }
-              />
-              <Label htmlFor="available" className="cursor-pointer">
-                Court is available for booking
-              </Label>
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-3 pt-4">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={handleCloseDialog}
-                disabled={uploading}
-              >
-                Cancel
-              </Button>
-              <Button
-                className="flex-1"
-                onClick={handleSubmit}
-                disabled={uploading}
-              >
-                {uploading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>{editingCourt ? "Update" : "Add"} Court</>
-                )}
-              </Button>
             </div>
           </div>
         </DialogContent>

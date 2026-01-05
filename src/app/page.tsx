@@ -2,6 +2,7 @@ import Navbar from "@/components/layout/Navbar";
 import Hero from "@/components/home/Hero";
 import Welcome from "@/components/home/Welcome";
 import FeaturesGrid from "@/components/home/FeaturesGrid";
+import Courts from "@/components/home/Courts";
 import Pricing from "@/components/home/Pricing";
 import Footer from "@/components/layout/Footer";
 import BookingDialogWrapper from "@/components/booking/BookingDialogWrapper";
@@ -23,6 +24,7 @@ export default async function Home() {
   const welcomeContent = sections.welcome || welcomeInitial;
   const featuresContent = sections.features || { items: featuresInitial };
   const pricingContent = sections.pricing || pricingInitial;
+  const courts = sections.courts || [];
 
   return (
     <>
@@ -34,6 +36,7 @@ export default async function Home() {
         <Hero content={heroContent} />
         <Welcome content={welcomeContent} />
         <FeaturesGrid content={featuresContent} />
+        <Courts courts={courts} />
         <Pricing content={pricingContent} />
         <Footer />
       </main>
