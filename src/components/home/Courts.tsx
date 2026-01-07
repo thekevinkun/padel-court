@@ -7,7 +7,7 @@ import { Expand } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 
-import CourtLightbox from "./CourtLightBox";
+import CourtLightbox from "@/components/lightbox/CourtLightbox";
 
 import { Court } from "@/types";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
