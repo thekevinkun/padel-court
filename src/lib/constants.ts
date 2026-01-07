@@ -1,4 +1,9 @@
-import { FeatureItem, PricingContent, TestimonialsContent } from "@/types";
+import {
+  FeatureItem,
+  PricingContent,
+  TestimonialsContent,
+  GalleryContent,
+} from "@/types";
 
 export const BUSINESS_NAME = "Padel Batu Alam Permai";
 export const BUSINESS_ADDRESS =
@@ -234,6 +239,75 @@ export const pricingInitial: PricingContent = {
       { name: "Premium Racket", price: "60,000", description: "Per session" },
     ],
   },
+};
+
+export const galleryInitial: GalleryContent = {
+  badge: "Gallery",
+  heading: "Captured Moments",
+  description:
+    "Experience the energy and passion of padel through stunning visuals of our world-class facilities and vibrant community",
+  images: [
+    {
+      id: "1",
+      url: "/images/gallery-placeholder.png",
+      alt: "Intense padel match on Court 1",
+      caption: "Professional tournament action on our premium courts",
+    },
+    {
+      id: "2",
+      url: "/images/gallery-placeholder.png",
+      alt: "Court 2 during sunset",
+      caption: "Golden hour games with spectacular views",
+    },
+    {
+      id: "3",
+      url: "/images/gallery-placeholder.png",
+      alt: "Happy players after a game",
+      caption: "Building friendships through padel",
+    },
+    {
+      id: "4",
+      url: "/images/gallery-placeholder.png",
+      alt: "Night game with professional lighting",
+      caption: "State-of-the-art lighting for evening matches",
+    },
+    {
+      id: "5",
+      url: "/images/gallery-placeholder.png",
+      alt: "Wide view of all courts",
+      caption: "Our complete facility overview",
+    },
+    {
+      id: "6",
+      url: "/images/gallery-placeholder.png",
+      alt: "Professional coaching in action",
+      caption: "Expert coaching to elevate your game",
+    },
+    {
+      id: "7",
+      url: "/images/gallery-placeholder.png",
+      alt: "Court surface detail",
+      caption: "Premium playing surfaces for optimal performance",
+    },
+    {
+      id: "8",
+      url: "/images/gallery-placeholder.png",
+      alt: "Community event at the club",
+      caption: "Regular tournaments and social gatherings",
+    },
+    {
+      id: "9",
+      url: "/images/gallery-placeholder.png",
+      alt: "Club amenities and lounge",
+      caption: "Comfortable spaces to relax and socialize",
+    },
+  ],
+  note: {
+    title: "Every Game Tells a Story",
+    description:
+      "From thrilling matches to memorable moments with friends, our courts are where passion meets excellence. Join our community and create your own unforgettable padel journey.",
+  },
+  version: 1,
 };
 
 export const footerData = {

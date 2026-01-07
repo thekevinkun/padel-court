@@ -6,6 +6,7 @@ import {
   Court,
   TestimonialsContent,
   PricingContent,
+  GalleryContent,
   ContentSections,
 } from "@/types";
 
@@ -53,6 +54,7 @@ export async function getContentSections(): Promise<ContentSectionsWithCourts> {
       courts: courts || [], // Add courts array
       testimonials: null,
       pricing: null,
+      gallery: null,
     };
 
     // Map sections if they exist
@@ -74,6 +76,9 @@ export async function getContentSections(): Promise<ContentSectionsWithCourts> {
           case "pricing":
             content.pricing = section.content as PricingContent;
             break;
+          case "gallery":
+            content.gallery = section.content as GalleryContent;
+            break;
         }
       });
     }
@@ -88,6 +93,7 @@ export async function getContentSections(): Promise<ContentSectionsWithCourts> {
       testimonials: null,
       pricing: null,
       courts: [],
+      gallery: null,
     };
   }
 }

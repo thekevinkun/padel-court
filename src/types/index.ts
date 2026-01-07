@@ -254,12 +254,58 @@ export interface PricingSectionCMS {
   savePricing: () => Promise<void>;
 }
 
+export interface GalleryImage {
+  id: string;
+  url: string;
+  alt: string;
+  caption?: string;
+}
+
+export interface GalleryNote {
+  title: string;
+  description: string;
+}
+
+export interface GalleryContent {
+  version?: number;
+  badge: string;
+  heading: string;
+  description: string;
+  images: GalleryImage[];
+  note: GalleryNote;
+}
+
+export interface GallerySectionCMS {
+  gallery: GalleryContent;
+  setGallery: (gallery: GalleryContent) => void;
+  galleryDialogOpen: boolean;
+  setGalleryDialogOpen: (open: boolean) => void;
+  imageDialogOpen: boolean;
+  setImageDialogOpen: (open: boolean) => void;
+  noteDialogOpen: boolean;
+  setNoteDialogOpen: (open: boolean) => void;
+  editingImage: GalleryImage | null;
+  setEditingImage: (image: GalleryImage | null) => void;
+  imageFile: File | null;
+  setImageFile: (file: File | null) => void;
+  imagePreview: string | null;
+  setImagePreview: (preview: string | null) => void;
+  onImageSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  openAddImage: () => void;
+  openEditImage: (image: GalleryImage) => void;
+  deleteImage: (id: string) => void;
+  saveImage: () => Promise<void>;
+  saveNote: () => Promise<void>;
+  savingGallery: boolean;
+}
+
 export type ContentSections = {
   hero: HeroContent | null;
   welcome: WelcomeContent | null;
   features: FeaturesContent | null;
   testimonials: TestimonialsContent | null;
   pricing: PricingContent | null;
+  gallery: GalleryContent | null;
 };
 
 export type Version = {

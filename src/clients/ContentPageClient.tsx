@@ -8,6 +8,7 @@ import WelcomeSection from "@/components/dashboard/WelcomeSection";
 import FeaturesGridSection from "@/components/dashboard/FeaturesGridSection";
 import TestimonialsSection from "@/components/dashboard/TestimonialsSection";
 import PricingSection from "@/components/dashboard/PricingSection";
+import GallerySection from "@/components/dashboard/GallerySection";
 
 import { supabase } from "@/lib/supabase/client";
 import {
@@ -16,6 +17,7 @@ import {
   featuresInitial,
   testimonialsInitial,
   pricingInitial,
+  galleryInitial,
 } from "@/lib/constants";
 import {
   uploadImage,
@@ -29,6 +31,8 @@ import {
   PricingContent,
   WelcomeContent,
   TestimonialsContent,
+  GalleryContent,
+  GalleryImage,
 } from "@/types";
 
 const ContentPageClient = () => {
@@ -517,6 +521,164 @@ const ContentPageClient = () => {
     });
   };
 
+  /* GALLERY HANDLERS */
+  // Gallery state
+  const [gallery, setGallery] = useState<GalleryContent>({
+    ...galleryInitial,
+    version: 1,
+  });
+  const [galleryDialogOpen, setGalleryDialogOpen] = useState(false);
+  const [galleryImageDialogOpen, setGalleryImageDialogOpen] = useState(false);
+  const [galleryNoteDialogOpen, setGalleryNoteDialogOpen] = useState(false);
+  const [editingGalleryImage, setEditingGalleryImage] =
+    useState<GalleryImage | null>(null);
+  const [galleryImageFile, setGalleryImageFile] = useState<File | null>(null);
+  const [galleryImagePreview, setGalleryImagePreview] = useState<string | null>(
+    null
+  );
+  const [savingGallery, setSavingGallery] = useState(false);
+
+  // Gallery functions
+  const onGalleryImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setGalleryImageFile(f);
+    readPreview(f, setGalleryImagePreview);
+  };
+
+  const openAddGalleryImage = () => {
+    setEditingGalleryImage({
+      id: `new-${Date.now()}`,
+      url: "",
+      alt: "",
+      caption: "",
+    });
+    setGalleryImagePreview(null);
+    setGalleryImageFile(null);
+    setGalleryImageDialogOpen(true);
+  };
+
+  const openEditGalleryImage = (image: GalleryImage) => {
+    setEditingGalleryImage({ ...image });
+    setGalleryImagePreview(image.url);
+    setGalleryImageFile(null);
+    setGalleryImageDialogOpen(true);
+  };
+
+  const deleteGalleryImage = (id: string) => {
+    if (!confirm("Delete this image from gallery?")) return;
+    setGallery((prev) => ({
+      ...prev,
+      images: prev.images.filter((img) => img.id !== id),
+    }));
+  };
+
+  const saveGalleryImage = async () => {
+    if (!editingGalleryImage) return;
+    setSavingGallery(true);
+
+    try {
+      const copy = { ...editingGalleryImage };
+
+      // Upload new image if selected
+      if (galleryImageFile) {
+        const validation = validateImageFile(galleryImageFile, 5);
+        if (!validation.isValid) {
+          alert(validation.error);
+          setSavingGallery(false);
+          return;
+        }
+
+        const uploaded = await uploadImage(
+          "content",
+          galleryImageFile,
+          "gallery"
+        );
+        if (uploaded) {
+          copy.url = uploaded;
+        } else {
+          throw new Error("Image upload failed");
+        }
+      }
+
+      // Validate required fields
+      if (!copy.url || !copy.alt) {
+        alert("Image and Alt text are required");
+        setSavingGallery(false);
+        return;
+      }
+
+      // Update or add image
+      const updatedImages = (() => {
+        const exists = gallery.images.find((img) => img.id === copy.id);
+        if (exists) {
+          return gallery.images.map((img) => (img.id === copy.id ? copy : img));
+        }
+        return [...gallery.images, copy];
+      })();
+
+      const changeDesc = editingGalleryImage.id.startsWith("new-")
+        ? "Added new gallery image"
+        : "Updated gallery image";
+
+      // Save to database
+      await saveSectionWithVersion(
+        "gallery",
+        { ...gallery, images: updatedImages },
+        changeDesc
+      );
+
+      // Update state
+      setGallery({
+        ...gallery,
+        images: updatedImages,
+        version: gallery.version,
+      });
+      setGalleryImageDialogOpen(false);
+      setEditingGalleryImage(null);
+      setGalleryImagePreview(null);
+      setGalleryImageFile(null);
+
+      // Trigger revalidation
+      await triggerRevalidation();
+      console.log("✅ Gallery image saved");
+    } catch (err) {
+      console.error("Save gallery image error:", err);
+      alert("Failed to save image. Please try again.");
+    } finally {
+      setSavingGallery(false);
+    }
+  };
+
+  const saveGalleryNote = async () => {
+    if (!gallery.note.title || !gallery.note.description) {
+      alert("Note title and description are required");
+      return;
+    }
+
+    setSavingGallery(true);
+    try {
+      // Save to database
+      await saveSectionWithVersion(
+        "gallery",
+        gallery,
+        "Updated gallery section"
+      );
+
+      setGalleryNoteDialogOpen(false);
+      setGalleryDialogOpen(false);
+
+      // Trigger revalidation
+      await triggerRevalidation();
+      console.log("✅ Gallery note saved");
+    } catch (err) {
+      console.error("Save gallery note error:", err);
+      alert("Failed to save note");
+    } finally {
+      setSavingGallery(false);
+    }
+  };
+
   /* Fetch all sections from database */
   const fetchAllSections = async () => {
     try {
@@ -552,6 +714,9 @@ const ContentPageClient = () => {
               break;
             case "pricing":
               setPricing({ ...section.content, version: section.version });
+              break;
+            case "gallery":
+              setGallery({ ...section.content, version: section.version });
               break;
           }
         });
@@ -741,6 +906,29 @@ const ContentPageClient = () => {
         removePricingItem={removePricingItem}
         savingPricing={savingPricing}
         savePricing={savePricing}
+      />
+      <GallerySection
+        gallery={gallery}
+        setGallery={setGallery}
+        galleryDialogOpen={galleryDialogOpen}
+        setGalleryDialogOpen={setGalleryDialogOpen}
+        imageDialogOpen={galleryImageDialogOpen}
+        setImageDialogOpen={setGalleryImageDialogOpen}
+        noteDialogOpen={galleryNoteDialogOpen}
+        setNoteDialogOpen={setGalleryNoteDialogOpen}
+        editingImage={editingGalleryImage}
+        setEditingImage={setEditingGalleryImage}
+        imageFile={galleryImageFile}
+        setImageFile={setGalleryImageFile}
+        imagePreview={galleryImagePreview}
+        setImagePreview={setGalleryImagePreview}
+        onImageSelect={onGalleryImageSelect}
+        openAddImage={openAddGalleryImage}
+        openEditImage={openEditGalleryImage}
+        deleteImage={deleteGalleryImage}
+        saveImage={saveGalleryImage}
+        saveNote={saveGalleryNote}
+        savingGallery={savingGallery}
       />
     </div>
   );

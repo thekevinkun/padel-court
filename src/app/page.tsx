@@ -5,8 +5,10 @@ import FeaturesGrid from "@/components/home/FeaturesGrid";
 import Courts from "@/components/home/Courts";
 import Testimonials from "@/components/home/Testimonials";
 import Pricing from "@/components/home/Pricing";
+import Gallery from "@/components/home/Gallery";
 import Footer from "@/components/layout/Footer";
 import BookingDialogWrapper from "@/components/booking/BookingDialogWrapper";
+
 import { getContentSections } from "@/lib/content";
 import {
   heroInitial,
@@ -14,9 +16,9 @@ import {
   featuresInitial,
   testimonialsInitial,
   pricingInitial,
+  galleryInitial,
 } from "@/lib/constants";
 
-// This is now a Server Component (no "use client")
 export default async function Home() {
   // Fetch content server-side before rendering
   const sections = await getContentSections();
@@ -27,6 +29,7 @@ export default async function Home() {
   const featuresContent = sections.features || { items: featuresInitial };
   const testimonialsContent = sections.testimonials || testimonialsInitial;
   const pricingContent = sections.pricing || pricingInitial;
+  const galleryContent = sections.gallery || galleryInitial;
   const courts = sections.courts || [];
 
   return (
@@ -34,7 +37,7 @@ export default async function Home() {
       <main className="min-h-screen">
         {/* Client component wrapper handles navbar interactivity */}
         <Navbar />
-        
+
         {/* All content is pre-rendered server-side */}
         <Hero content={heroContent} />
         <Welcome content={welcomeContent} />
@@ -42,6 +45,7 @@ export default async function Home() {
         <Courts courts={courts} />
         <Testimonials content={testimonialsContent} />
         <Pricing content={pricingContent} />
+        <Gallery content={galleryContent} />
         <Footer />
       </main>
 
@@ -51,5 +55,5 @@ export default async function Home() {
   );
 }
 
-// Optional: Add revalidation for ISR (Incremental Static Regeneration)
+// Add revalidation for ISR (Incremental Static Regeneration)
 export const revalidate = 300; // Revalidate every 5 minutes
