@@ -4,6 +4,7 @@ import {
   WelcomeContent,
   FeaturesContent,
   Court,
+  TestimonialsContent,
   PricingContent,
   ContentSections,
 } from "@/types";
@@ -49,8 +50,9 @@ export async function getContentSections(): Promise<ContentSectionsWithCourts> {
       hero: null,
       welcome: null,
       features: null,
-      pricing: null,
       courts: courts || [], // Add courts array
+      testimonials: null,
+      pricing: null,
     };
 
     // Map sections if they exist
@@ -66,6 +68,9 @@ export async function getContentSections(): Promise<ContentSectionsWithCourts> {
           case "features":
             content.features = section.content as FeaturesContent;
             break;
+          case "testimonials":
+            content.testimonials = section.content as TestimonialsContent;
+            break;
           case "pricing":
             content.pricing = section.content as PricingContent;
             break;
@@ -80,6 +85,7 @@ export async function getContentSections(): Promise<ContentSectionsWithCourts> {
       hero: null,
       welcome: null,
       features: null,
+      testimonials: null,
       pricing: null,
       courts: [],
     };

@@ -1,4 +1,4 @@
-import { FeatureItem, PricingContent } from "@/types";
+import { FeatureItem, PricingContent, TestimonialsContent } from "@/types";
 
 export const BUSINESS_NAME = "Padel Batu Alam Permai";
 export const BUSINESS_ADDRESS =
@@ -110,6 +110,48 @@ export const featuresInitial: FeatureItem[] = [
   },
 ];
 
+// Initial/default testimonials content
+export const testimonialsInitial: TestimonialsContent = {
+  badge: "Testimonials",
+  heading: "What Our Players Say",
+  description:
+    "Hear from our community of passionate padel players about their experience at our facilities",
+  videoUrl: "/images/court-placeholder.png",
+  backgroundImage: "/images/court-placeholder.png", // Background for overlay section
+  testimonials: [
+    {
+      id: "1",
+      name: "Cecilia C",
+      role: "Regular Player",
+      rating: 5,
+      comment:
+        "Great environment and love that the courts are outdoor. The staff are super friendly and helpful. Perfect place for chilling and grabbing a drink after playing. Overall, it's a great spot to stay active and meet new people. 🏓",
+      avatar: null,
+      date: new Date().toISOString(),
+    },
+    {
+      id: "2",
+      name: "David M",
+      role: "Weekend Warrior",
+      rating: 5,
+      comment:
+        "Amazing facilities! The courts are always well-maintained and the booking system is so easy to use. The coaching staff helped me improve my game significantly. Highly recommend to anyone looking to play padel!",
+      avatar: null,
+      date: new Date().toISOString(),
+    },
+    {
+      id: "3",
+      name: "Sarah L",
+      role: "Competitive Player",
+      rating: 5,
+      comment:
+        "Best padel venue in the area! The atmosphere is fantastic, courts are professional-grade, and the community here is wonderful. I've made so many friends through the tournaments they organize.",
+      avatar: null,
+      date: new Date().toISOString(),
+    },
+  ],
+};
+
 // Pricing Structure
 export const pricingInitial: PricingContent = {
   badge: "Our Pricing List",
@@ -196,7 +238,8 @@ export const pricingInitial: PricingContent = {
 
 export const footerData = {
   businessName: "Padel Batu Alam Permai",
-  tagline: "Premium padel courts in Batu Alam Permai. Book your court online with instant confirmation.",
+  tagline:
+    "Premium padel courts in Batu Alam Permai. Book your court online with instant confirmation.",
   email: "info@padelbap.com",
   phone: "+62 812 3456 7890",
   whatsapp: "+62 812 3456 7890",
@@ -206,8 +249,16 @@ export const footerData = {
     weekend: { open: "06:00", close: "23:00" },
   },
   social: [
-    { name: "Facebook", icon: "facebook", url: "https://facebook.com/padelbap" },
-    { name: "Instagram", icon: "instagram", url: "https://instagram.com/padelbap" },
+    {
+      name: "Facebook",
+      icon: "facebook",
+      url: "https://facebook.com/padelbap",
+    },
+    {
+      name: "Instagram",
+      icon: "instagram",
+      url: "https://instagram.com/padelbap",
+    },
   ],
   links: {
     useful: [

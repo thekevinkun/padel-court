@@ -1,9 +1,8 @@
-// /src/app/layout.tsx
 import type { Metadata } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
 import StructuredData from "@/components/StructuredData";
 import { generateSiteMetadata, defaultMetadata } from "@/lib/metadata";
-import { BookingProvider } from "@/contexts/BookingContext";
+import ClientProviders from "@/providers/ClientProviders";
 import "./globals.css";
 
 const inter = Inter({
@@ -61,8 +60,7 @@ export default function RootLayout({
         <StructuredData />
       </head>
       <body>
-        {/* Wrap everything with booking context provider */}
-        <BookingProvider>{children}</BookingProvider>
+        <ClientProviders>{children}</ClientProviders>
       </body>
     </html>
   );

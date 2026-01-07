@@ -159,6 +159,52 @@ export interface FeaturesGridSectionCMS {
   savingFeatures: boolean;
 }
 
+export interface Testimonial {
+  id: string;
+  name: string;
+  role?: string;
+  rating: number;
+  comment: string;
+  avatar?: string | null;
+  date?: string;
+}
+
+export interface TestimonialsContent {
+  version?: number;
+  badge: string;
+  heading: string;
+  description: string;
+  videoUrl: string;
+  backgroundImage: string;
+  testimonials: Testimonial[];
+}
+
+export interface TestimonialsSectionCMS {
+  testimonials: TestimonialsContent;
+  setTestimonials: React.Dispatch<React.SetStateAction<TestimonialsContent>>;
+  testimonialsDialogOpen: boolean;
+  setTestimonialsDialogOpen: (open: boolean) => void;
+  videoPreview: string | null;
+  setVideoPreview: (preview: string | null) => void;
+  backgroundPreview: string | null;
+  setBackgroundPreview: (preview: string | null) => void;
+  setVideoFile: (file: File | null) => void;
+  setBackgroundFile: (file: File | null) => void;
+  onVideoSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onBackgroundSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  saveTestimonials: () => Promise<void>;
+  savingTestimonials: boolean;
+  testimonialDialogOpen: boolean;
+  setTestimonialDialogOpen: (open: boolean) => void;
+  editingTestimonial: Testimonial | null;
+  setEditingTestimonial: (testimonial: Testimonial | null) => void;
+  openAddTestimonial: () => void;
+  openEditTestimonial: (testimonial: Testimonial) => void;
+  deleteTestimonial: (id: string) => void;
+  saveTestimonial: () => Promise<void>;
+  savingTestimonial: boolean;
+}
+
 export interface PricingItem {
   name: string;
   price: string;
@@ -212,6 +258,7 @@ export type ContentSections = {
   hero: HeroContent | null;
   welcome: WelcomeContent | null;
   features: FeaturesContent | null;
+  testimonials: TestimonialsContent | null;
   pricing: PricingContent | null;
 };
 
