@@ -50,6 +50,14 @@ const ContentPageClient = () => {
   const onHeroImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
+
+    // Validate file before setting
+    const validation = validateImageFile(f, 5);
+    if (!validation.isValid) {
+      alert(validation.error);
+      return;
+    }
+
     setHeroImageFile(f);
     readPreview(f, setHeroPreview);
   };
@@ -58,33 +66,40 @@ const ContentPageClient = () => {
     setSavingHero(true);
     try {
       let imageUrl = hero.image_url;
+
       if (heroImageFile) {
-        // Validate file
-        const validation = validateImageFile(heroImageFile, 5);
-        if (!validation.isValid) {
-          alert(validation.error);
-          return;
+        // Delete old image if updating
+        if (hero.image_url) {
+          const oldFilePath = extractFilePathFromUrl(hero.image_url, "content");
+          if (oldFilePath) {
+            await deleteImage("content", oldFilePath);
+            console.log("🗑️ Old hero image deleted");
+          }
         }
 
+        // Upload new image to content/hero/
         const uploaded = await uploadImage("content", heroImageFile, "hero");
-        if (uploaded) imageUrl = uploaded;
+        if (!uploaded) {
+          throw new Error("Failed to upload image. Please try again.");
+        }
+        imageUrl = uploaded;
       }
 
       const updatedHero = { ...hero, image_url: imageUrl };
 
-      // Save to database
       await saveSectionWithVersion("hero", updatedHero, "Updated hero section");
-
       setHero({ ...updatedHero, version: hero.version });
       setHeroDialogOpen(false);
-
-      // Trigger revalidation
       await triggerRevalidation();
 
       console.log("✅ Hero section saved");
     } catch (err) {
       console.error("Save hero error:", err);
-      alert("Failed to save hero");
+      alert(
+        `Failed to save hero: ${
+          err instanceof Error ? err.message : "Unknown error"
+        }`
+      );
     } finally {
       setSavingHero(false);
       setHeroImageFile(null);
@@ -114,6 +129,14 @@ const ContentPageClient = () => {
   ) => {
     const f = e.target.files?.[0];
     if (!f) return;
+
+    // Validate file before setting
+    const validation = validateImageFile(f, 5);
+    if (!validation.isValid) {
+      alert(`Image ${index + 1}: ${validation.error}`);
+      return;
+    }
+
     const arr = [...welcomeFiles];
     arr[index] = f;
     setWelcomeFiles(arr);
@@ -134,41 +157,51 @@ const ContentPageClient = () => {
     setSavingWelcome(true);
     try {
       const images = [...tempWelcomePreviews];
+
       for (let i = 0; i < welcomeFiles.length; i++) {
         const f = welcomeFiles[i];
         if (f) {
-          // Validate each file
-          const validation = validateImageFile(f, 5);
-          if (!validation.isValid) {
-            alert(`Image ${i + 1}: ${validation.error}`);
-            continue;
+          // Delete old image if updating this slot
+          if (welcome.images[i]) {
+            const oldFilePath = extractFilePathFromUrl(
+              welcome.images[i],
+              "content"
+            );
+            if (oldFilePath) {
+              await deleteImage("content", oldFilePath);
+              console.log(`🗑️ Old welcome image ${i + 1} deleted`);
+            }
           }
 
+          // Upload new image to content/welcome/
           const uploaded = await uploadImage("content", f, "welcome");
-          if (uploaded) images[i] = uploaded;
+          if (!uploaded) {
+            throw new Error(`Failed to upload image ${i + 1}`);
+          }
+          images[i] = uploaded;
         }
       }
 
       const updatedWelcome = { ...welcome, images };
 
-      // Save to database
       await saveSectionWithVersion(
         "welcome",
         updatedWelcome,
         "Updated welcome section"
       );
-
       setWelcome({ ...updatedWelcome, version: welcome.version });
       setWelcomePreviews(images);
       setWelcomeDialogOpen(false);
-
-      // Trigger revalidation
       await triggerRevalidation();
 
       console.log("✅ Welcome section saved");
     } catch (err) {
       console.error("Save welcome error:", err);
-      alert("Failed to save welcome");
+      alert(
+        `Failed to save welcome: ${
+          err instanceof Error ? err.message : "Unknown error"
+        }`
+      );
     } finally {
       setSavingWelcome(false);
       setWelcomeFiles(Array(4).fill(null));
@@ -191,6 +224,14 @@ const ContentPageClient = () => {
   const onFeatureImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
+
+    // Validate file before setting
+    const validation = validateImageFile(f, 5);
+    if (!validation.isValid) {
+      alert(validation.error);
+      return;
+    }
+
     setFeatureFile(f);
     readPreview(f, setFeaturePreview);
   };
@@ -231,19 +272,26 @@ const ContentPageClient = () => {
     setSavingFeatures(true);
     try {
       const copy = { ...editingFeature };
+
       if (featureFile) {
-        // Validate file
-        const validation = validateImageFile(featureFile, 5);
-        if (!validation.isValid) {
-          alert(validation.error);
-          return;
+        // Delete old image if updating
+        const oldImageUrl = copy.type === "image" ? copy.src : copy.bgImage;
+        if (oldImageUrl) {
+          const oldFilePath = extractFilePathFromUrl(oldImageUrl, "content");
+          if (oldFilePath) {
+            await deleteImage("content", oldFilePath);
+            console.log("🗑️ Old feature image deleted");
+          }
         }
 
+        // Upload new image to content/features/
         const uploaded = await uploadImage("content", featureFile, "features");
-        if (uploaded) {
-          if (copy.type === "image") copy.src = uploaded;
-          else copy.bgImage = uploaded;
+        if (!uploaded) {
+          throw new Error("Failed to upload image. Please try again.");
         }
+
+        if (copy.type === "image") copy.src = uploaded;
+        else copy.bgImage = uploaded;
       }
 
       const updatedFeatures = (() => {
@@ -263,19 +311,19 @@ const ContentPageClient = () => {
         { items: updatedFeatures },
         changeDesc
       );
-
-      // Update state with new items and keep version
       setFeatures({ items: updatedFeatures, version: features.version });
       setFeaturesDialogOpen(false);
       setEditingFeature(null);
-
-      // Trigger revalidation
       await triggerRevalidation();
 
       console.log("✅ Features section saved");
     } catch (err) {
       console.error("Save feature error:", err);
-      alert("Failed to save feature");
+      alert(
+        `Failed to save feature: ${
+          err instanceof Error ? err.message : "Unknown error"
+        }`
+      );
     } finally {
       setSavingFeatures(false);
       setFeatureFile(null);
@@ -291,28 +339,50 @@ const ContentPageClient = () => {
   });
   const [testimonialsDialogOpen, setTestimonialsDialogOpen] = useState(false);
   const [testimonialDialogOpen, setTestimonialDialogOpen] = useState(false);
-  const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [videoPreview, setVideoPreview] = useState<string | null>(null);
-  const [backgroundFile, setBackgroundFile] = useState<File | null>(null);
-  const [backgroundPreview, setBackgroundPreview] = useState<string | null>(
-    null
-  );
+  const [testimonialsVideoFile, setTestimonialsVideoFile] =
+    useState<File | null>(null);
+  const [testimonialsVideoPreview, setTestimonialsVideoPreview] = useState<
+    string | null
+  >(null);
+  const [testimonialsBackgroundFile, setTestimonialsBackgroundFile] =
+    useState<File | null>(null);
+  const [testimonialsBackgroundPreview, setTestimonialsBackgroundPreview] =
+    useState<string | null>(null);
   const [savingTestimonials, setSavingTestimonials] = useState(false);
   const [editingTestimonial, setEditingTestimonial] = useState<any>(null);
 
   // Testimonials functions
-  const onVideoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onTestimonialsVideoSelect = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const f = e.target.files?.[0];
     if (!f) return;
-    setVideoFile(f);
-    readPreview(f, setVideoPreview);
+
+    // Check video file size (50MB max)
+    if (f.size > 50 * 1024 * 1024) {
+      alert("Video file too large. Maximum size is 50MB.");
+      return;
+    }
+
+    setTestimonialsVideoFile(f);
+    readPreview(f, setTestimonialsVideoPreview);
   };
 
-  const onBackgroundSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onTestimonialsBackgroundSelect = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const f = e.target.files?.[0];
     if (!f) return;
-    setBackgroundFile(f);
-    readPreview(f, setBackgroundPreview);
+
+    // Validate background image
+    const validation = validateImageFile(f, 5);
+    if (!validation.isValid) {
+      alert(`Background: ${validation.error}`);
+      return;
+    }
+
+    setTestimonialsBackgroundFile(f);
+    readPreview(f, setTestimonialsBackgroundPreview);
   };
 
   const saveTestimonials = async () => {
@@ -321,37 +391,54 @@ const ContentPageClient = () => {
       let videoUrl = testimonials.videoUrl;
       let backgroundImage = testimonials.backgroundImage;
 
-      if (videoFile) {
-        // For video, we can skip strict image validation
-        // but still check file size
-        if (videoFile.size > 50 * 1024 * 1024) {
-          // 50MB max for video
-          alert("Video file too large. Maximum size is 50MB.");
-          return;
+      if (testimonialsVideoFile) {
+        // Delete old video if updating
+        if (testimonials.videoUrl) {
+          const oldFilePath = extractFilePathFromUrl(
+            testimonials.videoUrl,
+            "content"
+          );
+          if (oldFilePath) {
+            await deleteImage("content", oldFilePath);
+            console.log("🗑️ Old testimonials video deleted");
+          }
         }
 
+        // Upload new video to content/testimonials/
         const uploaded = await uploadImage(
           "content",
-          videoFile,
+          testimonialsVideoFile,
           "testimonials"
         );
-        if (uploaded) videoUrl = uploaded;
+        if (!uploaded) {
+          throw new Error("Failed to upload video. Please try again.");
+        }
+        videoUrl = uploaded;
       }
 
-      if (backgroundFile) {
-        // Validate background image
-        const validation = validateImageFile(backgroundFile, 5);
-        if (!validation.isValid) {
-          alert(`Background: ${validation.error}`);
-          return;
+      if (testimonialsBackgroundFile) {
+        // Delete old background if updating
+        if (testimonials.backgroundImage) {
+          const oldFilePath = extractFilePathFromUrl(
+            testimonials.backgroundImage,
+            "content"
+          );
+          if (oldFilePath) {
+            await deleteImage("content", oldFilePath);
+            console.log("🗑️ Old testimonials background deleted");
+          }
         }
 
+        // Upload new background to content/testimonials/
         const uploaded = await uploadImage(
           "content",
-          backgroundFile,
+          testimonialsBackgroundFile,
           "testimonials"
         );
-        if (uploaded) backgroundImage = uploaded;
+        if (!uploaded) {
+          throw new Error("Failed to upload background. Please try again.");
+        }
+        backgroundImage = uploaded;
       }
 
       const updatedTestimonials = {
@@ -365,22 +452,25 @@ const ContentPageClient = () => {
         updatedTestimonials,
         "Updated testimonials section"
       );
-
       setTestimonials({
         ...updatedTestimonials,
         version: testimonials.version,
       });
       setTestimonialsDialogOpen(false);
-
       await triggerRevalidation();
+
       console.log("✅ Testimonials section saved");
     } catch (err) {
       console.error("Save testimonials error:", err);
-      alert("Failed to save testimonials");
+      alert(
+        `Failed to save testimonials: ${
+          err instanceof Error ? err.message : "Unknown error"
+        }`
+      );
     } finally {
       setSavingTestimonials(false);
-      setVideoFile(null);
-      setBackgroundFile(null);
+      setTestimonialsVideoFile(null);
+      setTestimonialsBackgroundFile(null);
     }
   };
 
@@ -443,12 +533,16 @@ const ContentPageClient = () => {
       setTestimonials({ ...updatedContent, version: testimonials.version });
       setTestimonialDialogOpen(false);
       setEditingTestimonial(null);
-
       await triggerRevalidation();
+
       console.log("✅ Testimonial saved");
     } catch (err) {
       console.error("Save testimonial error:", err);
-      alert("Failed to save testimonial");
+      alert(
+        `Failed to save testimonial: ${
+          err instanceof Error ? err.message : "Unknown error"
+        }`
+      );
     } finally {
       setSavingTestimonials(false);
     }
@@ -542,6 +636,14 @@ const ContentPageClient = () => {
   const onGalleryImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
+
+    // Validate file before setting
+    const validation = validateImageFile(f, 5);
+    if (!validation.isValid) {
+      alert(validation.error);
+      return;
+    }
+
     setGalleryImageFile(f);
     readPreview(f, setGalleryImagePreview);
   };
@@ -580,25 +682,26 @@ const ContentPageClient = () => {
     try {
       const copy = { ...editingGalleryImage };
 
-      // Upload new image if selected
       if (galleryImageFile) {
-        const validation = validateImageFile(galleryImageFile, 5);
-        if (!validation.isValid) {
-          alert(validation.error);
-          setSavingGallery(false);
-          return;
+        // Delete old image if updating
+        if (copy.url && !copy.id.startsWith("new-")) {
+          const oldFilePath = extractFilePathFromUrl(copy.url, "content");
+          if (oldFilePath) {
+            await deleteImage("content", oldFilePath);
+            console.log("🗑️ Old gallery image deleted");
+          }
         }
 
+        // Upload new image to content/gallery/
         const uploaded = await uploadImage(
           "content",
           galleryImageFile,
           "gallery"
         );
-        if (uploaded) {
-          copy.url = uploaded;
-        } else {
-          throw new Error("Image upload failed");
+        if (!uploaded) {
+          throw new Error("Failed to upload image. Please try again.");
         }
+        copy.url = uploaded;
       }
 
       // Validate required fields
@@ -621,14 +724,11 @@ const ContentPageClient = () => {
         ? "Added new gallery image"
         : "Updated gallery image";
 
-      // Save to database
       await saveSectionWithVersion(
         "gallery",
         { ...gallery, images: updatedImages },
         changeDesc
       );
-
-      // Update state
       setGallery({
         ...gallery,
         images: updatedImages,
@@ -638,13 +738,16 @@ const ContentPageClient = () => {
       setEditingGalleryImage(null);
       setGalleryImagePreview(null);
       setGalleryImageFile(null);
-
-      // Trigger revalidation
       await triggerRevalidation();
+
       console.log("✅ Gallery image saved");
     } catch (err) {
       console.error("Save gallery image error:", err);
-      alert("Failed to save image. Please try again.");
+      alert(
+        `Failed to save image: ${
+          err instanceof Error ? err.message : "Unknown error"
+        }`
+      );
     } finally {
       setSavingGallery(false);
     }
@@ -709,8 +812,8 @@ const ContentPageClient = () => {
               break;
             case "testimonials":
               setTestimonials({ ...section.content, version: section.version });
-              setVideoPreview(section.content.videoUrl);
-              setBackgroundPreview(section.content.backgroundImage);
+              setTestimonialsVideoPreview(section.content.videoUrl);
+              setTestimonialsBackgroundPreview(section.content.backgroundImage);
               break;
             case "pricing":
               setPricing({ ...section.content, version: section.version });
@@ -876,14 +979,14 @@ const ContentPageClient = () => {
         setTestimonials={setTestimonials}
         testimonialsDialogOpen={testimonialsDialogOpen}
         setTestimonialsDialogOpen={setTestimonialsDialogOpen}
-        videoPreview={videoPreview}
-        setVideoPreview={setVideoPreview}
-        backgroundPreview={backgroundPreview}
-        setBackgroundPreview={setBackgroundPreview}
-        setVideoFile={setVideoFile}
-        setBackgroundFile={setBackgroundFile}
-        onVideoSelect={onVideoSelect}
-        onBackgroundSelect={onBackgroundSelect}
+        videoPreview={testimonialsVideoPreview}
+        setVideoPreview={setTestimonialsVideoPreview}
+        backgroundPreview={testimonialsBackgroundPreview}
+        setBackgroundPreview={setTestimonialsBackgroundPreview}
+        setVideoFile={setTestimonialsVideoFile}
+        setBackgroundFile={setTestimonialsBackgroundFile}
+        onVideoSelect={onTestimonialsVideoSelect}
+        onBackgroundSelect={onTestimonialsBackgroundSelect}
         saveTestimonials={saveTestimonials}
         savingTestimonials={savingTestimonials}
         testimonialDialogOpen={testimonialDialogOpen}
