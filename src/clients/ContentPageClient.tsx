@@ -143,10 +143,12 @@ const ContentPageClient = () => {
     const arr = [...welcomeFiles];
     arr[index] = f;
     setWelcomeFiles(arr);
+
+    // READ PREVIEW INTO TEMP PREVIEWS (NOT welcomePreviews!)
     readPreview(f, (src) => {
-      const p = [...welcomePreviews];
+      const p = [...tempWelcomePreviews]; // Use tempWelcomePreviews
       p[index] = src;
-      setWelcomePreviews(p);
+      setTempWelcomePreviews(p); // Update temp, not main previews
     });
   };
 
@@ -192,6 +194,7 @@ const ContentPageClient = () => {
         updatedWelcome,
         "Updated welcome section"
       );
+
       setWelcome({ ...updatedWelcome, version: welcome.version });
       setWelcomePreviews(images);
       setWelcomeDialogOpen(false);

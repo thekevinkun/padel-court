@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Edit, Upload, Loader2, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,7 +13,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
 import VersionHistoryDialog from "@/components/dashboard/VersionHistoryDialog";
 
 import { WelcomeSectionCMS } from "@/types";
@@ -50,10 +48,7 @@ const WelcomeSection = ({
                 sectionType="welcome"
                 currentVersion={welcome.version || 1}
               />
-              <Button
-                onClick={openWelcomeDialog}
-                className="gap-2"
-              >
+              <Button onClick={openWelcomeDialog} className="gap-2">
                 <Edit className="w-4 h-4" /> Edit
               </Button>
             </div>
@@ -66,7 +61,7 @@ const WelcomeSection = ({
                 key={idx}
                 className="aspect-[3/4] bg-gray-100 rounded-lg overflow-hidden"
               >
-                {p ? ( // ADD THIS CHECK HERE!
+                {p ? (
                   <img
                     src={p}
                     alt={`welcome-${idx}`}
