@@ -9,6 +9,7 @@ import FeaturesGridSection from "@/components/dashboard/FeaturesGridSection";
 import TestimonialsSection from "@/components/dashboard/TestimonialsSection";
 import PricingSection from "@/components/dashboard/PricingSection";
 import GallerySection from "@/components/dashboard/GallerySection";
+import CTASection from "@/components/dashboard/CTASection";
 
 import { supabase } from "@/lib/supabase/client";
 import {
@@ -18,6 +19,7 @@ import {
   testimonialsInitial,
   pricingInitial,
   galleryInitial,
+  ctaInitial,
 } from "@/lib/constants";
 import {
   uploadImage,
@@ -33,6 +35,7 @@ import {
   TestimonialsContent,
   GalleryContent,
   GalleryImage,
+  CTAContent,
 } from "@/types";
 
 const ContentPageClient = () => {
@@ -782,6 +785,94 @@ const ContentPageClient = () => {
     }
   };
 
+  /* CTA HANDLERS */
+  // CTA state
+  const [cta, setCta] = useState<CTAContent>({
+    ...ctaInitial,
+    version: 1,
+  });
+  const [ctaDialogOpen, setCtaDialogOpen] = useState(false);
+  const [ctaBackgroundFile, setCtaBackgroundFile] = useState<File | null>(null);
+  const [ctaBackgroundPreview, setCtaBackgroundPreview] = useState<
+    string | null
+  >(null);
+  const [savingCta, setSavingCta] = useState(false);
+
+  // CTA functions
+  const onCtaBackgroundSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+
+    // Validate file before setting
+    const validation = validateImageFile(f, 5);
+    if (!validation.isValid) {
+      alert(`Background: ${validation.error}`);
+      return;
+    }
+
+    setCtaBackgroundFile(f);
+    readPreview(f, setCtaBackgroundPreview);
+  };
+
+  const saveCta = async () => {
+    if (!cta.title || !cta.subtitle || !cta.buttonText || !cta.buttonLink) {
+      alert("All fields are required");
+      return;
+    }
+
+    setSavingCta(true);
+    try {
+      let backgroundImage = cta.backgroundImage;
+
+      // Upload new background image if selected
+      if (ctaBackgroundFile) {
+        // Delete old image if updating
+        if (cta.backgroundImage) {
+          const oldFilePath = extractFilePathFromUrl(
+            cta.backgroundImage,
+            "content"
+          );
+          if (oldFilePath) {
+            await deleteImage("content", oldFilePath);
+            console.log("🗑 Old CTA background deleted");
+          }
+        }
+
+        // Upload new image to content/cta/
+        const uploaded = await uploadImage("content", ctaBackgroundFile, "cta");
+        if (!uploaded) {
+          throw new Error("Failed to upload background. Please try again.");
+        }
+        backgroundImage = uploaded;
+      }
+
+      const updatedCta = {
+        ...cta,
+        backgroundImage,
+      };
+
+      // Save to database
+      await saveSectionWithVersion("cta", updatedCta, "Updated CTA section");
+
+      setCta({ ...updatedCta, version: cta.version });
+      setCtaDialogOpen(false);
+
+      // Trigger revalidation
+      await triggerRevalidation();
+      console.log("✅ CTA section saved");
+    } catch (err) {
+      console.error("Save CTA error:", err);
+      alert(
+        `Failed to save CTA: ${
+          err instanceof Error ? err.message : "Unknown error"
+        }`
+      );
+    } finally {
+      setSavingCta(false);
+      setCtaBackgroundFile(null);
+    }
+  };
+
   /* Fetch all sections from database */
   const fetchAllSections = async () => {
     try {
@@ -820,6 +911,10 @@ const ContentPageClient = () => {
               break;
             case "gallery":
               setGallery({ ...section.content, version: section.version });
+              break;
+            case "cta":
+              setCta({ ...section.content, version: section.version });
+              setCtaBackgroundPreview(section.content.backgroundImage);
               break;
           }
         });
@@ -1032,6 +1127,18 @@ const ContentPageClient = () => {
         saveImage={saveGalleryImage}
         saveNote={saveGalleryNote}
         savingGallery={savingGallery}
+      />
+      <CTASection
+        cta={cta}
+        setCta={setCta}
+        ctaDialogOpen={ctaDialogOpen}
+        setCtaDialogOpen={setCtaDialogOpen}
+        backgroundPreview={ctaBackgroundPreview}
+        setBackgroundPreview={setCtaBackgroundPreview}
+        setBackgroundFile={setCtaBackgroundFile}
+        onBackgroundSelect={onCtaBackgroundSelect}
+        saveCta={saveCta}
+        savingCta={savingCta}
       />
     </div>
   );

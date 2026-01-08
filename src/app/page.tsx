@@ -6,6 +6,7 @@ import Courts from "@/components/home/Courts";
 import Testimonials from "@/components/home/Testimonials";
 import Pricing from "@/components/home/Pricing";
 import Gallery from "@/components/home/Gallery";
+import CTA from "@/components/home/CTA";
 import Footer from "@/components/layout/Footer";
 import BookingDialogWrapper from "@/components/booking/BookingDialogWrapper";
 
@@ -17,6 +18,7 @@ import {
   testimonialsInitial,
   pricingInitial,
   galleryInitial,
+  ctaInitial,
 } from "@/lib/constants";
 
 export default async function Home() {
@@ -30,6 +32,7 @@ export default async function Home() {
   const testimonialsContent = sections.testimonials || testimonialsInitial;
   const pricingContent = sections.pricing || pricingInitial;
   const galleryContent = sections.gallery || galleryInitial;
+  const ctaContent = sections.cta || ctaInitial;
   const courts = sections.courts || [];
 
   return (
@@ -46,6 +49,7 @@ export default async function Home() {
         <Testimonials content={testimonialsContent} />
         <Pricing content={pricingContent} />
         <Gallery content={galleryContent} />
+        <CTA content={ctaContent} />
         <Footer />
       </main>
 

@@ -299,6 +299,28 @@ export interface GallerySectionCMS {
   savingGallery: boolean;
 }
 
+export interface CTAContent {
+  version?: number;
+  backgroundImage: string;
+  title: string;
+  subtitle: string;
+  buttonText: string;
+  buttonLink: string;
+}
+
+export interface CTASectionCMS {
+  cta: CTAContent;
+  setCta: (cta: CTAContent) => void;
+  ctaDialogOpen: boolean;
+  setCtaDialogOpen: (open: boolean) => void;
+  backgroundPreview: string | null;
+  setBackgroundPreview: (preview: string | null) => void;
+  setBackgroundFile: (file: File | null) => void;
+  onBackgroundSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  saveCta: () => void;
+  savingCta: boolean;
+}
+
 export type ContentSections = {
   hero: HeroContent | null;
   welcome: WelcomeContent | null;
@@ -306,6 +328,7 @@ export type ContentSections = {
   testimonials: TestimonialsContent | null;
   pricing: PricingContent | null;
   gallery: GalleryContent | null;
+  cta: CTAContent | null;
 };
 
 export type Version = {

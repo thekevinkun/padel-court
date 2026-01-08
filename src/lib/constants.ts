@@ -3,6 +3,7 @@ import {
   PricingContent,
   TestimonialsContent,
   GalleryContent,
+  CTAContent,
 } from "@/types";
 
 export const BUSINESS_NAME = "Padel Batu Alam Permai";
@@ -307,6 +308,16 @@ export const galleryInitial: GalleryContent = {
     description:
       "From thrilling matches to memorable moments with friends, our courts are where passion meets excellence. Join our community and create your own unforgettable padel journey.",
   },
+  version: 1,
+};
+
+export const ctaInitial: CTAContent = {
+  backgroundImage: "/images/court-placeholder.png",
+  title: "Ready to Experience Premium Padel?",
+  subtitle:
+    "Join our community of passionate players and elevate your game at Batu Alam Permai's world-class facilities.",
+  buttonText: "Book Your Court Now",
+  buttonLink: "#booking",
   version: 1,
 };
 
