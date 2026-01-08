@@ -63,13 +63,13 @@ const Footer = () => {
       {/* CTA Section - Overlapping */}
       <div className="relative">
         <div className="container-custom">
-          <Card className="relative -top-16 bg-background shadow-2xl border-0 overflow-hidden">
+          <Card className="relative -top-16 bg-background shadow-2xl border-0 overflow-hidden rounded-t-none">
             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-forest/5" />
             <div className="relative px-6 py-8 md:px-12 md:py-12">
               <div className="flex flex-col md:flex-row items-center justify-between gap-6">
                 <div className="text-center md:text-left">
                   <h3 className="heading-3 text-foreground mb-2">
-                    Ready to Play?
+                    Play Padel Today
                   </h3>
                   <p className="text-body">
                     Book your court now and experience the best padel facilities
