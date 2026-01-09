@@ -38,7 +38,7 @@ export const heroInitial = {
     "World-class courts. Professional coaching. Seamless booking. Everything you need for the perfect game.",
   ctaPrimary: { text: "BOOK NOW", href: "/#booking" },
   ctaSecondary: { text: "VIEW PRICING", href: "/#pricing" },
-  image_url: "/images/hero.png",
+  image_url: "/images/hero.webp",
   stats: [
     { number: "4+", label: "Premium Courts" },
     { number: "500+", label: "Happy Players" },
@@ -52,10 +52,10 @@ export const welcomeInitial = {
   description:
     "Discover Indonesia's Samarinda finest padel destination nestled in the heart of Batu Alam Permai. Our state-of-the-art facilities blend world-class infrastructure with natural tropical beauty, creating an unmatched playing experience for enthusiasts of all levels.",
   images: [
-    "/images/welcome-1.jpg",
-    "/images/welcome-2.jpg",
-    "/images/welcome-3.jpg",
-    "/images/welcome-4.jpg",
+    "/images/welcome-1.webp",
+    "/images/welcome-2.webp",
+    "/images/welcome-3.webp",
+    "/images/welcome-4.webp",
   ],
   features: [
     {
@@ -72,13 +72,13 @@ export const featuresInitial: FeatureItem[] = [
   {
     id: "f1",
     type: "image",
-    src: "/images/feature-1.jpg",
+    src: "/images/feature-1.webp",
     alt: "Professional padel court at Batu Alam Permai",
   },
   {
     id: "f2",
     type: "text",
-    bgImage: "/images/feature-highlight.jpg",
+    bgImage: "/images/feature-highlight.webp",
     icon: "Trophy",
     title: "Competitive Tournaments & Events",
     description:
@@ -87,13 +87,13 @@ export const featuresInitial: FeatureItem[] = [
   {
     id: "f3",
     type: "image",
-    src: "/images/feature-2.jpg",
+    src: "/images/feature-2.webp",
     alt: "Players enjoying padel match",
   },
   {
     id: "f4",
     type: "text",
-    bgImage: "/images/feature-highlight.jpg",
+    bgImage: "/images/feature-highlight.webp",
     icon: "Zap",
     title: "Dynamic Play for All Skill Levels",
     description:
@@ -102,13 +102,13 @@ export const featuresInitial: FeatureItem[] = [
   {
     id: "f5",
     type: "image",
-    src: "/images/feature-3.jpg",
+    src: "/images/feature-3.webp",
     alt: "Padel court facilities and amenities",
   },
   {
     id: "f6",
     type: "text",
-    bgImage: "/images/feature-highlight.jpg",
+    bgImage: "/images/feature-highlight.webp",
     icon: "Target",
     title: "European Standard Excellence",
     description:
@@ -122,8 +122,8 @@ export const testimonialsInitial: TestimonialsContent = {
   heading: "What Our Players Say",
   description:
     "Hear from our community of passionate padel players about their experience at our facilities",
-  videoUrl: "/images/court-placeholder.png",
-  backgroundImage: "/images/court-placeholder.png", // Background for overlay section
+  videoUrl: "/videos/padel_court_montage.mp4",
+  backgroundImage: "/images/bg-testimonials.webp", // Background for overlay section
   testimonials: [
     {
       id: "1",
@@ -250,55 +250,55 @@ export const galleryInitial: GalleryContent = {
   images: [
     {
       id: "1",
-      url: "/images/gallery-placeholder.png",
+      url: "/images/gallery-1.webp",
       alt: "Intense padel match on Court 1",
       caption: "Professional tournament action on our premium courts",
     },
     {
       id: "2",
-      url: "/images/gallery-placeholder.png",
+      url: "/images/gallery-2.webp",
       alt: "Court 2 during sunset",
       caption: "Golden hour games with spectacular views",
     },
     {
       id: "3",
-      url: "/images/gallery-placeholder.png",
+      url: "/images/gallery-3.webp",
       alt: "Happy players after a game",
       caption: "Building friendships through padel",
     },
     {
       id: "4",
-      url: "/images/gallery-placeholder.png",
+      url: "/images/gallery-4.webp",
       alt: "Night game with professional lighting",
       caption: "State-of-the-art lighting for evening matches",
     },
     {
       id: "5",
-      url: "/images/gallery-placeholder.png",
+      url: "/images/gallery-5.webp",
       alt: "Wide view of all courts",
       caption: "Our complete facility overview",
     },
     {
       id: "6",
-      url: "/images/gallery-placeholder.png",
+      url: "/images/gallery-6.webp",
       alt: "Professional coaching in action",
       caption: "Expert coaching to elevate your game",
     },
     {
       id: "7",
-      url: "/images/gallery-placeholder.png",
+      url: "/images/gallery-7.webp",
       alt: "Court surface detail",
       caption: "Premium playing surfaces for optimal performance",
     },
     {
       id: "8",
-      url: "/images/gallery-placeholder.png",
+      url: "/images/gallery-8.webp",
       alt: "Community event at the club",
       caption: "Regular tournaments and social gatherings",
     },
     {
       id: "9",
-      url: "/images/gallery-placeholder.png",
+      url: "/images/gallery-9.webp",
       alt: "Club amenities and lounge",
       caption: "Comfortable spaces to relax and socialize",
     },
@@ -312,7 +312,7 @@ export const galleryInitial: GalleryContent = {
 };
 
 export const ctaInitial: CTAContent = {
-  backgroundImage: "/images/court-placeholder.png",
+  backgroundImage: "/images/bg-cta.webp",
   title: "Ready to Experience Premium Padel?",
   subtitle:
     "Join our community of passionate players and elevate your game at Batu Alam Permai's world-class facilities.",

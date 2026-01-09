@@ -57,7 +57,7 @@ const CourtLightbox = ({ court, open, onOpenChange }: CourtLightboxProps) => {
             {/* Image Section */}
             <div className="relative w-full aspect-video">
               <Image
-                src={court.image_url || "/images/court-placeholder.png"}
+                src={court.image_url || "/images/placeholder-court.webp"}
                 alt={court.name}
                 fill
                 sizes="(max-width: 1200px) 100vw, 1200px"
