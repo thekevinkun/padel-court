@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import {
   Edit,
   Plus,
@@ -25,7 +26,6 @@ import {
 } from "@/components/ui/dialog";
 
 import VersionHistoryDialog from "@/components/dashboard/VersionHistoryDialog";
-
 import { TestimonialsSectionCMS } from "@/types";
 
 const TestimonialsSection = ({
@@ -97,7 +97,8 @@ const TestimonialsSection = ({
                 <Video className="w-4 h-4 text-forest" />
                 Video/Placeholder
               </h4>
-              <div className="w-full max-w-md aspect-video bg-gray-100 rounded-lg overflow-hidden">
+              {/* Added 'relative' for fill */}
+              <div className="relative w-full max-w-md aspect-video bg-gray-100 rounded-lg overflow-hidden">
                 {testimonials.videoUrl ? (
                   testimonials.videoUrl.endsWith(".mp4") ||
                   testimonials.videoUrl.endsWith(".webm") ||
@@ -109,10 +110,13 @@ const TestimonialsSection = ({
                       muted
                     />
                   ) : (
-                    <img
+                    /* DASHBOARD VIDEO THUMBNAIL */
+                    <Image
                       src={testimonials.videoUrl}
                       alt="Video preview"
-                      className="w-full h-full object-cover"
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 448px"
                     />
                   )
                 ) : (
@@ -123,21 +127,24 @@ const TestimonialsSection = ({
               </div>
             </div>
 
-            {/* Background Image Preview - NEW */}
+            {/* Background Image Preview */}
             <div>
               <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
                 <MessageSquare className="w-4 h-4 text-forest" />
                 Background Image (with dark overlay)
               </h4>
-              <div className="w-full max-w-md aspect-video bg-gray-100 rounded-lg overflow-hidden relative">
+              <div className="relative w-full max-w-md aspect-video bg-gray-100 rounded-lg overflow-hidden">
                 {testimonials.backgroundImage ? (
                   <>
-                    <img
+                    {/* DASHBOARD BACKGROUND PREVIEW */}
+                    <Image
                       src={testimonials.backgroundImage}
                       alt="Background preview"
-                      className="w-full h-full object-cover"
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 448px"
                     />
-                    <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-black/70 flex items-center justify-center z-10">
                       <p className="text-white text-xs">
                         Dark overlay will be applied
                       </p>
@@ -175,15 +182,18 @@ const TestimonialsSection = ({
                     <CardContent className="p-4">
                       <div className="flex items-start gap-4">
                         {/* Avatar or Initial */}
-                        <div className="flex-shrink-0">
+                        {/* AVATAR OPTIMIZATION (48px) */}
+                        <div className="relative w-12 h-12 flex-shrink-0">
                           {testimonial.avatar ? (
-                            <img
+                            <Image
                               src={testimonial.avatar}
                               alt={testimonial.name}
-                              className="w-12 h-12 rounded-full object-cover"
+                              fill
+                              className="rounded-full object-cover"
+                              sizes="48px"
                             />
                           ) : (
-                            <div className="w-12 h-12 rounded-full bg-forest/10 flex items-center justify-center">
+                            <div className="w-full h-full rounded-full bg-forest/10 flex items-center justify-center">
                               <span className="text-forest font-bold">
                                 {testimonial.name.charAt(0)}
                               </span>
@@ -300,22 +310,25 @@ const TestimonialsSection = ({
               </p>
               <div className="mt-2">
                 {videoPreview ? (
-                  <div className="relative">
+                  <div className="relative w-full aspect-video">
                     {videoPreview.startsWith("data:video") ||
                     videoPreview.endsWith(".mp4") ||
                     videoPreview.endsWith(".webm") ||
                     videoPreview.endsWith(".ogg") ? (
                       <video
                         src={videoPreview}
-                        className="w-full aspect-video object-cover rounded-lg"
+                        className="w-full h-full object-cover rounded-lg"
                         controls
                         muted
                       />
                     ) : (
-                      <img
+                      /* DIALOG VIDEO THUMBNAIL */
+                      <Image
                         src={videoPreview}
                         alt="preview"
-                        className="w-full aspect-video object-cover rounded-lg"
+                        fill
+                        className="object-cover rounded-lg"
+                        sizes="(max-width: 768px) 100vw, 672px"
                       />
                     )}
                     <button
@@ -323,7 +336,7 @@ const TestimonialsSection = ({
                         setVideoPreview(null);
                         setVideoFile(null);
                       }}
-                      className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600"
+                      className="absolute z-10 top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -346,7 +359,7 @@ const TestimonialsSection = ({
               </div>
             </div>
 
-            {/* Background Image Upload - NEW */}
+            {/* Background Image Upload */}
             <div>
               <Label>Background Image (with dark overlay)</Label>
               <p className="text-xs text-muted-foreground mb-2">
@@ -355,19 +368,22 @@ const TestimonialsSection = ({
               </p>
               <div className="mt-2">
                 {backgroundPreview ? (
-                  <div className="relative">
-                    <img
+                  /* DIALOG BACKGROUND PREVIEW */
+                  <div className="relative w-full aspect-video rounded-lg overflow-hidden">
+                    <Image
                       src={backgroundPreview}
                       alt="background preview"
-                      className="w-full aspect-video object-cover rounded-lg"
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 672px"
                     />
-                    <div className="absolute inset-0 bg-black/70 rounded-lg" />
+                    <div className="absolute inset-0 bg-black/70" />
                     <button
                       onClick={() => {
                         setBackgroundPreview(null);
                         setBackgroundFile(null);
                       }}
-                      className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 z-10"
+                      className="absolute z-10 top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -417,7 +433,7 @@ const TestimonialsSection = ({
         </DialogContent>
       </Dialog>
 
-      {/* Testimonial Item Dialog */}
+      {/* Testimonial Item Dialog (No changes needed for Image, only text inputs here usually) */}
       <Dialog
         open={testimonialDialogOpen}
         onOpenChange={setTestimonialDialogOpen}
@@ -446,7 +462,6 @@ const TestimonialsSection = ({
                   className="mt-1"
                 />
               </div>
-
               <div>
                 <Label>Role/Title (Optional)</Label>
                 <Input
@@ -461,7 +476,6 @@ const TestimonialsSection = ({
                   className="mt-1"
                 />
               </div>
-
               <div>
                 <Label>Rating (1-5 Stars) *</Label>
                 <div className="flex gap-2 mt-2">
@@ -488,7 +502,6 @@ const TestimonialsSection = ({
                   ))}
                 </div>
               </div>
-
               <div>
                 <Label>Testimonial Comment *</Label>
                 <Textarea
@@ -504,7 +517,6 @@ const TestimonialsSection = ({
                   rows={4}
                 />
               </div>
-
               <div className="flex gap-3 pt-4">
                 <Button
                   variant="outline"

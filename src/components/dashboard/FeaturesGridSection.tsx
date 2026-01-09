@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import {
   Plus,
   Edit,
@@ -10,8 +11,6 @@ import {
   Users,
   Clock,
   Sparkles,
-  ChevronDown,
-  ChevronUp,
   DollarSign,
   Trophy,
   Zap,
@@ -30,7 +29,6 @@ import {
 } from "@/components/ui/dialog";
 
 import VersionHistoryDialog from "@/components/dashboard/VersionHistoryDialog";
-
 import { FeaturesGridSectionCMS } from "@/types";
 
 const FeaturesGridSection = ({
@@ -91,7 +89,8 @@ const FeaturesGridSection = ({
                 {features.items.filter((f) => f.type === "image").length} Images
               </Badge>
               <Badge variant="outline" className="text-xs">
-                {features.items.filter((f) => f.type === "text").length} Text Cards
+                {features.items.filter((f) => f.type === "text").length} Text
+                Cards
               </Badge>
             </div>
           </div>
@@ -107,12 +106,16 @@ const FeaturesGridSection = ({
                       {/* Preview */}
                       <div className="flex-shrink-0">
                         {f.type === "image" ? (
-                          <div className="w-24 h-24 bg-gray-100 rounded-lg overflow-hidden">
+                          /* THUMBNAIL OPTIMIZATION */
+                          /* Added 'relative' to parent. Fixed size w-24 (96px). */
+                          <div className="relative w-24 h-24 bg-gray-100 rounded-lg overflow-hidden">
                             {f.src ? (
-                              <img
+                              <Image
                                 src={f.src}
-                                className="w-full h-full object-cover"
-                                alt={f.alt}
+                                alt={f.alt || "feature"}
+                                fill
+                                className="object-cover"
+                                sizes="96px"
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">
@@ -246,18 +249,22 @@ const FeaturesGridSection = ({
                     <Label>Feature Image</Label>
                     <div className="mt-2">
                       {featurePreview ? (
-                        <div className="relative">
-                          <img
+                        /* DIALOG SQUARE PREVIEW */
+                        /* Moved aspect-square to parent div */
+                        <div className="relative w-full aspect-square">
+                          <Image
                             src={featurePreview}
                             alt="preview"
-                            className="w-full aspect-square object-cover rounded-lg"
+                            fill
+                            className="object-cover rounded-lg"
+                            sizes="(max-width: 768px) 100vw, 672px"
                           />
                           <button
                             onClick={() => {
                               setFeaturePreview(null);
                               setFeatureFile(null);
                             }}
-                            className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600"
+                            className="absolute z-10 top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600"
                           >
                             <X className="w-4 h-4" />
                           </button>
@@ -302,18 +309,22 @@ const FeaturesGridSection = ({
                     <Label>Background Image</Label>
                     <div className="mt-2">
                       {featurePreview ? (
-                        <div className="relative">
-                          <img
+                        /* DIALOG BANNER PREVIEW */
+                        /* Moved h-32 to parent div */
+                        <div className="relative w-full h-32">
+                          <Image
                             src={featurePreview}
                             alt="preview"
-                            className="w-full h-32 object-cover rounded-lg opacity-50"
+                            fill
+                            className="object-cover rounded-lg opacity-50"
+                            sizes="(max-width: 768px) 100vw, 672px"
                           />
                           <button
                             onClick={() => {
                               setFeaturePreview(null);
                               setFeatureFile(null);
                             }}
-                            className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600"
+                            className="absolute z-10 top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600"
                           >
                             <X className="w-4 h-4" />
                           </button>

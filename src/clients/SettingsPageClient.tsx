@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import {
   Save,
   Loader2,
@@ -366,11 +367,16 @@ const SettingsPageClient = () => {
                 <div className="mt-2">
                   {logoPreview ? (
                     <div className="relative inline-block">
-                      <img
-                        src={logoPreview}
-                        alt="Logo"
-                        className="w-32 h-32 object-contain border rounded-lg p-2 bg-white"
-                      />
+                      <div className="relative w-32 h-32 rounded-lg p-2 border bg-white">
+                        <Image
+                          src={logoPreview}
+                          alt="Logo"
+                          fill
+                          className="object-contain"
+                          sizes="128px"
+                        />
+                      </div>
+                      
                       <button
                         type="button"
                         onClick={() => {

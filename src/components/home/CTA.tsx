@@ -28,7 +28,7 @@ const CTA = ({ content }: CTAProps) => {
       {/* Dark Overlay - Half Shadow */}
       <div
         className="absolute inset-0 bg-transparent bg-[linear-gradient(130deg,#000000_49%,#0D1301D1_34%)] 
-            opacity-70 transition-[background,border-radius,opacity] duration-300"
+          opacity-70 transition-[background,border-radius,opacity] duration-300"
       />
 
       {/* Content */}

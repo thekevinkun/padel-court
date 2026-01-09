@@ -27,22 +27,73 @@ const Gallery = ({ content }: GalleryProps) => {
   // Total: 8 images + 1 note card = 9 items
   const gridItems = [
     // Row 1: 2 items (1 image + 1 note)
-    { type: "image", span: "col-span-2", aspect: "aspect-[4/3]", index: 0 },
+    {
+      type: "image",
+      span: "col-span-2",
+      aspect: "aspect-[4/3]",
+      index: 0,
+      priority: true,
+    },
     { type: "note", span: "col-span-1", aspect: "aspect-[4/3]" },
-
     // Row 2: 3 images
-    { type: "image", span: "col-span-1", aspect: "aspect-square", index: 1 },
-    { type: "image", span: "col-span-1", aspect: "aspect-square", index: 2 },
-    { type: "image", span: "col-span-1", aspect: "aspect-square", index: 3 },
-
+    {
+      type: "image",
+      span: "col-span-1",
+      aspect: "aspect-square",
+      index: 1,
+      priority: true,
+    },
+    {
+      type: "image",
+      span: "col-span-1",
+      aspect: "aspect-square",
+      index: 2,
+      priority: true,
+    },
+    {
+      type: "image",
+      span: "col-span-1",
+      aspect: "aspect-square",
+      index: 3,
+      priority: false,
+    },
     // Row 3: 2 images (one wide)
-    { type: "image", span: "col-span-2", aspect: "aspect-video", index: 4 },
-    { type: "image", span: "col-span-1", aspect: "aspect-[3/4]", index: 5 },
-
+    {
+      type: "image",
+      span: "col-span-2",
+      aspect: "aspect-video",
+      index: 4,
+      priority: false,
+    },
+    {
+      type: "image",
+      span: "col-span-1",
+      aspect: "aspect-[3/4]",
+      index: 5,
+      priority: false,
+    },
     // Row 4: 3 images
-    { type: "image", span: "col-span-1", aspect: "aspect-[4/3]", index: 6 },
-    { type: "image", span: "col-span-1", aspect: "aspect-[4/3]", index: 7 },
-    { type: "image", span: "col-span-1", aspect: "aspect-[4/3]", index: 8 },
+    {
+      type: "image",
+      span: "col-span-1",
+      aspect: "aspect-[4/3]",
+      index: 6,
+      priority: false,
+    },
+    {
+      type: "image",
+      span: "col-span-1",
+      aspect: "aspect-[4/3]",
+      index: 7,
+      priority: false,
+    },
+    {
+      type: "image",
+      span: "col-span-1",
+      aspect: "aspect-[4/3]",
+      index: 8,
+      priority: false,
+    },
   ];
 
   return (
@@ -134,8 +185,11 @@ const Gallery = ({ content }: GalleryProps) => {
                         src={image.url}
                         alt={image.alt}
                         fill
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        quality={85} // ← Good quality for gallery
+                        priority={item.priority} // ← Priority for above-fold images
+                        sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 50vw"
                         className="object-cover group-hover:scale-110 transition-transform duration-500"
+                        loading={item.priority ? undefined : "lazy"}
                       />
 
                       {/* Gradient Overlay on Hover */}

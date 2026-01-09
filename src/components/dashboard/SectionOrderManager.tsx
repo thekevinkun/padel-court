@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { GripVertical, Eye, EyeOff, Loader2, Info } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 
 import { supabase } from "@/lib/supabase/client";
 
@@ -138,7 +139,7 @@ const SectionOrderManager = () => {
   const [sections, setSections] = useState<ContentSection[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -269,12 +270,13 @@ const SectionOrderManager = () => {
               Drag to reorder sections or toggle visibility
             </p>
           </div>
-          <button
+          <Button
+            size="sm"
+            variant="outline"
             onClick={() => setIsExpanded(!isExpanded)}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             {isExpanded ? "Collapse" : "Expand"}
-          </button>
+          </Button>
         </div>
       </CardHeader>
 

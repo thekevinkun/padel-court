@@ -12,7 +12,7 @@ import CourtLightbox from "@/components/lightbox/CourtLightbox";
 import { Court } from "@/types";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
 
-const Courts = ({ courts }: { courts: Court[] } ) => {
+const Courts = ({ courts }: { courts: Court[] }) => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [selectedCourt, setSelectedCourt] = useState<Court | null>(null);
 
@@ -80,7 +80,7 @@ const Courts = ({ courts }: { courts: Court[] } ) => {
                   onClick={() => openLightbox(featuredCourt)}
                   className="group relative h-full min-h-[400px] md:min-h-[500px] overflow-hidden cursor-pointer hover:shadow-2xl transition-all duration-300"
                 >
-                  {/* Image */}
+                  {/* Image - OPTIMIZED FOR FEATURED */}
                   <div className="absolute inset-0">
                     <Image
                       src={
@@ -89,7 +89,9 @@ const Courts = ({ courts }: { courts: Court[] } ) => {
                       }
                       alt={featuredCourt.name}
                       fill
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      priority // Load featured court immediately
+                      quality={90} // High quality for large featured image
+                      sizes="(max-width: 768px) 100vw, (max-width: 1024px) 66vw, 50vw"
                       className="object-cover group-hover:scale-110 transition-transform duration-500"
                     />
                   </div>
@@ -135,14 +137,16 @@ const Courts = ({ courts }: { courts: Court[] } ) => {
                   onClick={() => openLightbox(court)}
                   className="group relative h-full min-h-[250px] md:min-h-[300px] overflow-hidden cursor-pointer hover:shadow-xl transition-all duration-300"
                 >
-                  {/* Image */}
+                  {/* Image - OPTIMIZED FOR REGULAR COURTS */}
                   <div className="absolute inset-0">
                     <Image
                       src={court.image_url || "/images/court-placeholder.png"}
                       alt={court.name}
                       fill
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                      quality={85} // Good quality for regular courts
+                      sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                       className="object-cover group-hover:scale-110 transition-transform duration-500"
+                      loading="lazy" // Lazy load below-fold courts
                     />
                   </div>
 

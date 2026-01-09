@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import {
   Plus,
@@ -392,10 +393,13 @@ const CourtsPageClient = () => {
               {/* Court Image */}
               <div className="aspect-video bg-gray-200 relative overflow-hidden">
                 {court.image_url ? (
-                  <img
+                  /* GRID OPTIMIZATION: 33vw on desktop */
+                  <Image
                     src={court.image_url}
                     alt={court.name}
-                    className="w-full h-full object-cover"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gray-100">
@@ -403,7 +407,7 @@ const CourtsPageClient = () => {
                   </div>
                 )}
                 {!court.available && (
-                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
                     <span className="text-white font-semibold">
                       Maintenance
                     </span>
@@ -504,18 +508,21 @@ const CourtsPageClient = () => {
                   <Label>Court Image</Label>
                   <div className="mt-10">
                     {imagePreview ? (
-                      <div className="relative">
-                        <img
+                      /* DIALOG PREVIEW: Max-w-4xl (approx 896px) */
+                      <div className="relative w-full aspect-video">
+                        <Image
                           src={imagePreview}
                           alt="Preview"
-                          className="w-full aspect-video object-cover rounded-lg"
+                          fill
+                          className="object-cover rounded-lg"
+                          sizes="(max-width: 768px) 100vw, 896px"
                         />
                         <button
                           onClick={() => {
                             setImagePreview(null);
                             setImageFile(null);
                           }}
-                          className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded"
+                          className="absolute z-10 top-2 right-2 bg-red-500 text-white p-1 rounded"
                         >
                           <X className="w-4 h-4" />
                         </button>

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Edit, Upload, Loader2, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -55,17 +56,21 @@ const WelcomeSection = ({
           </div>
         </CardHeader>
         <CardContent>
+          {/* DASHBOARD THUMBNAILS (4 Columns) */}
           <div className="grid grid-cols-4 gap-3 mb-4">
             {welcomePreviews.map((p, idx) => (
               <div
                 key={idx}
-                className="aspect-[3/4] bg-gray-100 rounded-lg overflow-hidden"
+                // Added 'relative' so 'fill' works correctly
+                className="relative aspect-[3/4] bg-gray-100 rounded-lg overflow-hidden"
               >
                 {p ? (
-                  <img
+                  <Image
                     src={p}
                     alt={`welcome-${idx}`}
-                    className="w-full h-full object-cover"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 25vw, 25vw" // Logic: Always 1/4 of the screen width
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">
@@ -128,13 +133,17 @@ const WelcomeSection = ({
               <Label>Images (4 images)</Label>
               <div className="grid grid-cols-2 gap-3 mt-2">
                 {tempWelcomePreviews.map((p, i) => (
-                  <div key={i} className="relative">
+                  /* DIALOG EDIT PREVIEWS (2 Columns) */
+                  /* Added 'w-full aspect-[3/4]' to the parent div */
+                  <div key={i} className="relative w-full aspect-[3/4]">
                     {p ? (
                       <>
-                        <img
+                        <Image
                           src={p}
                           alt={`welcome-${i}`}
-                          className="w-full aspect-[3/4] object-cover rounded-lg"
+                          fill
+                          className="object-cover rounded-lg"
+                          sizes="(max-width: 768px) 50vw, 384px" // Logic: Dialog is max 768px. 2 cols = ~384px per image.
                         />
                         <button
                           onClick={() => {
@@ -145,13 +154,13 @@ const WelcomeSection = ({
                             nf[i] = null;
                             setWelcomeFiles(nf);
                           }}
-                          className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
+                          className="absolute z-10 top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
                         >
                           <X className="w-4 h-4" />
                         </button>
                       </>
                     ) : (
-                      <label className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-forest transition-colors aspect-[3/4] flex flex-col items-center justify-center">
+                      <label className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-forest transition-colors w-full h-full flex flex-col items-center justify-center">
                         <Upload className="w-6 h-6 mx-auto mb-1 text-muted-foreground" />
                         <p className="text-xs">Upload #{i + 1}</p>
                         <input

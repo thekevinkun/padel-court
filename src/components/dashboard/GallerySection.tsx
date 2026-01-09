@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import {
   Edit,
   Plus,
@@ -136,14 +137,18 @@ const GallerySection = ({
                 {gallery.images.map((image, index) => (
                   <Card key={image.id} className="overflow-hidden group">
                     <CardContent className="p-0">
+                      {/* OPTIMIZATION: GRID IMAGES */}
                       <div className="relative aspect-square">
-                        <img
+                        <Image
                           src={image.url}
                           alt={image.alt}
-                          className="w-full h-full object-cover"
+                          fill
+                          className="object-cover"
+                          // Logic: Mobile (2 cols = 50vw), Tablet (3 cols = 33vw), Desktop (4 cols = 25vw)
+                          sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                         />
                         {/* Overlay on hover */}
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-2">
+                        <div className="absolute inset-0 z-10 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-2">
                           <Button
                             size="sm"
                             variant="secondary"
@@ -162,7 +167,7 @@ const GallerySection = ({
                           </Button>
                         </div>
                         {/* Image number badge */}
-                        <div className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                        <div className="absolute top-2 left-2 z-10 bg-black/70 text-white text-xs px-2 py-1 rounded">
                           #{index + 1}
                         </div>
                       </div>
@@ -185,7 +190,7 @@ const GallerySection = ({
         </CardContent>
       </Card>
 
-      {/* Edit Section Dialog (Badge, Heading, Description) */}
+      {/* Edit Section Dialog */}
       <Dialog open={galleryDialogOpen} onOpenChange={setGalleryDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -359,18 +364,24 @@ const GallerySection = ({
                 <Label>Gallery Image *</Label>
                 <div className="mt-2">
                   {imagePreview ? (
-                    <div className="relative">
-                      <img
+                    /* OPTIMIZATION: PREVIEW IMAGE 
+                       - Moved 'aspect-video' to parent div
+                       - Capped sizes at 680px (Dialog width)
+                    */
+                    <div className="relative w-full aspect-video rounded-lg overflow-hidden">
+                      <Image
                         src={imagePreview}
                         alt="preview"
-                        className="w-full aspect-video object-cover rounded-lg"
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, 680px"
                       />
                       <button
                         onClick={() => {
                           setImagePreview(null);
                           setImageFile(null);
                         }}
-                        className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600"
+                        className="absolute z-10 top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600"
                       >
                         <X className="w-4 h-4" />
                       </button>

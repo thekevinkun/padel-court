@@ -43,9 +43,14 @@ const Welcome = ({ content }: { content: WelcomeContent }) => {
             <div className="grid grid-cols-2 gap-4 md:gap-6">
               {/* Map through content.images */}
               {content.images.map((image, index) => {
-                const variants = [slideInLeft, slideInRight, slideInLeft, slideInRight];
+                const variants = [
+                  slideInLeft,
+                  slideInRight,
+                  slideInLeft,
+                  slideInRight,
+                ];
                 const mtClasses = ["", "mt-8 md:mt-12", "-mt-8 md:-mt-12", ""];
-                
+
                 return (
                   <motion.div
                     key={index}
@@ -56,8 +61,11 @@ const Welcome = ({ content }: { content: WelcomeContent }) => {
                       src={image}
                       alt={`${content.heading} - Image ${index + 1}`}
                       fill
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      quality={85} // Good quality for collage
+                      priority={index < 2} // Priority for first 2 visible images
+                      sizes="(max-width: 768px) 50vw, (max-width: 1024px) 25vw, 20vw"
                       className="object-cover hover:scale-105 transition-transform duration-500"
+                      loading={index < 2 ? undefined : "lazy"}
                     />
                   </motion.div>
                 );
@@ -117,7 +125,7 @@ const Welcome = ({ content }: { content: WelcomeContent }) => {
             >
               {content.features.map((feature, index) => {
                 const Icon = getIcon(feature.icon);
-                
+
                 return (
                   <Card
                     key={index}
@@ -126,7 +134,9 @@ const Welcome = ({ content }: { content: WelcomeContent }) => {
                     <CardContent className="p-4 space-y-2">
                       <Icon className="w-5 h-5 text-forest" />
                       <div className="text-sm font-medium">{feature.title}</div>
-                      <p className="text-xs text-muted-foreground">{feature.desc}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {feature.desc}
+                      </p>
                     </CardContent>
                   </Card>
                 );

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Parallax } from "react-scroll-parallax"; 
+import { Parallax } from "react-scroll-parallax";
 import { ChevronLeft, ChevronRight, Quote, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -96,8 +96,15 @@ const Testimonials = ({ content }: TestimonialsProps) => {
                 className="w-full h-full object-cover"
               /> */}
 
-              {/* Video would go here when available */}
-              <video autoPlay loop muted playsInline className="w-full h-full object-cover">
+              {/* Video - Lower quality OK for background */}
+              <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-full h-full object-cover"
+                preload="metadata" // Optimize video loading
+              >
                 <source src={content.videoUrl} type="video/mp4" />
               </video>
             </div>

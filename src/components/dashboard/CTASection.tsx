@@ -1,4 +1,5 @@
 import React from "react";
+import Image from "next/image";
 import { Edit, Upload, Loader2, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -60,17 +61,21 @@ const CTASection = ({
               <div className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden">
                 {cta.backgroundImage ? (
                   <>
-                    <img
+                    {/* DASHBOARD PREVIEW OPTIMIZATION */}
+                    <Image
                       src={cta.backgroundImage}
                       alt="CTA background"
-                      className="w-full h-full object-cover"
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 50vw"
                     />
                     {/* Dark overlay preview */}
-                    <div className="absolute inset-0 bg-transparent bg-[linear-gradient(130deg,#000000_49%,#0D1301D1_34%)] 
-                        opacity-70 transition-[background,border-radius,opacity]" 
+                    <div
+                      className="absolute inset-0 bg-transparent bg-[linear-gradient(130deg,#000000_49%,#0D1301D1_34%)] 
+                        opacity-70 transition-[background,border-radius,opacity] z-10"
                     />
                     {/* Text overlay preview */}
-                    <div className="absolute inset-0 flex items-center p-8">
+                    <div className="absolute inset-0 flex items-center p-8 z-20">
                       <div className="max-w-2xl">
                         <h3 className="text-2xl md:text-3xl font-bold text-white mb-3">
                           {cta.title}
@@ -138,20 +143,26 @@ const CTASection = ({
               </p>
               <div className="mt-2">
                 {backgroundPreview ? (
-                  <div className="relative">
-                    <img
+                  /* DIALOG PREVIEW OPTIMIZATION 
+                     - Moved 'aspect-video' to parent div
+                     - Applied max size of 672px
+                  */
+                  <div className="relative w-full aspect-video rounded-lg overflow-hidden">
+                    <Image
                       src={backgroundPreview}
                       alt="preview"
-                      className="w-full aspect-video object-cover rounded-lg"
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 672px"
                     />
                     {/* Show overlay in preview */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-transparent rounded-lg" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-transparent z-10" />
                     <button
                       onClick={() => {
                         setBackgroundPreview(null);
                         setBackgroundFile(null);
                       }}
-                      className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 z-10"
+                      className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 z-20"
                     >
                       <X className="w-4 h-4" />
                     </button>
