@@ -67,11 +67,18 @@ const Testimonials = ({ content }: TestimonialsProps) => {
   return (
     <section className="relative lg:pt-32 md:pt-36 pt-0">
       {/* Background Image with Dark Overlay */}
-      <Parallax speed={-30} className="absolute inset-0 z-[-999]">
+      <Parallax
+        speed={-30}
+        className="absolute inset-0 z-[-999]"
+        disabled={
+          typeof window !== "undefined" &&
+          window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        }
+      >
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
-            backgroundImage: `url('${content.backgroundImage}')`,
+            backgroundImage: `url("${content.backgroundImage}")`,
           }}
         />
         <div className="absolute inset-0 bg-black/70" />
@@ -104,6 +111,7 @@ const Testimonials = ({ content }: TestimonialsProps) => {
                 playsInline
                 className="w-full h-full object-cover"
                 preload="metadata" // Optimize video loading
+                poster="/images/video-poster.webp" // Fallback poster image
               >
                 <source src={content.videoUrl} type="video/mp4" />
               </video>

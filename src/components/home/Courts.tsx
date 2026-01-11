@@ -2,15 +2,21 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import { Expand } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 
-import CourtLightbox from "@/components/lightbox/CourtLightbox";
-
 import { Court } from "@/types";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
+
+const CourtLightbox = dynamic(
+  () => import("@/components/lightbox/CourtLightbox"),
+  {
+    ssr: false,
+  }
+);
 
 const Courts = ({ courts }: { courts: Court[] }) => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -78,7 +84,8 @@ const Courts = ({ courts }: { courts: Court[] }) => {
               >
                 <Card
                   onClick={() => openLightbox(featuredCourt)}
-                  className="group relative h-full min-h-[400px] md:min-h-[500px] overflow-hidden cursor-pointer hover:shadow-2xl transition-all duration-300"
+                  className="group relative h-full min-h-[400px] md:min-h-[500px] overflow-hidden cursor-pointer 
+                    hover:shadow-2xl transition-all duration-300"
                 >
                   {/* Image - OPTIMIZED FOR FEATURED */}
                   <div className="absolute inset-0">
@@ -92,7 +99,7 @@ const Courts = ({ courts }: { courts: Court[] }) => {
                       priority // Load featured court immediately
                       quality={90} // High quality for large featured image
                       sizes="(max-width: 768px) 100vw, (max-width: 1024px) 66vw, 50vw"
-                      className="object-cover group-hover:scale-110 transition-transform duration-500"
+                      className="object-cover group-hover:scale-110 transition-transform duration-500 hover-scale"
                     />
                   </div>
 
@@ -145,7 +152,7 @@ const Courts = ({ courts }: { courts: Court[] }) => {
                       fill
                       quality={85} // Good quality for regular courts
                       sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                      className="object-cover group-hover:scale-110 transition-transform duration-500"
+                      className="object-cover group-hover:scale-110 transition-transform duration-500 hover-scale"
                       loading="lazy" // Lazy load below-fold courts
                     />
                   </div>

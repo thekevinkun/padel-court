@@ -16,11 +16,15 @@ const CTA = ({ content }: CTAProps) => {
   return (
     <section className="relative h-[60vh] md:h-[70vh] overflow-hidden mb-16">
       {/* Parallax Background */}
-      <Parallax speed={-30} className="absolute inset-0 z-[-999]">
+      <Parallax 
+        speed={-30} 
+        className="absolute inset-0 z-[-999]"
+        disabled={typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches}
+      >
         <div
           className="absolute inset-0 top-[-30px] md:top-[-20px] bg-cover bg-center h-[120%]"
           style={{
-            backgroundImage: `url('${content.backgroundImage}')`,
+            backgroundImage: `url("${content.backgroundImage}")`,
           }}
         />
       </Parallax>

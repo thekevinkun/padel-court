@@ -2,18 +2,19 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import {
-  motion,
-  useScroll,
-  useTransform,
-  AnimatePresence,
-} from "framer-motion";
+import dynamic from "next/dynamic";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 import { useBooking } from "@/contexts/BookingContext";
 import { navLinks } from "@/lib/constants";
-import { fadeInDown, drawerVariants, backdropVariants } from "@/lib/animations";
+import { backdropVariants } from "@/lib/animations";
+
+const AnimatePresence = dynamic(
+  () => import("framer-motion").then((mod) => mod.AnimatePresence),
+  { ssr: false }
+);
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -37,11 +38,6 @@ const Navbar = () => {
     scrollY,
     [0, 100],
     ["rgba(0, 0, 0, 0)", "rgba(233, 255, 0, 0.98)"]
-  );
-  const backdropBlur = useTransform(
-    scrollY,
-    [0, 100],
-    ["blur(0px)", "blur(10px)"]
   );
 
   // Close menu on escape key or outside click
@@ -75,11 +71,9 @@ const Navbar = () => {
         transition={{ duration: 0.3, ease: "easeOut" }}
         style={{
           backgroundColor,
-          backdropFilter: backdropBlur,
-          WebkitBackdropFilter: backdropBlur,
         }}
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          isScrolled ? "shadow-lg" : ""
+          isScrolled ? "shadow-lg md:backdrop-blur-[10px]" : ""
         }`}
       >
         <div className="container-custom">

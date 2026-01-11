@@ -54,7 +54,7 @@ const FeaturesGrid = ({ content }: { content: FeaturesContent }) => {
                     quality={85}
                     priority={index < 3} // Priority for first row (3 items)
                     sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 50vw"
-                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="object-cover group-hover:scale-105 transition-transform duration-500 hover-scale"
                     loading={index < 3 ? undefined : "lazy"}
                   />
                 </div>

@@ -2,13 +2,20 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import GalleryLightbox from "@/components/lightbox/GalleryLightbox";
 
 import { GalleryContent } from "@/types";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
+
+const GalleryLightbox = dynamic(
+  () => import("@/components/lightbox/GalleryLightbox"),
+  {
+    ssr: false,
+  }
+);
 
 interface GalleryProps {
   content: GalleryContent;
@@ -188,7 +195,7 @@ const Gallery = ({ content }: GalleryProps) => {
                         quality={85} // ← Good quality for gallery
                         priority={item.priority} // ← Priority for above-fold images
                         sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 50vw"
-                        className="object-cover group-hover:scale-110 transition-transform duration-500"
+                        className="object-cover group-hover:scale-110 transition-transform duration-500 hover-scale"
                         loading={item.priority ? undefined : "lazy"}
                       />
 

@@ -267,4 +267,12 @@
   .text-balance {
     text-wrap: balance;
   }
+
+  .hover-scale {
+    will-change: transform;
+  }
+
+  .hover-scale:not(:hover) {
+    will-change: auto;
+  }
 }

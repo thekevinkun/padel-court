@@ -1,20 +1,22 @@
 import type { Metadata } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
 import StructuredData from "@/components/StructuredData";
-import { generateSiteMetadata, defaultMetadata } from "@/lib/metadata";
 import ClientProviders from "@/providers/ClientProviders";
+import { generateSiteMetadata, defaultMetadata } from "@/lib/metadata";
 import "./globals.css";
 
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-sans",
   display: "swap",
+  preload: true,
 });
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
   variable: "--font-display",
   display: "swap",
+  preload: true,
 });
 
 /* Generate metadata from settings */
@@ -58,6 +60,14 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable}`}>
       <head>
         <StructuredData />
+        <link
+          rel="preconnect"
+          href="https://gqhjwptcfqdwawsfojcw.supabase.co"
+        />
+        <link
+          rel="dns-prefetch"
+          href="https://gqhjwptcfqdwawsfojcw.supabase.co"
+        />
       </head>
       <body>
         <ClientProviders>{children}</ClientProviders>
