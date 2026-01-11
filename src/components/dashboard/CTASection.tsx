@@ -129,158 +129,170 @@ const CTASection = ({
 
       {/* Edit Dialog */}
       <Dialog open={ctaDialogOpen} onOpenChange={setCtaDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit CTA Section</DialogTitle>
-          </DialogHeader>
+        <DialogContent className="max-w-2xl h-[100dvh] sm:h-[90dvh] overflow-hidden p-0">
+          <div className="h-full overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-primary [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-transparent">
+            <div className="p-6">
+              <DialogHeader>
+                <DialogTitle>Edit CTA Section</DialogTitle>
+              </DialogHeader>
 
-          <div className="space-y-4">
-            {/* Background Image Upload */}
-            <div>
-              <Label>Background Image</Label>
-              <p className="text-xs text-muted-foreground mb-2">
-                This image will show with parallax effect and dark overlay
-              </p>
-              <div className="mt-2">
-                {backgroundPreview ? (
-                  /* DIALOG PREVIEW OPTIMIZATION 
+              <div className="space-y-4">
+                {/* Background Image Upload */}
+                <div className="mt-4 mb-10">
+                  <Label>Background Image</Label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    This image will show with parallax effect and dark overlay
+                  </p>
+                  <div className="mt-2">
+                    {backgroundPreview ? (
+                      /* DIALOG PREVIEW OPTIMIZATION 
                      - Moved 'aspect-video' to parent div
                      - Applied max size of 672px
                   */
-                  <div className="relative w-full aspect-video rounded-lg overflow-hidden">
-                    <Image
-                      src={backgroundPreview}
-                      alt="preview"
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 100vw, 672px"
-                    />
-                    {/* Show overlay in preview */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-transparent z-10" />
-                    <button
-                      onClick={() => {
-                        setBackgroundPreview(null);
-                        setBackgroundFile(null);
-                      }}
-                      className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 z-20"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
+                      <div className="relative w-full aspect-video rounded-lg overflow-hidden">
+                        <Image
+                          src={backgroundPreview}
+                          alt="preview"
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 768px) 100vw, 672px"
+                        />
+                        {/* Show overlay in preview */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-transparent z-10" />
+                        <button
+                          onClick={() => {
+                            setBackgroundPreview(null);
+                            setBackgroundFile(null);
+                          }}
+                          className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 z-20"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-forest transition-colors block">
+                        <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                        <p className="text-sm font-medium">
+                          Upload Background Image
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Court or facility image recommended
+                        </p>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={onBackgroundSelect}
+                          className="hidden"
+                        />
+                      </label>
+                    )}
                   </div>
-                ) : (
-                  <label className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-forest transition-colors block">
-                    <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                    <p className="text-sm font-medium">
-                      Upload Background Image
+                </div>
+
+                {/* Title */}
+                <div>
+                  <Label htmlFor="title">Title *</Label>
+                  <Input
+                    id="title"
+                    value={cta.title}
+                    onChange={(e) => setCta({ ...cta, title: e.target.value })}
+                    placeholder="e.g., Ready to Experience Premium Padel?"
+                    className="mt-1"
+                  />
+                </div>
+
+                {/* Subtitle */}
+                <div>
+                  <Label htmlFor="subtitle">Subtitle *</Label>
+                  <Textarea
+                    id="subtitle"
+                    value={cta.subtitle}
+                    onChange={(e) =>
+                      setCta({ ...cta, subtitle: e.target.value })
+                    }
+                    placeholder="Compelling description to encourage action..."
+                    className="mt-1"
+                    rows={3}
+                  />
+                </div>
+
+                {/* Button Text */}
+                <div>
+                  <Label htmlFor="buttonText">Button Text *</Label>
+                  <Input
+                    id="buttonText"
+                    value={cta.buttonText}
+                    onChange={(e) =>
+                      setCta({ ...cta, buttonText: e.target.value })
+                    }
+                    placeholder="e.g., Book Your Court Now"
+                    className="mt-1"
+                  />
+                </div>
+
+                {/* Button Link */}
+                <div>
+                  <Label htmlFor="buttonLink">Button Link *</Label>
+                  <Input
+                    id="buttonLink"
+                    value={cta.buttonLink}
+                    onChange={(e) =>
+                      setCta({ ...cta, buttonLink: e.target.value })
+                    }
+                    placeholder="e.g., #booking or /pricing"
+                    className="mt-1"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Use #booking for booking dialog, or /page for internal links
+                  </p>
+                </div>
+
+                {/* Preview Box */}
+                <div className="bg-muted/30 rounded-lg p-4 border">
+                  <Label className="text-xs text-muted-foreground mb-2 block">
+                    Preview
+                  </Label>
+                  <div className="space-y-2">
+                    <h4 className="font-bold text-lg">{cta.title}</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {cta.subtitle}
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      Court or facility image recommended
-                    </p>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={onBackgroundSelect}
-                      className="hidden"
-                    />
-                  </label>
-                )}
+                    <Badge className="mt-2">{cta.buttonText}</Badge>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => setCtaDialogOpen(false)}
+                    disabled={savingCta}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    onClick={saveCta}
+                    disabled={
+                      savingCta ||
+                      !cta.title ||
+                      !cta.subtitle ||
+                      !cta.buttonText ||
+                      !cta.buttonLink
+                    }
+                  >
+                    {savingCta ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      "Save CTA Section"
+                    )}
+                  </Button>
+                </div>
               </div>
-            </div>
-
-            {/* Title */}
-            <div>
-              <Label htmlFor="title">Title *</Label>
-              <Input
-                id="title"
-                value={cta.title}
-                onChange={(e) => setCta({ ...cta, title: e.target.value })}
-                placeholder="e.g., Ready to Experience Premium Padel?"
-                className="mt-1"
-              />
-            </div>
-
-            {/* Subtitle */}
-            <div>
-              <Label htmlFor="subtitle">Subtitle *</Label>
-              <Textarea
-                id="subtitle"
-                value={cta.subtitle}
-                onChange={(e) => setCta({ ...cta, subtitle: e.target.value })}
-                placeholder="Compelling description to encourage action..."
-                className="mt-1"
-                rows={3}
-              />
-            </div>
-
-            {/* Button Text */}
-            <div>
-              <Label htmlFor="buttonText">Button Text *</Label>
-              <Input
-                id="buttonText"
-                value={cta.buttonText}
-                onChange={(e) => setCta({ ...cta, buttonText: e.target.value })}
-                placeholder="e.g., Book Your Court Now"
-                className="mt-1"
-              />
-            </div>
-
-            {/* Button Link */}
-            <div>
-              <Label htmlFor="buttonLink">Button Link *</Label>
-              <Input
-                id="buttonLink"
-                value={cta.buttonLink}
-                onChange={(e) => setCta({ ...cta, buttonLink: e.target.value })}
-                placeholder="e.g., #booking or /pricing"
-                className="mt-1"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Use #booking for booking dialog, or /page for internal links
-              </p>
-            </div>
-
-            {/* Preview Box */}
-            <div className="bg-muted/30 rounded-lg p-4 border">
-              <Label className="text-xs text-muted-foreground mb-2 block">
-                Preview
-              </Label>
-              <div className="space-y-2">
-                <h4 className="font-bold text-lg">{cta.title}</h4>
-                <p className="text-sm text-muted-foreground">{cta.subtitle}</p>
-                <Badge className="mt-2">{cta.buttonText}</Badge>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-3 pt-4">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => setCtaDialogOpen(false)}
-                disabled={savingCta}
-              >
-                Cancel
-              </Button>
-              <Button
-                className="flex-1"
-                onClick={saveCta}
-                disabled={
-                  savingCta ||
-                  !cta.title ||
-                  !cta.subtitle ||
-                  !cta.buttonText ||
-                  !cta.buttonLink
-                }
-              >
-                {savingCta ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  "Save CTA Section"
-                )}
-              </Button>
             </div>
           </div>
         </DialogContent>

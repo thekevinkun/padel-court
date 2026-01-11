@@ -210,238 +210,246 @@ const FeaturesGridSection = ({
       </Card>
 
       <Dialog open={featuresDialogOpen} onOpenChange={setFeaturesDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {editingFeature &&
-              features.items.find((f) => f.id === editingFeature.id)
-                ? "Edit Feature"
-                : "Add Feature"}
-            </DialogTitle>
-          </DialogHeader>
-          {editingFeature && (
-            <div className="space-y-4">
-              <div>
-                <Label>Feature Type</Label>
-                <select
-                  value={editingFeature.type}
-                  onChange={(e) =>
-                    setEditingFeature((prev: any) => ({
-                      ...prev,
-                      type: e.target.value as "image" | "text",
-                    }))
-                  }
-                  className="block w-full mt-1 p-2 border rounded-lg"
-                >
-                  <option value="image">Image Card</option>
-                  <option value="text">Text Card</option>
-                </select>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {editingFeature.type === "image"
-                    ? "Full-size image card"
-                    : "Text card with icon, title, and description"}
-                </p>
-              </div>
-
-              {editingFeature.type === "image" ? (
-                <>
-                  <div>
-                    <Label>Feature Image</Label>
-                    <div className="mt-2">
-                      {featurePreview ? (
-                        /* DIALOG SQUARE PREVIEW */
-                        /* Moved aspect-square to parent div */
-                        <div className="relative w-full aspect-square">
-                          <Image
-                            src={featurePreview}
-                            alt="preview"
-                            fill
-                            className="object-cover rounded-lg"
-                            sizes="(max-width: 768px) 100vw, 672px"
-                          />
-                          <button
-                            onClick={() => {
-                              setFeaturePreview(null);
-                              setFeatureFile(null);
-                            }}
-                            className="absolute z-10 top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        <label className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-forest transition-colors block">
-                          <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                          <p className="text-sm font-medium">
-                            Upload Feature Image
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Square image recommended (1:1 ratio)
-                          </p>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={onFeatureImageSelect}
-                            className="hidden"
-                          />
-                        </label>
-                      )}
-                    </div>
-                  </div>
-                  <div>
-                    <Label>Alt Text (Image Description)</Label>
-                    <Input
-                      value={editingFeature.alt}
-                      onChange={(e) =>
-                        setEditingFeature({
-                          ...editingFeature,
-                          alt: e.target.value,
-                        })
-                      }
-                      placeholder="e.g., Professional padel court at Batu Alam Permai"
-                      className="mt-1"
-                    />
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div>
-                    <Label>Background Image</Label>
-                    <div className="mt-2">
-                      {featurePreview ? (
-                        /* DIALOG BANNER PREVIEW */
-                        /* Moved h-32 to parent div */
-                        <div className="relative w-full h-32">
-                          <Image
-                            src={featurePreview}
-                            alt="preview"
-                            fill
-                            className="object-cover rounded-lg opacity-50"
-                            sizes="(max-width: 768px) 100vw, 672px"
-                          />
-                          <button
-                            onClick={() => {
-                              setFeaturePreview(null);
-                              setFeatureFile(null);
-                            }}
-                            className="absolute z-10 top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        <label className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-forest transition-colors block">
-                          <Upload className="w-6 h-6 mx-auto mb-1 text-muted-foreground" />
-                          <p className="text-sm">
-                            Upload Background (Optional)
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Will be overlayed with primary color
-                          </p>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={onFeatureImageSelect}
-                            className="hidden"
-                          />
-                        </label>
-                      )}
-                    </div>
-                  </div>
-                  <div>
-                    <Label>Icon</Label>
+        <DialogContent className="max-w-2xl h-[100dvh] sm:h-[90dvh] overflow-hidden p-0">
+          <div className="h-full overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-primary [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-transparent">
+            <div className="p-6">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingFeature &&
+                  features.items.find((f) => f.id === editingFeature.id)
+                    ? "Edit Feature"
+                    : "Add Feature"}
+                </DialogTitle>
+              </DialogHeader>
+              {editingFeature && (
+                <div className="space-y-4">
+                  <div className="mt-4 mb-10">
+                    <Label>Feature Type</Label>
                     <select
-                      value={editingFeature.icon}
+                      value={editingFeature.type}
                       onChange={(e) =>
-                        setEditingFeature({
-                          ...editingFeature,
-                          icon: e.target.value,
-                        })
+                        setEditingFeature((prev: any) => ({
+                          ...prev,
+                          type: e.target.value as "image" | "text",
+                        }))
                       }
                       className="block w-full mt-1 p-2 border rounded-lg"
                     >
-                      <option value="Trophy">
-                        🏆 Trophy (Tournaments/Competition)
-                      </option>
-                      <option value="Zap">⚡ Zap (Energy/Speed)</option>
-                      <option value="Target">
-                        🎯 Target (Precision/Goals)
-                      </option>
-                      <option value="Users">👥 Users (Community/Team)</option>
-                      <option value="Clock">🕐 Clock (Time/Schedule)</option>
-                      <option value="Sparkles">
-                        ✨ Sparkles (Premium/Quality)
-                      </option>
+                      <option value="image">Image Card</option>
+                      <option value="text">Text Card</option>
                     </select>
-                    <div className="mt-2 flex items-center gap-2 p-3 bg-muted rounded-lg">
-                      <span className="text-sm text-muted-foreground">
-                        Preview:
-                      </span>
-                      <div className="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center">
-                        <IconFromName name={editingFeature.icon} />
-                      </div>
-                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {editingFeature.type === "image"
+                        ? "Full-size image card"
+                        : "Text card with icon, title, and description"}
+                    </p>
                   </div>
-                  <div>
-                    <Label>Title</Label>
-                    <Input
-                      value={editingFeature.title}
-                      onChange={(e) =>
-                        setEditingFeature({
-                          ...editingFeature,
-                          title: e.target.value,
-                        })
-                      }
-                      placeholder="e.g., Competitive Tournaments & Events"
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label>Description</Label>
-                    <Textarea
-                      value={editingFeature.description}
-                      onChange={(e) =>
-                        setEditingFeature({
-                          ...editingFeature,
-                          description: e.target.value,
-                        })
-                      }
-                      placeholder="Describe this feature in detail..."
-                      className="mt-1"
-                      rows={4}
-                    />
-                  </div>
-                </>
-              )}
 
-              <div className="flex gap-3 pt-4">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => {
-                    setFeaturesDialogOpen(false);
-                    setEditingFeature(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  className="flex-1"
-                  onClick={saveFeature}
-                  disabled={savingFeatures}
-                >
-                  {savingFeatures ? (
+                  {editingFeature.type === "image" ? (
                     <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Saving...
+                      <div>
+                        <Label>Feature Image</Label>
+                        <div className="mt-2">
+                          {featurePreview ? (
+                            /* DIALOG SQUARE PREVIEW */
+                            /* Moved aspect-square to parent div */
+                            <div className="relative w-full aspect-square">
+                              <Image
+                                src={featurePreview}
+                                alt="preview"
+                                fill
+                                className="object-cover rounded-lg"
+                                sizes="(max-width: 768px) 100vw, 672px"
+                              />
+                              <button
+                                onClick={() => {
+                                  setFeaturePreview(null);
+                                  setFeatureFile(null);
+                                }}
+                                className="absolute z-10 top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <label className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-forest transition-colors block">
+                              <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                              <p className="text-sm font-medium">
+                                Upload Feature Image
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Square image recommended (1:1 ratio)
+                              </p>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={onFeatureImageSelect}
+                                className="hidden"
+                              />
+                            </label>
+                          )}
+                        </div>
+                      </div>
+                      <div>
+                        <Label>Alt Text (Image Description)</Label>
+                        <Input
+                          value={editingFeature.alt}
+                          onChange={(e) =>
+                            setEditingFeature({
+                              ...editingFeature,
+                              alt: e.target.value,
+                            })
+                          }
+                          placeholder="e.g., Professional padel court at Batu Alam Permai"
+                          className="mt-1"
+                        />
+                      </div>
                     </>
                   ) : (
-                    "Save Feature"
+                    <>
+                      <div>
+                        <Label>Background Image</Label>
+                        <div className="mt-2">
+                          {featurePreview ? (
+                            /* DIALOG BANNER PREVIEW */
+                            /* Moved h-32 to parent div */
+                            <div className="relative w-full h-32">
+                              <Image
+                                src={featurePreview}
+                                alt="preview"
+                                fill
+                                className="object-cover rounded-lg opacity-50"
+                                sizes="(max-width: 768px) 100vw, 672px"
+                              />
+                              <button
+                                onClick={() => {
+                                  setFeaturePreview(null);
+                                  setFeatureFile(null);
+                                }}
+                                className="absolute z-10 top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <label className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-forest transition-colors block">
+                              <Upload className="w-6 h-6 mx-auto mb-1 text-muted-foreground" />
+                              <p className="text-sm">
+                                Upload Background (Optional)
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Will be overlayed with primary color
+                              </p>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={onFeatureImageSelect}
+                                className="hidden"
+                              />
+                            </label>
+                          )}
+                        </div>
+                      </div>
+                      <div>
+                        <Label>Icon</Label>
+                        <select
+                          value={editingFeature.icon}
+                          onChange={(e) =>
+                            setEditingFeature({
+                              ...editingFeature,
+                              icon: e.target.value,
+                            })
+                          }
+                          className="block w-full mt-1 p-2 border rounded-lg"
+                        >
+                          <option value="Trophy">
+                            🏆 Trophy (Tournaments/Competition)
+                          </option>
+                          <option value="Zap">⚡ Zap (Energy/Speed)</option>
+                          <option value="Target">
+                            🎯 Target (Precision/Goals)
+                          </option>
+                          <option value="Users">
+                            👥 Users (Community/Team)
+                          </option>
+                          <option value="Clock">
+                            🕐 Clock (Time/Schedule)
+                          </option>
+                          <option value="Sparkles">
+                            ✨ Sparkles (Premium/Quality)
+                          </option>
+                        </select>
+                        <div className="mt-2 flex items-center gap-2 p-3 bg-muted rounded-lg">
+                          <span className="text-sm text-muted-foreground">
+                            Preview:
+                          </span>
+                          <div className="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center">
+                            <IconFromName name={editingFeature.icon} />
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <Label>Title</Label>
+                        <Input
+                          value={editingFeature.title}
+                          onChange={(e) =>
+                            setEditingFeature({
+                              ...editingFeature,
+                              title: e.target.value,
+                            })
+                          }
+                          placeholder="e.g., Competitive Tournaments & Events"
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label>Description</Label>
+                        <Textarea
+                          value={editingFeature.description}
+                          onChange={(e) =>
+                            setEditingFeature({
+                              ...editingFeature,
+                              description: e.target.value,
+                            })
+                          }
+                          placeholder="Describe this feature in detail..."
+                          className="mt-1"
+                          rows={4}
+                        />
+                      </div>
+                    </>
                   )}
-                </Button>
-              </div>
+
+                  <div className="flex gap-3 pt-4">
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => {
+                        setFeaturesDialogOpen(false);
+                        setEditingFeature(null);
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      className="flex-1"
+                      onClick={saveFeature}
+                      disabled={savingFeatures}
+                    >
+                      {savingFeatures ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        "Save Feature"
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </DialogContent>
       </Dialog>
     </>

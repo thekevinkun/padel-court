@@ -93,110 +93,114 @@ const WelcomeSection = ({
       </Card>
 
       <Dialog open={welcomeDialogOpen} onOpenChange={setWelcomeDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Welcome Section</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Badge</Label>
-              <Input
-                value={welcome.badge}
-                onChange={(e) =>
-                  setWelcome({ ...welcome, badge: e.target.value })
-                }
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label>Heading</Label>
-              <Input
-                value={welcome.heading}
-                onChange={(e) =>
-                  setWelcome({ ...welcome, heading: e.target.value })
-                }
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label>Description</Label>
-              <Textarea
-                value={welcome.description}
-                onChange={(e) =>
-                  setWelcome({ ...welcome, description: e.target.value })
-                }
-                className="mt-1"
-                rows={4}
-              />
-            </div>
-            <div>
-              <Label>Images (4 images)</Label>
-              <div className="grid grid-cols-2 gap-3 mt-2">
-                {tempWelcomePreviews.map((p, i) => (
-                  /* DIALOG EDIT PREVIEWS (2 Columns) */
-                  /* Added 'w-full aspect-[3/4]' to the parent div */
-                  <div key={i} className="relative w-full aspect-[3/4]">
-                    {p ? (
+        <DialogContent className="max-w-3xl h-[100dvh] sm:h-[90dvh] overflow-hidden p-0">
+          <div className="h-full overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-primary [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-transparent">
+            <div className="p-6">
+              <DialogHeader>
+                <DialogTitle>Edit Welcome Section</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="mt-4 mb-10">
+                  <Label>Badge</Label>
+                  <Input
+                    value={welcome.badge}
+                    onChange={(e) =>
+                      setWelcome({ ...welcome, badge: e.target.value })
+                    }
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label>Heading</Label>
+                  <Input
+                    value={welcome.heading}
+                    onChange={(e) =>
+                      setWelcome({ ...welcome, heading: e.target.value })
+                    }
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label>Description</Label>
+                  <Textarea
+                    value={welcome.description}
+                    onChange={(e) =>
+                      setWelcome({ ...welcome, description: e.target.value })
+                    }
+                    className="mt-1"
+                    rows={4}
+                  />
+                </div>
+                <div>
+                  <Label>Images (4 images)</Label>
+                  <div className="grid grid-cols-2 gap-3 mt-2">
+                    {tempWelcomePreviews.map((p, i) => (
+                      /* DIALOG EDIT PREVIEWS (2 Columns) */
+                      /* Added 'w-full aspect-[3/4]' to the parent div */
+                      <div key={i} className="relative w-full aspect-[3/4]">
+                        {p ? (
+                          <>
+                            <Image
+                              src={p}
+                              alt={`welcome-${i}`}
+                              fill
+                              className="object-cover rounded-lg"
+                              sizes="(max-width: 768px) 50vw, 384px" // Logic: Dialog is max 768px. 2 cols = ~384px per image.
+                            />
+                            <button
+                              onClick={() => {
+                                const np = [...tempWelcomePreviews];
+                                np[i] = "";
+                                setTempWelcomePreviews(np);
+                                const nf = [...welcomeFiles];
+                                nf[i] = null;
+                                setWelcomeFiles(nf);
+                              }}
+                              className="absolute z-10 top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </>
+                        ) : (
+                          <label className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-forest transition-colors w-full h-full flex flex-col items-center justify-center">
+                            <Upload className="w-6 h-6 mx-auto mb-1 text-muted-foreground" />
+                            <p className="text-xs">Upload #{i + 1}</p>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => onWelcomeImageSelect(i, e)}
+                              className="hidden"
+                            />
+                          </label>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => setWelcomeDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    onClick={saveWelcome}
+                    disabled={savingWelcome}
+                  >
+                    {savingWelcome ? (
                       <>
-                        <Image
-                          src={p}
-                          alt={`welcome-${i}`}
-                          fill
-                          className="object-cover rounded-lg"
-                          sizes="(max-width: 768px) 50vw, 384px" // Logic: Dialog is max 768px. 2 cols = ~384px per image.
-                        />
-                        <button
-                          onClick={() => {
-                            const np = [...tempWelcomePreviews];
-                            np[i] = "";
-                            setTempWelcomePreviews(np);
-                            const nf = [...welcomeFiles];
-                            nf[i] = null;
-                            setWelcomeFiles(nf);
-                          }}
-                          className="absolute z-10 top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Saving...
                       </>
                     ) : (
-                      <label className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-forest transition-colors w-full h-full flex flex-col items-center justify-center">
-                        <Upload className="w-6 h-6 mx-auto mb-1 text-muted-foreground" />
-                        <p className="text-xs">Upload #{i + 1}</p>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => onWelcomeImageSelect(i, e)}
-                          className="hidden"
-                        />
-                      </label>
+                      "Save Welcome"
                     )}
-                  </div>
-                ))}
+                  </Button>
+                </div>
               </div>
-            </div>
-            <div className="flex gap-3 pt-4">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => setWelcomeDialogOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                className="flex-1"
-                onClick={saveWelcome}
-                disabled={savingWelcome}
-              >
-                {savingWelcome ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  "Save Welcome"
-                )}
-              </Button>
             </div>
           </div>
         </DialogContent>

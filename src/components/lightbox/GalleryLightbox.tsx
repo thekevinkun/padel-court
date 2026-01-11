@@ -4,7 +4,13 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ChevronLeft, ChevronRight, Download } from "lucide-react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 import { GalleryImage } from "@/types";
 
@@ -73,27 +79,31 @@ const GalleryLightbox = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-7xl h-[90vh] p-0 bg-black/95 border-0">
+      <DialogContent className="max-w-7xl h-[90vh] p-0 bg-gradient-to-br from-black via-gray-900 to-black border-0">
+        <DialogHeader className="sr-only">
+          <DialogTitle>{currentImage.caption}</DialogTitle>
+        </DialogHeader>
+
         {/* Close Button */}
-        <button
+        {/* <button
           onClick={() => onOpenChange(false)}
           className="absolute top-4 right-4 z-50 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
         >
           <X className="w-6 h-6" />
-        </button>
+        </button> */}
 
         {/* Navigation Buttons */}
         {images.length > 1 && (
           <>
             <button
               onClick={handlePrev}
-              className="absolute left-4 top-1/2 -translate-y-1/2 z-50 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+              className="absolute left-4 top-1/2 -translate-y-1/2 z-50 p-3 rounded-full bg-primary/50 hover:bg-primary/85 text-black transition-colors"
             >
               <ChevronLeft className="w-6 h-6" />
             </button>
             <button
               onClick={handleNext}
-              className="absolute right-4 top-1/2 -translate-y-1/2 z-50 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+              className="absolute right-4 top-1/2 -translate-y-1/2 z-50 p-3 rounded-full bg-primary/50 hover:bg-primary/85 text-black transition-colors"
             >
               <ChevronRight className="w-6 h-6" />
             </button>
@@ -101,12 +111,13 @@ const GalleryLightbox = ({
         )}
 
         {/* Download Button */}
-        <button
+        <Button
           onClick={handleDownload}
-          className="absolute top-4 right-20 z-50 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+          variant="outline"
+          className="absolute top-4 right-20 z-50 hover:bg-forest hover:text-white hover:border transition-colors"
         >
-          <Download className="w-5 h-5" />
-        </button>
+          <Download />
+        </Button>
 
         {/* Image Container */}
         <div className="relative w-full h-full flex items-center justify-center p-4 md:p-8">
@@ -132,7 +143,7 @@ const GalleryLightbox = ({
         </div>
 
         {/* Image Info */}
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6 md:p-8">
+        <div className="absolute bottom-[-15] left-0 right-0 p-6 md:p-8">
           <div className="max-w-4xl mx-auto">
             {currentImage.caption && (
               <p className="text-white text-lg md:text-xl font-medium mb-2">

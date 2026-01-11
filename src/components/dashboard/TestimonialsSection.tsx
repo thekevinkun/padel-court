@@ -261,12 +261,14 @@ const TestimonialsSection = ({
         open={testimonialsDialogOpen}
         onOpenChange={setTestimonialsDialogOpen}
       >
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl h-[100dvh] sm:h-[90dvh] overflow-hidden p-0">
+          <div className="h-full overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-primary [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-transparent">
+            <div className="p-6">
           <DialogHeader>
             <DialogTitle>Edit Testimonials Section</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div>
+            <div className="mt-4 mb-10">
               <Label>Badge</Label>
               <Input
                 value={testimonials.badge}
@@ -429,6 +431,8 @@ const TestimonialsSection = ({
                 )}
               </Button>
             </div>
+          </div>
+          </div>
           </div>
         </DialogContent>
       </Dialog>
