@@ -29,6 +29,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import VersionHistoryDialog from "@/components/dashboard/VersionHistoryDialog";
 
@@ -231,6 +232,9 @@ const FeaturesGridSection = ({
                     ? "Edit Feature"
                     : "Add Feature"}
                 </DialogTitle>
+                <DialogDescription className="sr-only">
+                  Add or Edit your Feature Text or Image
+                </DialogDescription>
               </DialogHeader>
               {editingFeature && (
                 <div className="space-y-4">

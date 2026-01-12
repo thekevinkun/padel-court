@@ -40,6 +40,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -501,6 +502,9 @@ const CourtsPageClient = () => {
                 <DialogTitle>
                   {editingCourt ? "Edit Court" : "Add New Court"}
                 </DialogTitle>
+                <DialogDescription className="sr-only">
+                  Add or Edit your court
+                </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 {/* Image Upload */}

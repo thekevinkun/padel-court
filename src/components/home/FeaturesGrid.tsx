@@ -8,6 +8,7 @@ import { Trophy, Zap, Users, Clock, Sparkles, LucideIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 import { FeaturesContent } from "@/types";
+import { blurDataURL } from "@/lib/image-blur";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
 
 const TargetIcon = forwardRef<SVGSVGElement, LucideProps>(
@@ -66,6 +67,8 @@ const FeaturesGrid = ({ content }: { content: FeaturesContent }) => {
                     sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 50vw"
                     className="object-cover group-hover:scale-105 transition-transform duration-500 hover-scale"
                     loading={index < 3 ? undefined : "lazy"}
+                    placeholder="blur"
+                    blurDataURL={blurDataURL}
                   />
                 </div>
               ) : (
@@ -81,6 +84,8 @@ const FeaturesGrid = ({ content }: { content: FeaturesContent }) => {
                       sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                       className="object-cover"
                       loading="lazy" // Text cards less critical
+                      placeholder="blur"
+                      blurDataURL={blurDataURL}
                     />
                   </div>
 

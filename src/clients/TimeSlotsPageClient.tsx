@@ -17,6 +17,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -451,6 +452,9 @@ const TimeSlotsPageClient = () => {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Edit Time Slot</DialogTitle>
+            <DialogDescription className="sr-only">
+              Find the right time for time slots
+            </DialogDescription>
           </DialogHeader>
           {editingSlot && (
             <div className="space-y-4">
@@ -520,6 +524,9 @@ const TimeSlotsPageClient = () => {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Generate Time Slots</DialogTitle>
+            <DialogDescription className="sr-only">
+              Fill new time
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">

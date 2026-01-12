@@ -12,6 +12,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import VersionHistoryDialog from "@/components/dashboard/VersionHistoryDialog";
 
@@ -134,6 +135,9 @@ const CTASection = ({
             <div className="p-6">
               <DialogHeader>
                 <DialogTitle>Edit CTA Section</DialogTitle>
+                <DialogDescription className="sr-only">
+                  Choose your assets for CTA Section
+                </DialogDescription>
               </DialogHeader>
 
               <div className="space-y-4">

@@ -15,6 +15,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -203,6 +204,9 @@ const PricingSection = ({
             <div className="p-6">
               <DialogHeader>
                 <DialogTitle>Edit Pricing Section</DialogTitle>
+                <DialogDescription className="sr-only">
+                  Find the right price and text for your pricing
+                </DialogDescription>
               </DialogHeader>
               <div className="space-y-6">
                 <div className="grid grid-cols-2 gap-4">

@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 
 import { GalleryContent } from "@/types";
+import { blurDataURL } from "@/lib/image-blur";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
 
 const GalleryLightbox = dynamic(
@@ -197,6 +198,8 @@ const Gallery = ({ content }: GalleryProps) => {
                         sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 50vw"
                         className="object-cover group-hover:scale-110 transition-transform duration-500 hover-scale"
                         loading={item.priority ? undefined : "lazy"}
+                        placeholder="blur"
+                        blurDataURL={blurDataURL}
                       />
 
                       {/* Gradient Overlay on Hover */}

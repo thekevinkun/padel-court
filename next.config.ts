@@ -1,5 +1,8 @@
 import type { NextConfig } from "next";
 
+const isDev = process.env.NODE_ENV === "development";
+const isProd = process.env.NODE_ENV === "production";
+
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
@@ -18,7 +21,7 @@ const nextConfig: NextConfig = {
         pathname: "/**",
       },
     ],
-    
+
     // Fix warning: Define allowed quality values
     qualities: [70, 75, 80, 85, 90, 95, 100],
 
@@ -29,12 +32,11 @@ const nextConfig: NextConfig = {
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
 
-    // // Disable image optimization for build (speeds up builds)
-    // // Set to true for production, false for dev
-    // unoptimized: process.env.NODE_ENV === "development" ? false : false,
+    // DEV: Fast rebuilds | PROD: Optimized images
+    unoptimized: isDev,
 
-    // Minimize file size
-    minimumCacheTTL: 60, // Cache optimized images for 60 seconds
+    // Minimize file size 1 year in prod, 60s in dev
+    minimumCacheTTL: isProd ? 31536000 : 60,
   },
 
   // Remove console logs in production
@@ -46,9 +48,6 @@ const nextConfig: NextConfig = {
           }
         : false,
   },
-
-  // // Optimize bundle size
-  // swcMinify: true, // Use SWC for faster minification
 
   // Enable experimental features
   experimental: {
@@ -67,34 +66,26 @@ const nextConfig: NextConfig = {
       {
         source: "/:path*",
         headers: [
-          {
-            key: "X-DNS-Prefetch-Control",
-            value: "on",
-          },
-          {
-            key: "X-Frame-Options",
-            value: "SAMEORIGIN",
-          },
-          {
-            key: "X-Content-Type-Options",
-            value: "nosniff",
-          },
-          {
-            key: "Referrer-Policy",
-            value: "origin-when-cross-origin",
-          },
+          { key: "X-DNS-Prefetch-Control", value: "on" },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "origin-when-cross-origin" },
         ],
       },
-      // Cache static assets aggressively
-      {
-        source: "/images/:all*",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=31536000, immutable",
-          },
-        ],
-      },
+      // ✅ Only in production
+      ...(isProd
+        ? [
+            {
+              source: "/images/:all*",
+              headers: [
+                {
+                  key: "Cache-Control",
+                  value: "public, max-age=31536000, immutable",
+                },
+              ],
+            },
+          ]
+        : []),
     ];
   },
 };

@@ -8,6 +8,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +16,7 @@ import { Separator } from "@/components/ui/separator";
 
 import { useBooking } from "@/contexts/BookingContext";
 import { Court } from "@/types";
+import { blurDataURL } from "@/lib/image-blur";
 
 interface CourtLightboxProps {
   court: Court | null;
@@ -50,6 +52,9 @@ const CourtLightbox = ({ court, open, onOpenChange }: CourtLightboxProps) => {
       <DialogContent className="max-w-4xl h-[100dvh] sm:h-[90dvh] overflow-hidden p-0">
         <DialogHeader className="sr-only">
           <DialogTitle>{court.name}</DialogTitle>
+          <DialogDescription className="sr-only">
+            {court.description}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="h-full overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-primary [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-transparent">
@@ -63,6 +68,8 @@ const CourtLightbox = ({ court, open, onOpenChange }: CourtLightboxProps) => {
                 sizes="(max-width: 1200px) 100vw, 1200px"
                 className="object-cover"
                 priority
+                placeholder="blur"
+                blurDataURL={blurDataURL}
               />
             </div>
 

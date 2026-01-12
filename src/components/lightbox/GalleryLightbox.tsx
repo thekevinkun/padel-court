@@ -10,9 +10,11 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 
 import { GalleryImage } from "@/types";
+import { blurDataURL } from "@/lib/image-blur";
 
 interface GalleryLightboxProps {
   images: GalleryImage[];
@@ -82,6 +84,9 @@ const GalleryLightbox = ({
       <DialogContent className="max-w-7xl h-[90vh] p-0 bg-gradient-to-br from-black via-gray-900 to-black border-0">
         <DialogHeader className="sr-only">
           <DialogTitle>{currentImage.caption}</DialogTitle>
+          <DialogDescription className="sr-only">
+            {currentImage.alt}
+          </DialogDescription>
         </DialogHeader>
 
         {/* Close Button */}
@@ -137,6 +142,8 @@ const GalleryLightbox = ({
                 className="object-contain"
                 sizes="100vw"
                 priority
+                placeholder="blur"
+                blurDataURL={blurDataURL}
               />
             </motion.div>
           </AnimatePresence>
@@ -176,6 +183,8 @@ const GalleryLightbox = ({
                     fill
                     className="object-cover"
                     sizes="80px"
+                    placeholder="blur"
+                    blurDataURL={blurDataURL}
                   />
                 </button>
               ))}

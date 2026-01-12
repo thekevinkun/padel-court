@@ -17,6 +17,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
 import { WelcomeContent } from "@/types";
+import { blurDataURL } from "@/lib/image-blur";
 import { fadeInUp, fadeIn, slideInLeft, slideInRight } from "@/lib/animations";
 
 const Welcome = ({ content }: { content: WelcomeContent }) => {
@@ -73,6 +74,8 @@ const Welcome = ({ content }: { content: WelcomeContent }) => {
                       sizes="(max-width: 768px) 50vw, (max-width: 1024px) 25vw, 20vw"
                       className="object-cover hover:scale-105 transition-transform duration-500"
                       loading={index < 2 ? undefined : "lazy"}
+                      placeholder="blur"
+                      blurDataURL={blurDataURL}
                     />
                   </motion.div>
                 );

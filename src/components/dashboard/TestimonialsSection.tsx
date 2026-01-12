@@ -23,6 +23,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 
 import VersionHistoryDialog from "@/components/dashboard/VersionHistoryDialog";
@@ -266,6 +267,9 @@ const TestimonialsSection = ({
             <div className="p-6">
               <DialogHeader>
                 <DialogTitle>Edit Testimonials Section</DialogTitle>
+                <DialogDescription className="sr-only">
+                  Update your testimonials with right images and texts
+                </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="mt-4 mb-10">
@@ -457,6 +461,9 @@ const TestimonialsSection = ({
                 ? "Add Testimonial"
                 : "Edit Testimonial"}
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              Update your testimonials with right images and texts
+            </DialogDescription>
           </DialogHeader>
           {editingTestimonial && (
             <div className="space-y-4">

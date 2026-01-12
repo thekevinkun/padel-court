@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 
 import { useBooking } from "@/contexts/BookingContext";
 import { HeroContent } from "@/types";
+import { blurDataURL } from "@/lib/image-blur";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
 
 const Hero = ({ content }: { content: HeroContent }) => {
@@ -27,7 +28,7 @@ const Hero = ({ content }: { content: HeroContent }) => {
           sizes="100vw"
           className="object-cover"
           placeholder="blur"
-          blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDABQODxIPDRQSEBIXFRQdHx4eHRseHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/2wBDARUXFx4aHR4eHh7/HRoe/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCwAB//2Q=="
+          blurDataURL={blurDataURL}
         />
         <div className="absolute inset-0 bg-black/50" />
       </div>

@@ -21,6 +21,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import VersionHistoryDialog from "@/components/dashboard/VersionHistoryDialog";
 import { GallerySectionCMS } from "@/types";
@@ -195,7 +196,11 @@ const GallerySection = ({
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Edit Gallery Section</DialogTitle>
+            <DialogDescription className="sr-only">
+              Choose your section to update
+            </DialogDescription>
           </DialogHeader>
+          
           <div className="space-y-4">
             <div>
               <Label>Badge</Label>
@@ -266,9 +271,9 @@ const GallerySection = ({
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Edit Note Card</DialogTitle>
-            <p className="text-sm text-muted-foreground">
+            <DialogDescription>
               This black card appears in the gallery grid
-            </p>
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -356,6 +361,9 @@ const GallerySection = ({
                 ? "Add Gallery Image"
                 : "Edit Gallery Image"}
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              Find your image for update gallery
+            </DialogDescription>
           </DialogHeader>
           {editingImage && (
             <div className="space-y-4">

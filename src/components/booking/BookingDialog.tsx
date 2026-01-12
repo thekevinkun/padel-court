@@ -18,6 +18,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -295,15 +296,27 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={resetAndClose}>
       <DialogContent
-        onOpenAutoFocus={(e) => e.preventDefault()}
+        onOpenAutoFocus={(e) => {
+          e.preventDefault();
+        }}
         className="max-w-4xl h-[100dvh] sm:h-[90dvh] overflow-hidden p-0"
       >
-        <div className="h-full overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-primary [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-transparent">
+        <div
+          className="h-full overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent 
+              [&::-webkit-scrollbar-thumb]:bg-primary [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 
+              [&::-webkit-scrollbar-thumb]:border-transparent"
+          tabIndex={-1}
+          style={{ outline: "none" }}
+        >
           <div className="p-6">
             <DialogHeader className="mb-6">
               <DialogTitle className="text-2xl font-display">
                 Book Your Court
               </DialogTitle>
+              <DialogDescription>
+                Select a court, choose your time, and fill in your details to
+                book.
+              </DialogDescription>
             </DialogHeader>
 
             {/* Progress Steps */}
@@ -381,7 +394,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                   <div>
                     <Label>Choose Your Court</Label>
                     <RadioGroup
-                      value={formData.courtId}
+                      value={formData.courtId || ""}
                       onValueChange={(value) =>
                         setFormData({ ...formData, courtId: value })
                       }
@@ -458,7 +471,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                       </div>
                     ) : (
                       <RadioGroup
-                        value={formData.slotId}
+                        value={formData.slotId || ""}
                         onValueChange={(value) =>
                           setFormData({ ...formData, slotId: value })
                         }

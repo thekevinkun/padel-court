@@ -7,6 +7,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -166,9 +167,9 @@ const VersionHistoryDialog = ({
           <DialogTitle>
             {getSectionName(sectionType)} - Version History
           </DialogTitle>
-          <p className="text-sm text-muted-foreground">
+          <DialogDescription>
             Current version: <Badge variant="outline">v{currentVersion}</Badge>
-          </p>
+          </DialogDescription>
         </DialogHeader>
 
         {loading ? (

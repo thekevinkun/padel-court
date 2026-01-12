@@ -13,6 +13,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import VersionHistoryDialog from "@/components/dashboard/VersionHistoryDialog";
 
@@ -98,6 +99,9 @@ const WelcomeSection = ({
             <div className="p-6">
               <DialogHeader>
                 <DialogTitle>Edit Welcome Section</DialogTitle>
+                <DialogDescription className="sr-only">
+                  Update your welcome section
+                </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="mt-4 mb-10">

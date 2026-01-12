@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 
 import { Court } from "@/types";
+import { blurDataURL } from "@/lib/image-blur";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
 
 const CourtLightbox = dynamic(
@@ -100,6 +101,8 @@ const Courts = ({ courts }: { courts: Court[] }) => {
                       quality={90} // High quality for large featured image
                       sizes="(max-width: 768px) 100vw, (max-width: 1024px) 66vw, 50vw"
                       className="object-cover group-hover:scale-110 transition-transform duration-500 hover-scale"
+                      placeholder="blur"
+                      blurDataURL={blurDataURL}
                     />
                   </div>
 
@@ -154,6 +157,8 @@ const Courts = ({ courts }: { courts: Court[] }) => {
                       sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                       className="object-cover group-hover:scale-110 transition-transform duration-500 hover-scale"
                       loading="lazy" // Lazy load below-fold courts
+                      placeholder="blur"
+                      blurDataURL={blurDataURL}
                     />
                   </div>
 

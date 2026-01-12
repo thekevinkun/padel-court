@@ -10,6 +10,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -105,6 +106,9 @@ const HeroSection = ({
             <div className="p-6">
               <DialogHeader>
                 <DialogTitle>Edit Hero Section</DialogTitle>
+                <DialogDescription className="sr-only">
+                  Choose your image and text to update
+                </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="mt-4 mb-10">
