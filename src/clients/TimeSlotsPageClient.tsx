@@ -1,15 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  Lock,
-  Unlock,
-  Edit2,
-  Loader2,
-  Plus,
-  RefreshCw,
-  Wifi,
-} from "lucide-react";
+import { Lock, Unlock, Edit2, Loader2, Plus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,6 +24,7 @@ import { Badge } from "@/components/ui/badge";
 
 // import TimeSlotsRealtimeDiagnostic from "@/components/dashboard/TimeSlotsRealtimeDiagnostic";
 
+import { TimeSlot } from "@/types";
 import { useRealtimeTimeSlots } from "@/hooks/useRealtimeTimeSlots";
 import { supabase } from "@/lib/supabase/client";
 
@@ -44,14 +37,14 @@ const TimeSlotsPageClient = () => {
   );
 
   // Use real-time hook
-  const { timeSlots, loading, isSubscribed, refetch } = useRealtimeTimeSlots({
+  const { timeSlots, loading, refetch } = useRealtimeTimeSlots({
     courtId: selectedCourt,
     date: selectedDate,
     enabled: !!selectedCourt && !!selectedDate,
   });
 
   // Edit dialog state
-  const [editingSlot, setEditingSlot] = useState<any | null>(null);
+  const [editingSlot, setEditingSlot] = useState<TimeSlot | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editPrice, setEditPrice] = useState<number>(0);
@@ -92,7 +85,7 @@ const TimeSlotsPageClient = () => {
     }
   };
 
-  const toggleSlotAvailability = async (slot: any) => {
+  const toggleSlotAvailability = async (slot: TimeSlot) => {
     try {
       const newAvailability = !slot.available;
 
@@ -113,7 +106,7 @@ const TimeSlotsPageClient = () => {
     }
   };
 
-  const handleEditSlot = (slot: any) => {
+  const handleEditSlot = (slot: TimeSlot) => {
     setEditingSlot(slot);
     setEditPrice(slot.price_per_person);
     setEditAvailable(slot.available);

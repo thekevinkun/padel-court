@@ -11,7 +11,6 @@ import {
   Instagram,
   Twitter,
   ArrowRight,
-  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -28,18 +27,17 @@ const socialIcons = {
 };
 
 const Footer = () => {
-  const { settings, loading, error } = useSettings();
+  const { settings } = useSettings();
 
   // Use settings from database or fallback
-  const businessName =
-    settings?.business_name || footerData.businessName;
+  // const businessName =
+  //   settings?.business_name || footerData.businessName;
   const tagline = settings?.business_description || footerData.tagline;
   const email = settings?.email || footerData.email;
   const phone = settings?.phone || footerData.phone;
   const whatsapp = settings?.whatsapp || footerData.whatsapp;
   const address = settings?.address || footerData.address;
-  const operatingHours =
-    settings?.operating_hours || footerData.operatingHours;
+  const operatingHours = settings?.operating_hours || footerData.operatingHours;
   const usefulLinks = footerData.links.useful;
   const legalLinks = footerData.links.legal;
   const copyright = footerData.copyright;

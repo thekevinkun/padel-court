@@ -4,10 +4,10 @@ import { createAuthClient } from "@/lib/supabase/auth-server";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const bookingId = params.id;
+    const { id: bookingId } = await params;
     const body = await request.json();
     const { notes } = body; // Optional notes from admin
 

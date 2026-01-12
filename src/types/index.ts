@@ -120,10 +120,16 @@ export type FeatureItem =
       type: "image";
       src: string;
       alt: string;
+      bgImage?: string;
+      icon?: string;
+      title?: string;
+      description?: string;
     }
   | {
       id: string;
       type: "text";
+      src?: string;
+      alt?: string;
       bgImage: string;
       icon: string;
       title: string;
@@ -334,7 +340,7 @@ export type ContentSections = {
 export type Version = {
   id: string;
   version: number;
-  content: any;
+  content: unknown;
   changed_by: string | null;
   change_description: string | null;
   created_at: string;

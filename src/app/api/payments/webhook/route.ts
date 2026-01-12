@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const midtransClient = require("midtrans-client");
 
 export async function POST(request: NextRequest) {
@@ -47,14 +48,14 @@ export async function POST(request: NextRequest) {
 
     // Determine payment status for our database
     let paymentStatus = "PENDING";
-    let shouldUpdateBooking = false;
+    let _shouldUpdateBooking = false;
     let newBookingStatus: string | null = null;
 
     // SUCCESS CASES
     if (transactionStatus === "capture" || transactionStatus === "settlement") {
       if (fraudStatus === "accept" || transactionStatus === "settlement") {
         paymentStatus = "SUCCESS";
-        shouldUpdateBooking = true;
+        _shouldUpdateBooking = true;
         newBookingStatus = "PAID";
       }
     }
@@ -73,12 +74,20 @@ export async function POST(request: NextRequest) {
       fraudStatus === "challenge" // fraud challenge (treat as failed)
     ) {
       paymentStatus = "FAILED";
-      shouldUpdateBooking = true;
+      _shouldUpdateBooking = true;
       newBookingStatus = "CANCELLED";
     }
 
     // Update payment record
-    const updateData: any = {
+    const updateData: {
+      midtrans_transaction_id: string;
+      payment_type: string;
+      payment_method: string;
+      status: string;
+      payment_response: unknown;
+      updated_at: string;
+      completed_at?: string;
+    } = {
       midtrans_transaction_id: statusResponse.transaction_id,
       payment_type: paymentType,
       payment_method: statusResponse.payment_type,
@@ -205,19 +214,25 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as {
+      message?: string;
+      stack?: string;
+      ApiResponse?: unknown;
+      httpStatusCode?: number;
+    };
     console.error("❌ Webhook error:", error);
 
     // Log the full error for debugging
     console.error("Error details:", {
-      message: error.message,
-      stack: error.stack,
-      response: error.ApiResponse,
+      message: err.message,
+      stack: err.stack,
+      response: err.ApiResponse,
     });
 
     // If it's a Midtrans API error, we still return 200 to prevent retries
     // The failed page will handle the cancellation
-    if (error.httpStatusCode || error.ApiResponse) {
+    if (err.httpStatusCode || err.ApiResponse) {
       console.log(
         "⚠️ Midtrans API error - returning success to prevent webhook retry"
       );
@@ -230,7 +245,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error: "Webhook processing failed",
-        details: error.message,
+        details: err.message,
       },
       { status: 500 }
     );

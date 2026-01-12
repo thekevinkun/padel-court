@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { createAuthClient } from "@/lib/supabase/auth-server";
+import { RevenueData } from "@/types/reports";
 
 export async function GET(request: NextRequest) {
   try {
@@ -114,7 +115,7 @@ export async function GET(request: NextRequest) {
     console.log("📊 Summary calculated:", summary);
 
     // Revenue Timeline (group by date)
-    const revenueByDate = bookings.reduce((acc: any, b) => {
+    const revenueByDate = bookings.reduce((acc: Record<string, RevenueData>, b) => {
       const date = b.date;
       if (!acc[date]) {
         acc[date] = {
@@ -141,11 +142,11 @@ export async function GET(request: NextRequest) {
     }, {});
 
     const revenueTimeline = Object.values(revenueByDate).sort(
-      (a: any, b: any) => a.date.localeCompare(b.date)
+      (a, b) => a.date.localeCompare(b.date)
     );
 
     // Payment Methods Breakdown - FIXED VERSION
-    const paymentMethodsMap = bookings.reduce((acc: any, b) => {
+    const paymentMethodsMap = bookings.reduce((acc: Record<string, { count: number; amount: number }>, b) => {
       // Online payment method
       const method = b.payment_method?.toUpperCase() || "UNKNOWN";
       if (!acc[method]) {
@@ -170,7 +171,7 @@ export async function GET(request: NextRequest) {
     }, {});
 
     const totalAmount = Object.values(paymentMethodsMap).reduce(
-      (sum: number, m: any) => sum + m.amount,
+      (sum: number, m) => sum + m.amount,
       0
     );
 
@@ -178,7 +179,7 @@ export async function GET(request: NextRequest) {
     console.log("💳 Total Amount for percentages:", totalAmount);
 
     const paymentMethods = Object.entries(paymentMethodsMap).map(
-      ([method, data]: [string, any]) => ({
+      ([method, data]) => ({
         method,
         count: data.count,
         amount: data.amount,
@@ -189,7 +190,7 @@ export async function GET(request: NextRequest) {
     console.log("💳 Final Payment Methods:", paymentMethods);
 
     // Top Performing Courts
-    const courtStats = bookings.reduce((acc: any, b) => {
+    const courtStats = bookings.reduce((acc: Record<string, { bookings: number; revenue: number }>, b) => {
       const courtName = b.courts?.name || "Unknown";
 
       if (!acc[courtName]) {
@@ -202,7 +203,7 @@ export async function GET(request: NextRequest) {
     }, {});
 
     const topCourts = Object.entries(courtStats)
-      .map(([courtName, stats]: [string, any]) => ({
+      .map(([courtName, stats]) => ({
         courtName,
         bookings: stats.bookings,
         revenue: stats.revenue,
@@ -211,7 +212,7 @@ export async function GET(request: NextRequest) {
       .slice(0, 5);
 
     // Peak Hours Analysis
-    const hourStats = bookings.reduce((acc: any, b) => {
+    const hourStats = bookings.reduce((acc: Record<string, number>, b) => {
       // Extract hour from time (e.g., "14:00 - 15:00" -> "14:00")
       const hour = b.time.split(" - ")[0];
       if (!acc[hour]) {
@@ -222,8 +223,8 @@ export async function GET(request: NextRequest) {
     }, {});
 
     const peakHours = Object.entries(hourStats)
-      .map(([hour, bookings]) => ({ hour, bookings }))
-      .sort((a: any, b: any) => b.bookings - a.bookings);
+      .map(([hour, bookings]) => ({ hour, bookings: bookings as number }))
+      .sort((a, b) => b.bookings - a.bookings);
 
     // Return analytics data
     return NextResponse.json({

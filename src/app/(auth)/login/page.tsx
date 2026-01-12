@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { LogIn, Loader2 } from "lucide-react";
@@ -49,8 +50,9 @@ export default function LoginPage() {
       // Redirect to dashboard
       router.push("/admin");
       router.refresh();
-    } catch (err: any) {
-      setError(err.message || "Login failed. Please try again.");
+    } catch (err: unknown) {
+      const error = err as Error;
+      setError(error.message || "Login failed. Please try again.");
       setLoading(false);
     }
   };
@@ -129,9 +131,9 @@ export default function LoginPage() {
               </Button>
 
               <div className="text-center text-sm text-muted-foreground mt-4">
-                <a href="/" className="hover:text-forest">
+                <Link href="/" className="hover:text-forest">
                   ← Back to Homepage
-                </a>
+                </Link>
               </div>
             </form>
           </CardContent>

@@ -1,12 +1,13 @@
 import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 import { DashboardStats } from "@/types";
+import { Booking } from "@/types/booking";
 import { supabase } from "@/lib/supabase/client";
 
 export function useRealtimeDashboardStats(
   initialStats: DashboardStats,
   onStatsUpdate: (stats: DashboardStats) => void,
-  onRecentBookingsUpdate: (bookings: any[]) => void
+  onRecentBookingsUpdate: (bookings: Booking[]) => void
 ) {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const lastEventRef = useRef<{ id: string; timestamp: number } | null>(null);
@@ -29,7 +30,13 @@ export function useRealtimeDashboardStats(
           // Prevent duplicate events (debounce within 1 second)
           const now = Date.now();
           const bookingId =
-            (payload.new as any)?.id || (payload.old as any)?.id;
+            (payload.new as { id?: string })?.id ??
+            (payload.old as { id?: string })?.id;
+
+          if (!bookingId) {
+            console.warn("⚠️ Booking event without ID, ignored");
+            return;
+          }
 
           if (
             lastEventRef.current &&
@@ -46,14 +53,21 @@ export function useRealtimeDashboardStats(
 
           // Show contextual toasts
           if (payload.eventType === "INSERT") {
-            const newBooking = payload.new as any;
+            const newBooking = payload.new as { customer_name: string };
             toast.success("📈 Dashboard Updated", {
               description: `New booking from ${newBooking.customer_name}`,
               duration: Infinity,
             });
           } else if (payload.eventType === "UPDATE") {
-            const updatedBooking = payload.new as any;
-            const oldBooking = payload.old as any;
+            const updatedBooking = payload.new as { 
+              customer_name: string; 
+              status: string; 
+              session_status: string 
+            };
+            const oldBooking = payload.old as { 
+              status: string; 
+              session_status: string 
+            };
 
             const statusChanged = oldBooking.status !== updatedBooking.status;
             const sessionStatusChanged =

@@ -23,7 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 import VersionHistoryDialog from "@/components/dashboard/VersionHistoryDialog";
 
-import { PricingSectionCMS } from "@/types";
+import { PricingSectionCMS, PricingSubSection } from "@/types";
 
 const PricingSection = ({
   pricing,
@@ -92,7 +92,7 @@ const PricingSection = ({
                         {pricing.courtRental.peakHours.subtitle}
                       </p>
                       {pricing.courtRental.peakHours.items.map(
-                        (item: any, i: number) => (
+                        (item, i: number) => (
                           <div
                             key={i}
                             className="flex justify-between text-sm py-1"
@@ -114,7 +114,7 @@ const PricingSection = ({
                         {pricing.courtRental.offPeakHours.subtitle}
                       </p>
                       {pricing.courtRental.offPeakHours.items.map(
-                        (item: any, i: number) => (
+                        (item, i: number) => (
                           <div
                             key={i}
                             className="flex justify-between text-sm py-1"
@@ -141,14 +141,16 @@ const PricingSection = ({
                 <AccordionContent>
                   <div className="space-y-4 pl-6">
                     {["headCoach", "seniorCoach", "juniorCoach"].map((key) => {
-                      const pkg = pricing[key as keyof typeof pricing] as any;
+                      const pkg = pricing[
+                        key as keyof typeof pricing
+                      ] as PricingSubSection;
                       return (
                         <div key={key}>
                           <p className="text-sm font-medium">{pkg.title}</p>
                           <p className="text-xs text-muted-foreground mb-2">
                             {pkg.subtitle}
                           </p>
-                          {pkg.items.map((item: any, i: number) => (
+                          {pkg.items.map((item, i: number) => (
                             <div
                               key={i}
                               className="flex justify-between text-sm py-1"
@@ -178,7 +180,7 @@ const PricingSection = ({
                 </AccordionTrigger>
                 <AccordionContent>
                   <div className="space-y-2 pl-6">
-                    {pricing.racketRental.items.map((item: any, i: number) => (
+                    {pricing.racketRental.items.map((item, i: number) => (
                       <div
                         key={i}
                         className="flex justify-between text-sm py-1"
@@ -247,7 +249,7 @@ const PricingSection = ({
                   </h3>
                   <div className="space-y-3 pl-6">
                     {pricing.courtRental.peakHours.items.map(
-                      (item: any, i: number) => (
+                      (item, i: number) => (
                         <div
                           key={i}
                           className="grid grid-cols-3 gap-2 items-end"
@@ -314,7 +316,7 @@ const PricingSection = ({
                   </h3>
                   <div className="space-y-3 pl-6">
                     {pricing.courtRental.offPeakHours.items.map(
-                      (item: any, i: number) => (
+                      (item, i: number) => (
                         <div
                           key={i}
                           className="grid grid-cols-3 gap-2 items-end"
@@ -378,7 +380,7 @@ const PricingSection = ({
                   (coachType) => {
                     const pkg = pricing[
                       coachType as keyof typeof pricing
-                    ] as any;
+                    ] as PricingSubSection;
                     return (
                       <div key={coachType}>
                         <h3 className="font-semibold mb-3 flex items-center gap-2">
@@ -386,7 +388,7 @@ const PricingSection = ({
                           {pkg.title}
                         </h3>
                         <div className="space-y-3 pl-6">
-                          {pkg.items.map((item: any, i: number) => (
+                          {pkg.items.map((item, i: number) => (
                             <div
                               key={i}
                               className="grid grid-cols-3 gap-2 items-end"
@@ -451,7 +453,7 @@ const PricingSection = ({
                     Racket Rental
                   </h3>
                   <div className="space-y-3 pl-6">
-                    {pricing.racketRental.items.map((item: any, i: number) => (
+                    {pricing.racketRental.items.map((item, i: number) => (
                       <div key={i} className="grid grid-cols-3 gap-2 items-end">
                         <div>
                           <Label className="text-xs">Name</Label>

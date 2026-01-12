@@ -141,7 +141,7 @@ const NotificationPanel = ({ isOpen, onClose }: NotificationPanelProps) => {
                   </div>
                   <h3 className="font-semibold text-lg mb-2">All clear!</h3>
                   <p className="text-sm text-muted-foreground">
-                    No notifications yet. They'll appear here when customers
+                    No notifications yet. They&apos;ll appear here when customers
                     book or make payments.
                   </p>
                 </div>

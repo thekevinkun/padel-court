@@ -1,4 +1,3 @@
-// /src/app/api/payments/cancel-failed/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 
@@ -136,12 +135,13 @@ export async function POST(request: NextRequest) {
       bookingRef,
       status: "CANCELLED",
     });
-  } catch (error: any) {
-    console.error("❌ Error in cancel-failed:", error);
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error("❌ Error in cancel-failed:", err);
     return NextResponse.json(
       {
         error: "Failed to process cancellation",
-        details: error.message || "Unknown error",
+        details: err.message || "Unknown error",
       },
       { status: 500 }
     );

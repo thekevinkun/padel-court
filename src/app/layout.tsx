@@ -24,9 +24,7 @@ export async function generateMetadata(): Promise<Metadata> {
   try {
     // Fetch settings from API
     const response = await fetch(
-      `${
-        process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-      }/api/settings`,
+      `${process.env.NEXT_PUBLIC_APP_URL}/api/settings`,
       {
         // Important: Don't cache during build, but cache at runtime
         next: { revalidate: 300 }, // Revalidate every 5 minutes

@@ -3,7 +3,14 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Sparkles, MapPin, Clock, Users } from "lucide-react";
+import {
+  ArrowRight,
+  Sparkles,
+  MapPin,
+  Clock,
+  Users,
+  LucideIcon,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,7 +22,7 @@ import { fadeInUp, fadeIn, slideInLeft, slideInRight } from "@/lib/animations";
 const Welcome = ({ content }: { content: WelcomeContent }) => {
   // Map icon names to actual icon components
   const getIcon = (iconName: string) => {
-    const icons: Record<string, any> = {
+    const icons: Record<string, LucideIcon> = {
       Users: Users,
       Clock: Clock,
       Sparkles: Sparkles,

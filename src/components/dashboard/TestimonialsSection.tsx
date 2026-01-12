@@ -177,7 +177,7 @@ const TestimonialsSection = ({
               </div>
 
               <div className="space-y-3">
-                {testimonials.testimonials.map((testimonial, index) => (
+                {testimonials.testimonials.map((testimonial) => (
                   <Card key={testimonial.id} className="border-border/50">
                     <CardContent className="p-4">
                       <div className="flex items-start gap-4">
@@ -226,7 +226,7 @@ const TestimonialsSection = ({
                             </div>
                           </div>
                           <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-                            "{testimonial.comment}"
+                            &quot;{testimonial.comment}&quot;
                           </p>
                           <div className="flex gap-2">
                             <Button
@@ -264,175 +264,183 @@ const TestimonialsSection = ({
         <DialogContent className="max-w-2xl h-[100dvh] sm:h-[90dvh] overflow-hidden p-0">
           <div className="h-full overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-primary [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-transparent">
             <div className="p-6">
-          <DialogHeader>
-            <DialogTitle>Edit Testimonials Section</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="mt-4 mb-10">
-              <Label>Badge</Label>
-              <Input
-                value={testimonials.badge}
-                onChange={(e) =>
-                  setTestimonials({ ...testimonials, badge: e.target.value })
-                }
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label>Heading</Label>
-              <Input
-                value={testimonials.heading}
-                onChange={(e) =>
-                  setTestimonials({ ...testimonials, heading: e.target.value })
-                }
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label>Description</Label>
-              <Textarea
-                value={testimonials.description}
-                onChange={(e) =>
-                  setTestimonials({
-                    ...testimonials,
-                    description: e.target.value,
-                  })
-                }
-                className="mt-1"
-                rows={3}
-              />
-            </div>
+              <DialogHeader>
+                <DialogTitle>Edit Testimonials Section</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="mt-4 mb-10">
+                  <Label>Badge</Label>
+                  <Input
+                    value={testimonials.badge}
+                    onChange={(e) =>
+                      setTestimonials({
+                        ...testimonials,
+                        badge: e.target.value,
+                      })
+                    }
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label>Heading</Label>
+                  <Input
+                    value={testimonials.heading}
+                    onChange={(e) =>
+                      setTestimonials({
+                        ...testimonials,
+                        heading: e.target.value,
+                      })
+                    }
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label>Description</Label>
+                  <Textarea
+                    value={testimonials.description}
+                    onChange={(e) =>
+                      setTestimonials({
+                        ...testimonials,
+                        description: e.target.value,
+                      })
+                    }
+                    className="mt-1"
+                    rows={3}
+                  />
+                </div>
 
-            {/* Video Upload */}
-            <div>
-              <Label>Video/Placeholder (shown on desktop only)</Label>
-              <p className="text-xs text-muted-foreground mb-2">
-                Upload a video or image for the floating showcase box (hidden on
-                mobile)
-              </p>
-              <div className="mt-2">
-                {videoPreview ? (
-                  <div className="relative w-full aspect-video">
-                    {videoPreview.startsWith("data:video") ||
-                    videoPreview.endsWith(".mp4") ||
-                    videoPreview.endsWith(".webm") ||
-                    videoPreview.endsWith(".ogg") ? (
-                      <video
-                        src={videoPreview}
-                        className="w-full h-full object-cover rounded-lg"
-                        controls
-                        muted
-                      />
+                {/* Video Upload */}
+                <div>
+                  <Label>Video/Placeholder (shown on desktop only)</Label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Upload a video or image for the floating showcase box
+                    (hidden on mobile)
+                  </p>
+                  <div className="mt-2">
+                    {videoPreview ? (
+                      <div className="relative w-full aspect-video">
+                        {videoPreview.startsWith("data:video") ||
+                        videoPreview.endsWith(".mp4") ||
+                        videoPreview.endsWith(".webm") ||
+                        videoPreview.endsWith(".ogg") ? (
+                          <video
+                            src={videoPreview}
+                            className="w-full h-full object-cover rounded-lg"
+                            controls
+                            muted
+                          />
+                        ) : (
+                          /* DIALOG VIDEO THUMBNAIL */
+                          <Image
+                            src={videoPreview}
+                            alt="preview"
+                            fill
+                            className="object-cover rounded-lg"
+                            sizes="(max-width: 768px) 100vw, 672px"
+                          />
+                        )}
+                        <button
+                          onClick={() => {
+                            setVideoPreview(null);
+                            setVideoFile(null);
+                          }}
+                          className="absolute z-10 top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
                     ) : (
-                      /* DIALOG VIDEO THUMBNAIL */
-                      <Image
-                        src={videoPreview}
-                        alt="preview"
-                        fill
-                        className="object-cover rounded-lg"
-                        sizes="(max-width: 768px) 100vw, 672px"
-                      />
+                      <label className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-forest transition-colors block">
+                        <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                        <p className="text-sm font-medium">
+                          Upload Video/Image
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          16:9 aspect ratio recommended (MP4, WebM for video)
+                        </p>
+                        <input
+                          type="file"
+                          accept="image/*,video/*"
+                          onChange={onVideoSelect}
+                          className="hidden"
+                        />
+                      </label>
                     )}
-                    <button
-                      onClick={() => {
-                        setVideoPreview(null);
-                        setVideoFile(null);
-                      }}
-                      className="absolute z-10 top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
                   </div>
-                ) : (
-                  <label className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-forest transition-colors block">
-                    <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                    <p className="text-sm font-medium">Upload Video/Image</p>
-                    <p className="text-xs text-muted-foreground">
-                      16:9 aspect ratio recommended (MP4, WebM for video)
-                    </p>
-                    <input
-                      type="file"
-                      accept="image/*,video/*"
-                      onChange={onVideoSelect}
-                      className="hidden"
-                    />
-                  </label>
-                )}
+                </div>
+
+                {/* Background Image Upload */}
+                <div>
+                  <Label>Background Image (with dark overlay)</Label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    This image will be shown behind testimonials with 70% dark
+                    overlay
+                  </p>
+                  <div className="mt-2">
+                    {backgroundPreview ? (
+                      /* DIALOG BACKGROUND PREVIEW */
+                      <div className="relative w-full aspect-video rounded-lg overflow-hidden">
+                        <Image
+                          src={backgroundPreview}
+                          alt="background preview"
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 768px) 100vw, 672px"
+                        />
+                        <div className="absolute inset-0 bg-black/70" />
+                        <button
+                          onClick={() => {
+                            setBackgroundPreview(null);
+                            setBackgroundFile(null);
+                          }}
+                          className="absolute z-10 top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-forest transition-colors block">
+                        <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                        <p className="text-sm font-medium">Upload Background</p>
+                        <p className="text-xs text-muted-foreground">
+                          Court or facility image recommended
+                        </p>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={onBackgroundSelect}
+                          className="hidden"
+                        />
+                      </label>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => setTestimonialsDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    onClick={saveTestimonials}
+                    disabled={savingTestimonials}
+                  >
+                    {savingTestimonials ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      "Save Section"
+                    )}
+                  </Button>
+                </div>
               </div>
             </div>
-
-            {/* Background Image Upload */}
-            <div>
-              <Label>Background Image (with dark overlay)</Label>
-              <p className="text-xs text-muted-foreground mb-2">
-                This image will be shown behind testimonials with 70% dark
-                overlay
-              </p>
-              <div className="mt-2">
-                {backgroundPreview ? (
-                  /* DIALOG BACKGROUND PREVIEW */
-                  <div className="relative w-full aspect-video rounded-lg overflow-hidden">
-                    <Image
-                      src={backgroundPreview}
-                      alt="background preview"
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 100vw, 672px"
-                    />
-                    <div className="absolute inset-0 bg-black/70" />
-                    <button
-                      onClick={() => {
-                        setBackgroundPreview(null);
-                        setBackgroundFile(null);
-                      }}
-                      className="absolute z-10 top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <label className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-forest transition-colors block">
-                    <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                    <p className="text-sm font-medium">Upload Background</p>
-                    <p className="text-xs text-muted-foreground">
-                      Court or facility image recommended
-                    </p>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={onBackgroundSelect}
-                      className="hidden"
-                    />
-                  </label>
-                )}
-              </div>
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => setTestimonialsDialogOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                className="flex-1"
-                onClick={saveTestimonials}
-                disabled={savingTestimonials}
-              >
-                {savingTestimonials ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  "Save Section"
-                )}
-              </Button>
-            </div>
-          </div>
-          </div>
           </div>
         </DialogContent>
       </Dialog>

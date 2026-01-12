@@ -20,6 +20,7 @@ import {
   PlayCircle,
   StopCircle,
   Trophy,
+  LucideIcon,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -43,12 +44,13 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 
+import { Booking } from "@/types/booking";
 import { supabase } from "@/lib/supabase/client";
 import { getDisplayStatus, getDisplayStatusStyle } from "@/lib/booking";
 
 const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
   const router = useRouter();
-  const [booking, setBooking] = useState<any>(null);
+  const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Payment dialog
@@ -135,9 +137,10 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
           "id-ID"
         )} received via ${paymentMethod}`
       );
-    } catch (error: any) {
-      console.error("Error recording payment:", error);
-      alert(`❌ Error: ${error.message}`);
+    } catch (error: unknown) {
+      const err = error as Error;
+      console.error("Error recording payment:", err);
+      alert(`❌ Error: ${err.message}`);
     } finally {
       setRecording(false);
     }
@@ -183,9 +186,10 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
       setCheckInDialogOpen(false);
       setSessionNotes("");
       alert("🎾 Customer checked in successfully!");
-    } catch (error: any) {
-      console.error("Error checking in:", error);
-      alert(`❌ Error: ${error.message}`);
+    } catch (error: unknown) {
+      const err = error as Error;
+      console.error("Error checking in:", err);
+      alert(`❌ Error: ${err.message}`);
     } finally {
       setProcessing(false);
     }
@@ -211,9 +215,10 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
       setCheckOutDialogOpen(false);
       setSessionNotes("");
       alert("🏁 Customer checked out successfully!");
-    } catch (error: any) {
-      console.error("Error checking out:", error);
-      alert(`❌ Error: ${error.message}`);
+    } catch (error: unknown) {
+      const err = error as Error;
+      console.error("Error checking out:", err);
+      alert(`❌ Error: ${err.message}`);
     } finally {
       setProcessing(false);
     }
@@ -239,9 +244,10 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
       setCancelDialogOpen(false);
       setCancelReason("");
       alert("❌ Booking cancelled successfully!");
-    } catch (error: any) {
-      console.error("Error cancelling booking:", error);
-      alert(`❌ Error: ${error.message}`);
+    } catch (error: unknown) {
+      const err = error as Error;
+      console.error("Error cancelling booking:", err);
+      alert(`❌ Error: ${err.message}`);
     } finally {
       setCancelling(false);
     }
@@ -288,7 +294,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
         <AlertCircle className="w-12 h-12 text-muted-foreground mb-4" />
         <h3 className="text-lg font-semibold mb-2">Booking Not Found</h3>
         <p className="text-muted-foreground mb-4">
-          This booking doesn't exist or has been deleted.
+          This booking doesn&apos;t exist or has been deleted.
         </p>
         <Button
           onClick={() => router.push("/admin/bookings")}
@@ -349,7 +355,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
           {(() => {
             const displayStatus = getDisplayStatus(booking);
             const style = getDisplayStatusStyle(displayStatus);
-            const icons: Record<string, any> = {
+            const icons: Record<string, LucideIcon> = {
               PAID: CheckCircle,
               "DEPOSIT PAID": Clock,
               "PAYMENT EXPIRED": AlertCircle,
@@ -491,7 +497,9 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
               Received IDR{" "}
               {booking.venue_payment_amount.toLocaleString("id-ID")} via{" "}
               {booking.venue_payment_method} on{" "}
-              {new Date(booking.venue_payment_date).toLocaleString("id-ID")}
+              {booking.venue_payment_date
+                ? new Date(booking.venue_payment_date).toLocaleString("id-ID")
+                : "-"}
             </p>
           </AlertDescription>
         </Alert>
@@ -590,7 +598,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                   <MapPin className="w-4 h-4 text-muted-foreground mt-0.5" />
                   <div>
                     <p className="text-sm text-muted-foreground">Court</p>
-                    <p className="font-medium">{booking.courts.name}</p>
+                    <p className="font-medium">{booking?.courts?.name}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -645,7 +653,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                         Cancel This Booking
                       </p>
                       <p className="text-xs text-red-700 mt-1">
-                        Customer can't make it or didn't show up
+                        Customer can&apos;t make it or didn&apos;t show up
                       </p>
                     </div>
                     <Button
@@ -986,7 +994,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                 <div>
                   <p className="font-semibold text-blue-900">Start Session</p>
                   <p className="text-sm text-blue-700">
-                    {booking.courts.name} • {booking.time}
+                    {booking?.courts?.name} • {booking.time}
                   </p>
                 </div>
               </div>
@@ -1042,7 +1050,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
           <DialogHeader>
             <DialogTitle>Check Out Customer</DialogTitle>
             <DialogDescription>
-              Mark {booking.customer_name}'s session as completed
+              Mark {booking.customer_name}&apos;s session as completed
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -1054,7 +1062,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                     Complete Session
                   </p>
                   <p className="text-sm text-green-700">
-                    {booking.courts.name} • {booking.time}
+                    {booking?.courts?.name} • {booking.time}
                   </p>
                 </div>
               </div>

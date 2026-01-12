@@ -1,6 +1,8 @@
 "use client";
 
+import { forwardRef } from "react";
 import Image from "next/image";
+import type { LucideProps } from "lucide-react";
 import {
   Plus,
   Edit,
@@ -14,6 +16,7 @@ import {
   DollarSign,
   Trophy,
   Zap,
+  LucideIcon,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,9 +30,29 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
 import VersionHistoryDialog from "@/components/dashboard/VersionHistoryDialog";
+
 import { FeaturesGridSectionCMS } from "@/types";
+
+const TargetIcon = forwardRef<SVGSVGElement, LucideProps>(
+  ({ className, ...props }, ref) => (
+    <svg
+      ref={ref}
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      {...props}
+    >
+      <circle cx="12" cy="12" r="10" />
+      <circle cx="12" cy="12" r="6" />
+      <circle cx="12" cy="12" r="2" />
+    </svg>
+  )
+);
+
+TargetIcon.displayName = "TargetIcon";
 
 const FeaturesGridSection = ({
   features,
@@ -48,26 +71,14 @@ const FeaturesGridSection = ({
   savingFeatures,
 }: FeaturesGridSectionCMS) => {
   const IconFromName = ({ name }: { name: string }) => {
-    const icons: any = {
+    const icons: Record<string, LucideIcon> = {
       Users: Users,
       Clock: Clock,
       Sparkles: Sparkles,
       DollarSign: DollarSign,
       Trophy: Trophy,
       Zap: Zap,
-      Target: () => (
-        <svg
-          className="w-5 h-5"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <circle cx="12" cy="12" r="10" />
-          <circle cx="12" cy="12" r="6" />
-          <circle cx="12" cy="12" r="2" />
-        </svg>
-      ),
+      Target: TargetIcon,
     };
     const Icon = icons[name] || Sparkles;
     return <Icon className="w-5 h-5" />;
@@ -228,10 +239,32 @@ const FeaturesGridSection = ({
                     <select
                       value={editingFeature.type}
                       onChange={(e) =>
-                        setEditingFeature((prev: any) => ({
-                          ...prev,
-                          type: e.target.value as "image" | "text",
-                        }))
+                        setEditingFeature((prev) => {
+                          if (!prev) return prev;
+
+                          const newType = e.target.value as "image" | "text";
+
+                          // Create new object based on type
+                          if (newType === "image") {
+                            return {
+                              id: prev.id,
+                              type: "image" as const,
+                              src: prev.type === "image" ? prev.src : "",
+                              alt: prev.type === "image" ? prev.alt : "",
+                            };
+                          } else {
+                            return {
+                              id: prev.id,
+                              type: "text" as const,
+                              bgImage: prev.type === "text" ? prev.bgImage : "",
+                              icon:
+                                prev.type === "text" ? prev.icon : "Sparkles",
+                              title: prev.type === "text" ? prev.title : "",
+                              description:
+                                prev.type === "text" ? prev.description : "",
+                            };
+                          }
+                        })
                       }
                       className="block w-full mt-1 p-2 border rounded-lg"
                     >

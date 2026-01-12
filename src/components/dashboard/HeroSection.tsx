@@ -82,7 +82,7 @@ const HeroSection = ({
                 {hero.subtitle}
               </p>
               <div className="flex gap-6 pt-2">
-                {hero.stats.map((s: any, i: number) => (
+                {hero.stats.map((s, i: number) => (
                   <div key={i}>
                     <div className="text-2xl font-bold text-forest">
                       {s.number}

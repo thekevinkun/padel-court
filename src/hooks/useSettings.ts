@@ -30,7 +30,8 @@ export function useSettings() {
       } else {
         throw new Error("Invalid settings response");
       }
-    } catch (err: any) {
+    } catch (error: unknown) {
+      const err = error as Error;
       console.error("Error fetching settings:", err);
       setError(err.message || "Failed to load settings");
     } finally {

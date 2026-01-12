@@ -5,7 +5,7 @@ import { createServerClient } from "@/lib/supabase/server";
 let lastRunTimestamp = 0;
 const DEBOUNCE_MS = 3000; // 3 seconds
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     // Prevent duplicate calls within 3 seconds
     const now = Date.now();

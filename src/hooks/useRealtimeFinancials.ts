@@ -1,5 +1,3 @@
-// /src/hooks/useRealtimeFinancials.ts
-
 import { useEffect, useState, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { AnalyticsData } from "@/types/reports";
@@ -113,8 +111,8 @@ export function useRealtimeFinancials({
           lastEventTimeRef.current = now;
 
           // Get booking date from payload (type-safe)
-          const newRecord = payload.new as Record<string, any> | null;
-          const oldRecord = payload.old as Record<string, any> | null;
+          const newRecord = payload.new as Record<string, unknown> | null;
+          const oldRecord = payload.old as Record<string, unknown> | null;
           const bookingDate = newRecord?.date || oldRecord?.date;
 
           console.log("📊 Booking date:", bookingDate);

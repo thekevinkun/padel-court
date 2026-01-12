@@ -11,7 +11,6 @@ import PricingSection from "@/components/dashboard/PricingSection";
 import GallerySection from "@/components/dashboard/GallerySection";
 import CTASection from "@/components/dashboard/CTASection";
 
-import { supabase } from "@/lib/supabase/client";
 import {
   heroInitial,
   welcomeInitial,
@@ -27,11 +26,16 @@ import {
   extractFilePathFromUrl,
   validateImageFile,
 } from "@/lib/upload";
+import { supabase } from "@/lib/supabase/client";
 
 import {
   HeroContent,
   PricingContent,
+  PricingItem,
+  PricingSubSection,
   WelcomeContent,
+  FeatureItem,
+  Testimonial,
   TestimonialsContent,
   GalleryContent,
   GalleryImage,
@@ -221,7 +225,9 @@ const ContentPageClient = () => {
     version: 1,
   });
   const [featuresDialogOpen, setFeaturesDialogOpen] = useState(false);
-  const [editingFeature, setEditingFeature] = useState<any>(null);
+  const [editingFeature, setEditingFeature] = useState<FeatureItem | null>(
+    null
+  );
   const [featureFile, setFeatureFile] = useState<File | null>(null);
   const [featurePreview, setFeaturePreview] = useState<string | null>(null);
   const [savingFeatures, setSavingFeatures] = useState(false);
@@ -258,7 +264,7 @@ const ContentPageClient = () => {
     setFeaturesDialogOpen(true);
   };
 
-  const openEditFeature = (f: any) => {
+  const openEditFeature = (f: FeatureItem) => {
     setEditingFeature({ ...f });
     setFeaturePreview(f.src || f.bgImage || null);
     setFeatureFile(null);
@@ -355,7 +361,8 @@ const ContentPageClient = () => {
   const [testimonialsBackgroundPreview, setTestimonialsBackgroundPreview] =
     useState<string | null>(null);
   const [savingTestimonials, setSavingTestimonials] = useState(false);
-  const [editingTestimonial, setEditingTestimonial] = useState<any>(null);
+  const [editingTestimonial, setEditingTestimonial] =
+    useState<Testimonial | null>(null);
 
   // Testimonials functions
   const onTestimonialsVideoSelect = (
@@ -493,7 +500,7 @@ const ContentPageClient = () => {
     setTestimonialDialogOpen(true);
   };
 
-  const openEditTestimonial = (testimonial: any) => {
+  const openEditTestimonial = (testimonial: Testimonial) => {
     setEditingTestimonial({ ...testimonial });
     setTestimonialDialogOpen(true);
   };
@@ -591,20 +598,26 @@ const ContentPageClient = () => {
   const updatePricingItem = (
     section: string,
     index: number,
-    field: string,
+    field: keyof PricingItem,
     value: string
   ) => {
-    setPricing((prev: any) => {
+    setPricing((prev) => {
       const newPricing = { ...prev };
-      newPricing[section].items[index][field] = value;
+      const pricingSection = newPricing[
+        section as keyof typeof newPricing
+      ] as PricingSubSection;
+      pricingSection.items[index][field] = value;
       return newPricing;
     });
   };
 
   const addPricingItem = (section: string) => {
-    setPricing((prev: any) => {
+    setPricing((prev) => {
       const newPricing = { ...prev };
-      newPricing[section].items.push({
+      const pricingSection = newPricing[
+        section as keyof typeof newPricing
+      ] as PricingSubSection;
+      pricingSection.items.push({
         name: "",
         price: "",
         description: "",
@@ -614,9 +627,12 @@ const ContentPageClient = () => {
   };
 
   const removePricingItem = (section: string, index: number) => {
-    setPricing((prev: any) => {
+    setPricing((prev) => {
       const newPricing = { ...prev };
-      newPricing[section].items.splice(index, 1);
+      const pricingSection = newPricing[
+        section as keyof typeof newPricing
+      ] as PricingSubSection;
+      pricingSection.items.splice(index, 1);
       return newPricing;
     });
   };
@@ -955,7 +971,7 @@ const ContentPageClient = () => {
   // Save section with versioning
   const saveSectionWithVersion = async (
     sectionType: string,
-    content: any,
+    content: unknown,
     changeDescription?: string
   ) => {
     try {

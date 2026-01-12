@@ -170,10 +170,11 @@ const SettingsPageClient = () => {
           setSaveStatus("idle");
         }, 3000);
       }
-    } catch (error: any) {
-      console.error("Error saving settings:", error);
+    } catch (error: unknown) {
+      const err = error as Error;
+      console.error("Error saving settings:", err);
       setErrorMessage(
-        error.message || "Failed to save settings. Please try again."
+        err.message || "Failed to save settings. Please try again."
       );
       setSaveStatus("error");
     } finally {
@@ -182,25 +183,9 @@ const SettingsPageClient = () => {
   };
 
   // Update settings field
-  const updateField = (field: keyof SiteSettings, value: any) => {
+  const updateField = (field: keyof SiteSettings, value: unknown) => {
     if (!settings) return;
     setSettings({ ...settings, [field]: value });
-  };
-
-  // Update nested field (for objects like operating_hours)
-  const updateNestedField = (
-    parent: keyof SiteSettings,
-    child: string,
-    value: any
-  ) => {
-    if (!settings) return;
-    setSettings({
-      ...settings,
-      [parent]: {
-        ...(settings[parent] as any),
-        [child]: value,
-      },
-    });
   };
 
   // Fetch settings from API
@@ -376,7 +361,7 @@ const SettingsPageClient = () => {
                           sizes="128px"
                         />
                       </div>
-                      
+
                       <button
                         type="button"
                         onClick={() => {
@@ -880,7 +865,7 @@ const SettingsPageClient = () => {
                       }
                     />
                   </div>
-                  
+
                   <div className="flex items-center justify-between">
                     <Label>QRIS</Label>
                     <Switch
@@ -896,7 +881,7 @@ const SettingsPageClient = () => {
                       }
                     />
                   </div>
-                  
+
                   <div className="flex items-center justify-between">
                     <Label>E-Wallet (GoPay, ShopeePay, Dana)</Label>
                     <Switch

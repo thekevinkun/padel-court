@@ -6,10 +6,11 @@ export const metadata: Metadata = {
   description: "View and manage individual booking details",
 };
 
-export default function BookingDetailPage({
+export default async function BookingDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  return <BookingDetailClient bookingId={params.id} />;
+  const { id: bookingId } = await params;
+  return <BookingDetailClient bookingId={bookingId} />;
 }

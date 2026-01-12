@@ -10,8 +10,6 @@ import {
   BarChart3,
   Clock,
   TrendingDown,
-  Wifi,
-  WifiOff,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -81,7 +79,7 @@ const ReportsPageClient = () => {
   const { startDate, endDate } = getDateRange();
 
   // Real-time subscription
-  const { isSubscribed, lastUpdate } = useRealtimeFinancials({
+  useRealtimeFinancials({
     startDate,
     endDate,
     period: dateRange,

@@ -1,35 +1,45 @@
 "use client";
 
+import { forwardRef } from "react";
 import Image from "next/image";
+import type { LucideProps } from "lucide-react";
 import { motion } from "framer-motion";
-import { Trophy, Zap, Users, Clock, Sparkles } from "lucide-react";
+import { Trophy, Zap, Users, Clock, Sparkles, LucideIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 import { FeaturesContent } from "@/types";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
 
+const TargetIcon = forwardRef<SVGSVGElement, LucideProps>(
+  ({ className, ...props }, ref) => (
+    <svg
+      ref={ref}
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      {...props}
+    >
+      <circle cx="12" cy="12" r="10" />
+      <circle cx="12" cy="12" r="6" />
+      <circle cx="12" cy="12" r="2" />
+    </svg>
+  )
+);
+
+TargetIcon.displayName = "TargetIcon";
+
 const FeaturesGrid = ({ content }: { content: FeaturesContent }) => {
   // Map icon names to actual icon components
   const getIcon = (iconName: string) => {
-    const icons: Record<string, any> = {
+    const icons: Record<string, LucideIcon> = {
       Trophy: Trophy,
       Zap: Zap,
       Users: Users,
       Clock: Clock,
       Sparkles: Sparkles,
-      Target: () => (
-        <svg
-          className="w-6 h-6 md:w-7 md:h-7"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <circle cx="12" cy="12" r="10" />
-          <circle cx="12" cy="12" r="6" />
-          <circle cx="12" cy="12" r="2" />
-        </svg>
-      ),
+      Target: TargetIcon,
     };
     return icons[iconName] || Sparkles;
   };

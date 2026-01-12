@@ -1,13 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  differenceInHours,
-  differenceInDays,
-  addDays,
-  isBefore,
-  isAfter,
-} from "date-fns";
+import { differenceInHours, addDays } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
@@ -45,6 +39,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useSettings } from "@/hooks/useSettings";
 import { BookingFormData } from "@/types/booking";
 import { supabase } from "@/lib/supabase/client";
+import { Court } from "@/types";
 
 interface BookingDialogProps {
   open: boolean;
@@ -66,11 +61,19 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
   });
 
   // Fetch settings
-  const { settings, loading: settingsLoading } = useSettings();
+  const { settings } = useSettings();
 
   // Fetch courts and time slots from database
-  const [courts, setCourts] = useState<any[]>([]);
-  const [timeSlots, setTimeSlots] = useState<any[]>([]);
+  const [courts, setCourts] = useState<Court[]>([]);
+  const [timeSlots, setTimeSlots] = useState<
+    Array<{
+      id: string;
+      time: string;
+      available: boolean;
+      period: string;
+      pricePerPerson: number;
+    }>
+  >([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
 
   // Fetch courts on mount
@@ -223,37 +226,11 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
     }
   };
 
-  // Helper function to check if date is allowed
-  const isDateAllowed = (date: Date): boolean => {
-    if (!settings) return true; // Allow all if settings not loaded
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const targetDate = new Date(date);
-    targetDate.setHours(0, 0, 0, 0);
-
-    // Check max advance booking
-    const maxDate = addDays(today, settings.max_advance_booking);
-    if (isAfter(targetDate, maxDate)) {
-      return false; // Too far in future
-    }
-
-    // Check min advance booking (must be at least X hours from now)
-    const minDate = new Date();
-    minDate.setHours(minDate.getHours() + settings.min_advance_booking);
-
-    // If booking for today, check if any slots are still available
-    if (differenceInDays(targetDate, today) === 0) {
-      // Allow today if current time + min advance is still within today
-      return isBefore(minDate, new Date(targetDate).setHours(23, 59, 59));
-    }
-
-    return true; // Date is within allowed range
-  };
-
   // Helper to check if time slot has already passed
-  const isTimeSlotPassed = (slot: any, bookingDate: Date): boolean => {
+  const isTimeSlotPassed = (
+    slot: { time: string },
+    bookingDate: Date
+  ): boolean => {
     const now = new Date();
     const slotDateTime = new Date(bookingDate);
 
@@ -268,7 +245,10 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
   };
 
   // Helper function to check if time slot is allowed (too soon)
-  const isTimeSlotTooSoon = (slot: any, bookingDate: Date): boolean => {
+  const isTimeSlotTooSoon = (
+    slot: { time: string },
+    bookingDate: Date
+  ): boolean => {
     if (!settings) return false;
 
     const now = new Date();
@@ -287,14 +267,14 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
     return hoursDiff >= 0 && hoursDiff < settings.min_advance_booking;
   };
 
-  // Combined check for allowed slots
-  const isTimeSlotAllowed = (slot: any, bookingDate: Date): boolean => {
-    // Slot is NOT allowed if it has passed OR is too soon
-    return (
-      !isTimeSlotPassed(slot, bookingDate) &&
-      !isTimeSlotTooSoon(slot, bookingDate)
-    );
-  };
+  // // Combined check for allowed slots
+  // const isTimeSlotAllowed = (slot: any, bookingDate: Date): boolean => {
+  //   // Slot is NOT allowed if it has passed OR is too soon
+  //   return (
+  //     !isTimeSlotPassed(slot, bookingDate) &&
+  //     !isTimeSlotTooSoon(slot, bookingDate)
+  //   );
+  // };
 
   // Calculate deposit if required
   const calculateDeposit = (): number => {

@@ -24,8 +24,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useRealtimeDashboardStats } from "@/hooks/userRealtimeDashboardStats";
 
 import { DashboardStats } from "@/types";
+import { Booking } from "@/types/booking";
 import { supabase } from "@/lib/supabase/client";
-import { getDisplayStatus, getDisplayStatusStyle } from "@/lib/booking";
+import { getDisplayStatus } from "@/lib/booking";
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats>({
@@ -39,7 +40,7 @@ export default function DashboardPage() {
     upcomingSessions: 0,
     completedToday: 0,
   });
-  const [recentBookings, setRecentBookings] = useState<any[]>([]);
+  const [recentBookings, setRecentBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingRefresh, setLoadingRefresh] = useState(true);
 
@@ -243,7 +244,7 @@ export default function DashboardPage() {
           <div>
             <h2 className="text-2xl font-bold mb-2">Welcome back!</h2>
             <p className="text-white/80">
-              Here's what's happening with your padel courts today.
+              Here&apos;s what&apos;s happening with your padel courts today.
             </p>
             <div className="flex items-center gap-2 mt-3">
               {isSubscribed ? (

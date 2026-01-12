@@ -4,10 +4,10 @@ import { createAuthClient } from "@/lib/supabase/auth-server";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const bookingId = params.id;
+    const { id: bookingId } = await params;
     const body = await request.json();
     const { notes } = body; // Optional notes from admin
 
@@ -75,27 +75,27 @@ export async function POST(
       // Check if venue payment has expired
       if (booking.venue_payment_expired) {
         return NextResponse.json(
-          { 
+          {
             error: "Venue payment window has expired. Cannot check in.",
-            code: "VENUE_PAYMENT_EXPIRED"
+            code: "VENUE_PAYMENT_EXPIRED",
           },
           { status: 410 }
         );
       }
-      
+
       // Venue payment still pending
       return NextResponse.json(
-        { 
+        {
           error: `Customer must pay remaining balance of IDR ${booking.remaining_balance.toLocaleString(
             "id-ID"
           )} before check-in.`,
           code: "VENUE_PAYMENT_REQUIRED",
-          remainingBalance: booking.remaining_balance
+          remainingBalance: booking.remaining_balance,
         },
         { status: 402 } // 402 Payment Required
       );
     }
-    
+
     // Update booking to IN_PROGRESS
     const { data: updatedBooking, error: updateError } = await supabase
       .from("bookings")

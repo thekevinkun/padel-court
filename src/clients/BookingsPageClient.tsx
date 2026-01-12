@@ -12,6 +12,7 @@ import {
   PlayCircle,
   Trophy,
   AlertCircle,
+  LucideIcon,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -43,9 +44,9 @@ const BookingsPageClient = () => {
   const [fetchedBookings, setFetchedBookings] = useState<Booking[]>([]);
 
   // Real-time bookings (synced automatically)
-  const { bookings, isSubscribed } = useRealtimeBookings(fetchedBookings);
+  const { bookings } = useRealtimeBookings(fetchedBookings);
 
-  const [filteredBookings, setFilteredBookings] = useState<any[]>([]);
+  const [filteredBookings, setFilteredBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -131,7 +132,7 @@ const BookingsPageClient = () => {
       b.customer_name,
       b.customer_email,
       b.customer_phone,
-      b.courts.name,
+      b?.courts?.name,
       b.date,
       b.time,
       b.number_of_players,
@@ -152,11 +153,11 @@ const BookingsPageClient = () => {
     URL.revokeObjectURL(url);
   };
 
-  const getStatusBadge = (booking: any) => {
+  const getStatusBadge = (booking: Booking) => {
     const displayStatus = getDisplayStatus(booking);
     const style = getDisplayStatusStyle(displayStatus);
 
-    const icons: Record<string, any> = {
+    const icons: Record<string, LucideIcon> = {
       PAID: CheckCircle,
       "DEPOSIT PAID": Clock,
       "PAYMENT EXPIRED": AlertCircle,
@@ -212,10 +213,10 @@ const BookingsPageClient = () => {
     );
   }
 
-  // Calculate pending venue payments (DEPOSIT PAID status)
-  const pendingVenuePayments = bookings.filter(
-    (b) => getDisplayStatus(b) === "DEPOSIT PAID"
-  ).length;
+  // // Calculate pending venue payments (DEPOSIT PAID status)
+  // const pendingVenuePayments = bookings.filter(
+  //   (b) => getDisplayStatus(b) === "DEPOSIT PAID"
+  // ).length;
 
   return (
     <div className="space-y-6">
@@ -359,7 +360,7 @@ const BookingsPageClient = () => {
                         </div>
                       </TableCell>
                       <TableCell className="text-sm">
-                        {booking.courts.name}
+                        {booking?.courts?.name}
                       </TableCell>
                       <TableCell className="text-sm">
                         <div>

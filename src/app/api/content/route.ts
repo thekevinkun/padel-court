@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const supabase = createServerClient();
 
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
         updatedAt: section.updated_at,
       };
       return acc;
-    }, {} as Record<string, any>);
+    }, {} as Record<string, { content: unknown; version: number; order: number; updatedAt: string }>);
 
     // Also return as array for ordered rendering
     const contentArray = sections.map((section) => ({

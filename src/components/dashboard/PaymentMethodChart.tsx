@@ -49,11 +49,13 @@ const PaymentMethodChart = ({ data }: { data: PaymentMethodBreakdown[] }) => {
   }));
 
   // Custom label for pie slices
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const renderLabel = (entry: any) => {
     return `${entry.percentage.toFixed(1)}%`;
   };
 
   // Custom tooltip
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
@@ -85,10 +87,12 @@ const PaymentMethodChart = ({ data }: { data: PaymentMethodBreakdown[] }) => {
   };
 
   // Custom legend
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const renderLegend = (props: any) => {
     const { payload } = props;
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-6">
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
         {payload.map((entry: any, index: number) => {
           // Find the matching data by name instead of using index
           const data = chartData.find((item) => item.name === entry.value);

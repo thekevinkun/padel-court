@@ -4,17 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  LayoutDashboard,
-  Calendar,
-  Building2,
-  Clock,
-  FileText,
-  Settings,
-  Menu,
-  X,
-  LogOut,
-} from "lucide-react";
+import { Menu, X, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 import { useAuth } from "@/hooks/useAuth";
@@ -56,7 +46,7 @@ const Sidebar = () => {
           fixed top-0 left-0 bottom-0 z-40 w-64 bg-white
           flex flex-col shadow-md
           transition-transform duration-300 ease-in-out
-          ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+          ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"}
           lg:translate-x-0
         `}
       >
@@ -74,8 +64,14 @@ const Sidebar = () => {
               </svg>
             </div>
             <div>
-              <div className="logo leading-tight">Padel<br />Batu Alam Permai</div>
-              <div className="text-xs text-accent-foreground mt-1">Admin Panel</div>
+              <div className="logo leading-tight">
+                Padel
+                <br />
+                Batu Alam Permai
+              </div>
+              <div className="text-xs text-accent-foreground mt-1">
+                Admin Panel
+              </div>
             </div>
           </Link>
         </div>
@@ -117,9 +113,7 @@ const Sidebar = () => {
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium truncate">
-                {user?.email}
-              </div>
+              <div className="text-sm font-medium truncate">{user?.email}</div>
               <div className="text-xs text-muted-foreground">Admin</div>
             </div>
           </div>
@@ -135,6 +129,6 @@ const Sidebar = () => {
       </aside>
     </>
   );
-}
+};
 
 export default Sidebar;

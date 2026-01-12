@@ -46,13 +46,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 
 import { Court } from "@/types";
-import { supabase } from "@/lib/supabase/client";
 import {
   uploadImage,
   validateImageFile,
   deleteImage,
   extractFilePathFromUrl,
 } from "@/lib/upload";
+import { supabase } from "@/lib/supabase/client";
 
 // Sortable Feature Item Component
 function SortableFeatureItem({

@@ -23,11 +23,11 @@ export const generateBookingReceipt = async (
 ): Promise<Blob> => {
   const doc = new jsPDF();
   
-  // Colors
-  const primaryColor = "#ffcc00"; // yellow
-  const accentColor = "#2d6a4f"; // forest green
-  const textColor = "#1f2937";
-  const lightGray = "#f3f4f6";
+  // // Colors
+  // const primaryColor = "#ffcc00"; // yellow
+  // const accentColor = "#2d6a4f"; // forest green
+  // const textColor = "#1f2937";
+  // const lightGray = "#f3f4f6";
 
   // Header - Club Name
   doc.setFillColor(255, 204, 0); // yellow
@@ -213,7 +213,7 @@ export const generateBookingReceipt = async (
 
 // Optional: Function to download the PDF directly
 export const downloadReceipt = (data: ReceiptData) => {
-  const doc = new jsPDF();
+  // const doc = new jsPDF();
   generateBookingReceipt(data).then((blob) => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");

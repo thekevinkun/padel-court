@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 
-const midtransClient = require("midtrans-client");
+import midtransClient from "midtrans-client";
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,18 +20,17 @@ export async function POST(request: NextRequest) {
     // Get booking details
     const { data: booking, error: bookingError } = await supabase
       .from("bookings")
-      .select(`
+      .select(
+        `
         *,
         courts (name)
-      `)
+      `
+      )
       .eq("id", bookingId)
       .single();
 
     if (bookingError || !booking) {
-      return NextResponse.json(
-        { error: "Booking not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Booking not found" }, { status: 404 });
     }
 
     // Check if booking is already paid
@@ -65,7 +64,7 @@ export async function POST(request: NextRequest) {
           price: booking.total_amount, // Use deposit amount
           quantity: 1,
           name: `${booking.courts.name} - ${booking.time} (Deposit)`,
-        }
+        },
       ];
     } else {
       // For full payment: Use subtotal + fees as before
@@ -76,12 +75,16 @@ export async function POST(request: NextRequest) {
           quantity: 1,
           name: `${booking.courts.name} - ${booking.time}`,
         },
-        ...(booking.payment_fee > 0 ? [{
-          id: "payment-fee",
-          price: booking.payment_fee,
-          quantity: 1,
-          name: "Payment Processing Fee",
-        }] : []),
+        ...(booking.payment_fee > 0
+          ? [
+              {
+                id: "payment-fee",
+                price: booking.payment_fee,
+                quantity: 1,
+                name: "Payment Processing Fee",
+              },
+            ]
+          : []),
       ];
     }
 
@@ -129,15 +132,23 @@ export async function POST(request: NextRequest) {
       token: transaction.token,
       orderId: orderId,
     });
-  } catch (error: any) {
-    console.error("Error creating payment:", error);
-    const errorMessage = error.message || "Failed to create payment";
-    const errorDetails = error.ApiResponse || error.httpStatusCode || "Unknown error";
+  } catch (error: unknown) {
+    const err = error as {
+      message?: string;
+      ApiResponse?: unknown;
+      httpStatusCode?: number;
+    };
+    const errorMessage = err.message || "Failed to create payment";
+    const errorDetails =
+      err.ApiResponse || err.httpStatusCode || "Unknown error";
 
     return NextResponse.json(
-      { 
+      {
         error: errorMessage,
-        details: typeof errorDetails === 'object' ? JSON.stringify(errorDetails) : errorDetails 
+        details:
+          typeof errorDetails === "object"
+            ? JSON.stringify(errorDetails)
+            : errorDetails,
       },
       { status: 500 }
     );

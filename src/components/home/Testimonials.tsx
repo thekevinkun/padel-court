@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Parallax } from "react-scroll-parallax";
 import { ChevronLeft, ChevronRight, Quote, Star } from "lucide-react";
@@ -188,17 +189,22 @@ const Testimonials = ({ content }: TestimonialsProps) => {
 
                       {/* Comment */}
                       <p className="text-xl md:text-2xl leading-relaxed mb-8 text-white font-light italic">
-                        "{currentTestimonial.comment}"
+                        &quot;{currentTestimonial.comment}&quot;
                       </p>
 
                       {/* Author Info */}
                       <div className="flex items-center gap-4">
                         {currentTestimonial.avatar ? (
-                          <img
-                            src={currentTestimonial.avatar}
-                            alt={currentTestimonial.name}
-                            className="w-14 h-14 rounded-full object-cover border-2 border-primary/30"
-                          />
+                          <div className="w-14 h-14 rounded-full border-2 border-primary/30">
+                            <Image
+                              src={currentTestimonial.avatar}
+                              alt={currentTestimonial.name}
+                              fill
+                              sizes="56px"
+                              className="w-full h-full object-cover rounded-full"
+                              loading="lazy"
+                            />
+                          </div>
                         ) : (
                           <div className="w-14 h-14 rounded-full bg-primary/20 flex items-center justify-center border-2 border-primary/30">
                             <span className="text-primary font-bold text-xl">

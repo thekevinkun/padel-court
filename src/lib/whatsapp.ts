@@ -3,7 +3,7 @@ import { ReceiptData } from "./pdf-generator";
 /**
  * Sends booking receipt details via WhatsApp
  * Opens WhatsApp with pre-filled message
- * 
+ *
  * @param phoneNumber - WhatsApp number (will be cleaned of non-digits)
  * @param receiptData - Booking receipt data
  * @param pdfBlob - Optional PDF blob (for future implementation)
@@ -11,11 +11,11 @@ import { ReceiptData } from "./pdf-generator";
 export const sendWhatsAppReceipt = (
   phoneNumber: string,
   receiptData: ReceiptData,
-  pdfBlob?: Blob
+  _pdfBlob?: Blob
 ) => {
   // Clean phone number - remove all non-digit characters
   const cleanNumber = phoneNumber.replace(/\D/g, "");
-  
+
   // Ensure number starts with country code (62 for Indonesia)
   const formattedNumber = cleanNumber.startsWith("62")
     ? cleanNumber
@@ -50,7 +50,7 @@ export const sendWhatsAppReceipt = (
  */
 const formatWhatsAppMessage = (data: ReceiptData): string => {
   const divider = "━━━━━━━━━━━━━━━━━━━━";
-  
+
   return `
 🎾 *PADEL BATU ALAM PERMAI*
 ${divider}
@@ -73,9 +73,15 @@ ${divider}
 • Court: ${data.courtName}
 • Date: ${data.date}
 • Time: ${data.time}
-• Players: ${data.numberOfPlayers} ${data.numberOfPlayers === 1 ? "person" : "people"}
+• Players: ${data.numberOfPlayers} ${
+    data.numberOfPlayers === 1 ? "person" : "people"
+  }
 
-${data.notes && data.notes !== "-" ? `• Notes: ${data.notes}\n\n${divider}\n\n` : `\n${divider}\n\n`}💰 *Payment Summary:*
+${
+  data.notes && data.notes !== "-"
+    ? `• Notes: ${data.notes}\n\n${divider}\n\n`
+    : `\n${divider}\n\n`
+}💰 *Payment Summary:*
 • Court Booking: IDR ${data.subtotal.toLocaleString("id-ID")}
 • Payment Fee: IDR ${data.paymentFee.toLocaleString("id-ID")}
 • *TOTAL PAID: IDR ${data.total.toLocaleString("id-ID")}*
@@ -127,7 +133,7 @@ See you soon! 🙏
 
   const encodedMessage = encodeURIComponent(message);
   const whatsappUrl = `https://wa.me/${formattedNumber}?text=${encodedMessage}`;
-  
+
   window.open(whatsappUrl, "_blank");
 };
 
@@ -137,7 +143,7 @@ See you soon! 🙏
 export const validateIndonesianPhone = (phone: string): boolean => {
   // Remove all non-digit characters
   const cleaned = phone.replace(/\D/g, "");
-  
+
   // Check if it's a valid Indonesian number
   // Should start with 62 or 0, and be 10-13 digits long
   if (cleaned.startsWith("62")) {
@@ -145,7 +151,7 @@ export const validateIndonesianPhone = (phone: string): boolean => {
   } else if (cleaned.startsWith("0")) {
     return cleaned.length >= 10 && cleaned.length <= 13;
   }
-  
+
   return false;
 };
 
@@ -155,14 +161,14 @@ export const validateIndonesianPhone = (phone: string): boolean => {
  */
 export const formatPhoneDisplay = (phone: string): string => {
   const cleaned = phone.replace(/\D/g, "");
-  
+
   let formatted = cleaned;
   if (cleaned.startsWith("0")) {
     formatted = "62" + cleaned.slice(1);
   } else if (!cleaned.startsWith("62")) {
     formatted = "62" + cleaned;
   }
-  
+
   // Format as: +62 812 3456 7890
   return `+${formatted.slice(0, 2)} ${formatted.slice(2, 5)} ${formatted.slice(
     5,

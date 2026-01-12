@@ -1,6 +1,7 @@
-// /src/app/api/payments/check-status/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const midtransClient = require("midtrans-client");
 
 export async function POST(request: NextRequest) {
@@ -154,11 +155,16 @@ export async function POST(request: NextRequest) {
         transactionStatus,
         message,
       });
-    } catch (midtransError: any) {
+    } catch (midtransError: unknown) {
+      const err = midtransError as {
+        httpStatusCode?: number;
+        ApiResponse?: { status_code?: string };
+      };
+
       // If Midtrans returns 404, the transaction was never created
       if (
-        midtransError.httpStatusCode === 404 ||
-        midtransError.ApiResponse?.status_code === "404"
+        err.httpStatusCode === 404 ||
+        err.ApiResponse?.status_code === "404"
       ) {
         console.log(
           "❌ Transaction not found in Midtrans - payment page never loaded properly"
@@ -200,10 +206,7 @@ export async function POST(request: NextRequest) {
       }
 
       // If Midtrans returns 500, their system is having issues
-      if (
-        midtransError.httpStatusCode === 500 ||
-        midtransError.httpStatusCode === "500"
-      ) {
+      if (err.httpStatusCode === 500) {
         console.log("❌ Midtrans API error 500 - system issues");
 
         // Mark as failed since we can't verify
@@ -243,12 +246,13 @@ export async function POST(request: NextRequest) {
 
       throw midtransError;
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as Error;
     console.error("❌ Status check error:", error);
     return NextResponse.json(
       {
         error: "Failed to check payment status",
-        details: error.message || "Unknown error",
+        details: err.message || "Unknown error",
       },
       { status: 500 }
     );
