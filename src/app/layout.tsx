@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
 import StructuredData from "@/components/StructuredData";
 import ClientProviders from "@/providers/ClientProviders";
+import { getSettingsData } from "@/lib/supabase/settings-server";
 import { generateSiteMetadata, defaultMetadata } from "@/lib/metadata";
 import "./globals.css";
 
@@ -22,29 +23,16 @@ const spaceGrotesk = Space_Grotesk({
 /* Generate metadata from settings */
 export async function generateMetadata(): Promise<Metadata> {
   try {
-    // Fetch settings from API
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL}/api/settings`,
-      {
-        // Important: Don't cache during build, but cache at runtime
-        next: { revalidate: 300 }, // Revalidate every 5 minutes
-      }
-    );
+    // Use the direct function call instead of fetch()
+    const settings = await getSettingsData();
 
-    if (!response.ok) {
-      throw new Error("Failed to fetch settings");
+    if (settings) {
+      return generateSiteMetadata(settings);
     }
 
-    const data = await response.json();
-    if (data.success && data.settings) {
-      return generateSiteMetadata(data.settings);
-    }
-
-    // Fallback to default metadata
     return defaultMetadata;
   } catch (error) {
     console.error("Error generating metadata:", error);
-    // Fallback to default metadata
     return defaultMetadata;
   }
 }
