@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, LogOut } from "lucide-react";
@@ -52,28 +53,21 @@ const Sidebar = () => {
       >
         {/* Logo */}
         <div className="p-6">
-          <Link href="/admin" className="flex items-start gap-3">
-            <div className="bg-black p-2 rounded-lg">
-              <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M13 2L3 14h8l-1 8 10-12h-8l1-8z"
-                  fill="#E9FF00"
-                  stroke="#E9FF00"
-                  strokeWidth="2"
+          <div className="flex items-start justify-center">
+            <Link href="/admin" className="w-fit">
+              <div className="relative z-30">
+                <Image
+                  src="/logos/logo-admin.webp"
+                  alt="Padel Batu Alam Permai"
+                  width={800}
+                  height={254}
+                  priority
+                  className="w-32 md:w-42"
+                  quality={100}
                 />
-              </svg>
-            </div>
-            <div>
-              <div className="logo leading-tight">
-                Padel
-                <br />
-                Batu Alam Permai
               </div>
-              <div className="text-xs text-accent-foreground mt-1">
-                Admin Panel
-              </div>
-            </div>
-          </Link>
+            </Link>
+          </div>
         </div>
 
         {/* Navigation */}

@@ -303,8 +303,8 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
       >
         <div
           className="h-full overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent 
-              [&::-webkit-scrollbar-thumb]:bg-primary [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 
-              [&::-webkit-scrollbar-thumb]:border-transparent"
+              [&::-webkit-scrollbar-thumb]:bg-primary [&::-webkit-scrollbar-thumb]:rounded-full 
+              [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-transparent"
           tabIndex={-1}
           style={{ outline: "none" }}
         >

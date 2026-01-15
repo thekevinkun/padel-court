@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 
 import { Court } from "@/types";
 import { blurDataURL } from "@/lib/image-blur";
+import { ImagePresets } from "@/lib/supabase/image-transform";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
 
 const CourtLightbox = dynamic(
@@ -25,7 +26,7 @@ const Courts = ({ courts }: { courts: Court[] }) => {
 
   // First court is featured, rest are regular
   const featuredCourt = courts[0];
-  const regularCourts = courts.slice(1);
+  const regularCourts = courts.slice(1).filter(c => c.id !== featuredCourt.id);
 
   const openLightbox = (court: Court) => {
     setSelectedCourt(court);
@@ -92,15 +93,16 @@ const Courts = ({ courts }: { courts: Court[] }) => {
                   <div className="absolute inset-0">
                     <Image
                       src={
-                        featuredCourt.image_url ||
-                        "/images/court-placeholder.png"
+                        featuredCourt.image_url
+                          ? ImagePresets.courtFeatured(featuredCourt.image_url)
+                          : "/images/court-placeholder.png"
                       }
                       alt={featuredCourt.name}
                       fill
-                      priority // Load featured court immediately
-                      quality={90} // High quality for large featured image
+                      quality={80} // High quality for large featured image
                       sizes="(max-width: 768px) 100vw, (max-width: 1024px) 66vw, 50vw"
                       className="object-cover group-hover:scale-110 transition-transform duration-500 hover-scale"
+                      loading="lazy"
                       placeholder="blur"
                       blurDataURL={blurDataURL}
                     />
@@ -150,7 +152,11 @@ const Courts = ({ courts }: { courts: Court[] }) => {
                   {/* Image - OPTIMIZED FOR REGULAR COURTS */}
                   <div className="absolute inset-0">
                     <Image
-                      src={court.image_url || "/images/court-placeholder.png"}
+                      src={
+                        court.image_url
+                          ? ImagePresets.courtCard(court.image_url)
+                          : "/images/court-placeholder.png"
+                      }
                       alt={court.name}
                       fill
                       quality={85} // Good quality for regular courts

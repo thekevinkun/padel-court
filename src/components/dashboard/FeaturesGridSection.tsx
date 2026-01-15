@@ -125,9 +125,11 @@ const FeaturesGridSection = ({
                               <Image
                                 src={f.src}
                                 alt={f.alt || "feature"}
+                                quality={75}
                                 fill
                                 className="object-cover"
                                 sizes="96px"
+                                loading="lazy"
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">
@@ -238,7 +240,7 @@ const FeaturesGridSection = ({
               </DialogHeader>
               {editingFeature && (
                 <div className="space-y-4">
-                  <div className="mt-4 mb-10">
+                  <div className="mt-4">
                     <Label>Feature Type</Label>
                     <select
                       value={editingFeature.type}
@@ -294,9 +296,11 @@ const FeaturesGridSection = ({
                               <Image
                                 src={featurePreview}
                                 alt="preview"
+                                quality={75}
                                 fill
                                 className="object-cover rounded-lg"
                                 sizes="(max-width: 768px) 100vw, 672px"
+                                loading="lazy"
                               />
                               <button
                                 onClick={() => {
@@ -354,9 +358,11 @@ const FeaturesGridSection = ({
                               <Image
                                 src={featurePreview}
                                 alt="preview"
+                                quality={75}
                                 fill
                                 className="object-cover rounded-lg opacity-50"
                                 sizes="(max-width: 768px) 100vw, 672px"
+                                loading="lazy"
                               />
                               <button
                                 onClick={() => {

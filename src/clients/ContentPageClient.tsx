@@ -1,14 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 
 import SectionOrderManager from "@/components/dashboard/SectionOrderManager";
 import HeroSection from "@/components/dashboard/HeroSection";
 import WelcomeSection from "@/components/dashboard/WelcomeSection";
 import FeaturesGridSection from "@/components/dashboard/FeaturesGridSection";
-import TestimonialsSection from "@/components/dashboard/TestimonialsSection";
 import PricingSection from "@/components/dashboard/PricingSection";
-import GallerySection from "@/components/dashboard/GallerySection";
 import CTASection from "@/components/dashboard/CTASection";
 
 import {
@@ -41,6 +40,21 @@ import {
   GalleryImage,
   CTAContent,
 } from "@/types";
+
+// Lazy load heavy sections
+const GallerySection = dynamic(
+  () => import("@/components/dashboard/GallerySection"),
+  {
+    loading: () => <div className="animate-pulse h-64 bg-muted rounded-lg" />,
+  }
+);
+
+const TestimonialsSection = dynamic(
+  () => import("@/components/dashboard/TestimonialsSection"),
+  {
+    loading: () => <div className="animate-pulse h-64 bg-muted rounded-lg" />,
+  }
+);
 
 const ContentPageClient = () => {
   const [loading, setLoading] = useState(true);

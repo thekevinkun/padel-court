@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import {
   MapPin,
@@ -90,7 +91,7 @@ const Footer = () => {
       </div>
 
       {/* Main Footer Content */}
-      <div className="container-custom pt-8 pb-12 md:pb-16">
+      <div className="container-custom pt-4 md:pt-8 pb-12 md:pb-16">
         <motion.div
           initial="hidden"
           whileInView="visible"
@@ -100,35 +101,24 @@ const Footer = () => {
         >
           {/* Brand Section */}
           <motion.div variants={fadeInUp} className="lg:col-span-1">
-            <Link href="/" className="inline-block mb-4">
-              <div className="flex items-center gap-3 group">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-primary rounded-lg blur-md opacity-50 group-hover:opacity-75 transition-opacity" />
-                  <div className="relative bg-primary/20 p-2 rounded-lg border border-primary/30">
-                    <svg
-                      className="w-8 h-8"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M13 2L3 14h8l-1 8 10-12h-8l1-8z"
-                        fill="#E9FF00"
-                        stroke="#E9FF00"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </div>
+            <div className="flex items-center justify-center md:justify-start">
+              <Link href="/" className="w-fit">
+                <div className="relative z-30">
+                  <Image
+                    src="/logos/logo-white.webp"
+                    alt="Padel Batu Alam Permai"
+                    width={800}
+                    height={254}
+                    className="w-54 md:w-44"
+                    quality={100}
+                  />
                 </div>
-                <div className="font-display font-bold text-base leading-tight">
-                  <div className="text-white">PADEL</div>
-                  <div className="text-xs text-gray-400">BATU ALAM PERMAI</div>
-                </div>
-              </div>
-            </Link>
-            <p className="text-sm text-gray-400 mb-6">{tagline}</p>
+              </Link>
+            </div>
+
+            <p className="text-center md:text-start text-sm text-gray-400 mt-7 md:mt-4 mb-6">
+              {tagline}
+            </p>
 
             {/* Contact Info */}
             <div className="space-y-3">

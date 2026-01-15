@@ -18,6 +18,7 @@ import { Separator } from "@/components/ui/separator";
 
 import { WelcomeContent } from "@/types";
 import { blurDataURL } from "@/lib/image-blur";
+import { ImagePresets } from "@/lib/supabase/image-transform";
 import { fadeInUp, fadeIn, slideInLeft, slideInRight } from "@/lib/animations";
 
 const Welcome = ({ content }: { content: WelcomeContent }) => {
@@ -66,7 +67,7 @@ const Welcome = ({ content }: { content: WelcomeContent }) => {
                     className={`relative aspect-[3/4] rounded-2xl overflow-hidden shadow-xl ${mtClasses[index]}`}
                   >
                     <Image
-                      src={image}
+                      src={ImagePresets.welcome(image)}
                       alt={`${content.heading} - Image ${index + 1}`}
                       fill
                       quality={85} // Good quality for collage

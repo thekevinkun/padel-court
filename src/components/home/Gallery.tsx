@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 
 import { GalleryContent } from "@/types";
 import { blurDataURL } from "@/lib/image-blur";
+import { ImagePresets } from "@/lib/supabase/image-transform";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
 
 const GalleryLightbox = dynamic(
@@ -190,11 +191,11 @@ const Gallery = ({ content }: GalleryProps) => {
                   >
                     <div className={`${item.aspect} relative overflow-hidden`}>
                       <Image
-                        src={image.url}
+                        src={ImagePresets.galleryGrid(image.url)}
                         alt={image.alt}
                         fill
-                        quality={85} // ← Good quality for gallery
-                        priority={item.priority} // ← Priority for above-fold images
+                        quality={85}
+                        priority={item.priority}
                         sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 50vw"
                         className="object-cover group-hover:scale-110 transition-transform duration-500 hover-scale"
                         loading={item.priority ? undefined : "lazy"}

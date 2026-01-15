@@ -11,6 +11,7 @@ const inter = Inter({
   variable: "--font-sans",
   display: "swap",
   preload: true,
+  adjustFontFallback: false,
 });
 
 const spaceGrotesk = Space_Grotesk({
@@ -18,6 +19,7 @@ const spaceGrotesk = Space_Grotesk({
   variable: "--font-display",
   display: "swap",
   preload: true,
+  adjustFontFallback: false,
 });
 
 /* Generate metadata from settings */
@@ -46,6 +48,53 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable}`}>
       <head>
         <StructuredData />
+        {/* Favicon */}
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="16x16"
+          href="/favicon-16x16.png"
+        />
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="32x32"
+          href="/favicon-32x32.png"
+        />
+        <link
+          rel="apple-touch-icon"
+          sizes="180x180"
+          href="/apple-touch-icon.png"
+        />
+
+        {/* PWA Manifest */}
+        <link rel="manifest" href="/site.webmanifest" />
+
+        {/* Theme Color (for mobile browsers) */}
+        <meta name="theme-color" content="#E9FF00" />
+        <meta
+          name="theme-color"
+          media="(prefers-color-scheme: light)"
+          content="#E9FF00"
+        />
+        <meta
+          name="theme-color"
+          media="(prefers-color-scheme: dark)"
+          content="#0D1301"
+        />
+
+        {/* Mobile Web App Capable */}
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta
+          name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"
+        />
+        <meta name="apple-mobile-web-app-title" content="Padel BAP" />
+
+        {/* Preload supabase connect */}
         <link
           rel="preconnect"
           href="https://gqhjwptcfqdwawsfojcw.supabase.co"

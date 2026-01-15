@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 import { TestimonialsContent } from "@/types";
+import { ImagePresets } from "@/lib/supabase/image-transform";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
 
 interface TestimonialsProps {
@@ -79,7 +80,9 @@ const Testimonials = ({ content }: TestimonialsProps) => {
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
-            backgroundImage: `url("${content.backgroundImage}")`,
+            backgroundImage: `url('${ImagePresets.backgroundImage(
+              content.backgroundImage
+            )}')`,
           }}
         />
         <div className="absolute inset-0 bg-black/70" />

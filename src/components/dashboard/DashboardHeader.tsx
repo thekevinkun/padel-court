@@ -40,7 +40,7 @@ const DashboardHeader = () => {
 
   return (
     <>
-      <header className="bg-white px-4 lg:px-8 py-4 sticky top-0 shadow-md z-10">
+      <header className="bg-white px-4 lg:px-8 py-4 sticky top-0 shadow-md z-40">
         <div className="flex items-center justify-between">
           {/* Page Title */}
           <div>

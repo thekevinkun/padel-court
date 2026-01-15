@@ -1,40 +1,60 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 import { useBooking } from "@/contexts/BookingContext";
 import { HeroContent } from "@/types";
 import { blurDataURL } from "@/lib/image-blur";
+import { ImagePresets } from "@/lib/supabase/image-transform";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
 
 const Hero = ({ content }: { content: HeroContent }) => {
   const { openBooking } = useBooking();
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   return (
     <section className="relative h-screen w-full overflow-hidden">
       {/* Background Image - OPTIMIZED */}
       <div className="absolute inset-0 z-0">
         <Image
-          src={content.image_url}
+          src={ImagePresets.hero(content.image_url)}
           alt="Premium Padel Court at Batu Alam Permai"
           fill
           priority
-          quality={95} // Highest quality for hero
+          fetchPriority="high"
+          quality={90} // Highest quality for hero
           sizes="100vw"
           className="object-cover"
           placeholder="blur"
           blurDataURL={blurDataURL}
+          onLoad={() => setImageLoaded(true)}
         />
         <div className="absolute inset-0 bg-black/50" />
+
+        {/* Loading Spinner Overlay */}
+        {!imageLoaded && (
+          <motion.div
+            initial={{ opacity: 1 }}
+            animate={{ opacity: imageLoaded ? 0 : 1 }}
+            transition={{ duration: 0.5 }}
+            className="absolute inset-0 z-10 flex items-center justify-center bg-black/30 backdrop-blur-sm"
+          >
+            <div className="text-center">
+              <LoadingSpinner size="lg" />
+            </div>
+          </motion.div>
+        )}
       </div>
 
       {/* Content */}
-      <div className="relative z-10 h-full flex items-center pt-18">
+      <div className="relative z-5 h-full flex items-center pt-18">
         <div className="container-custom">
           <motion.div
             variants={staggerContainer}

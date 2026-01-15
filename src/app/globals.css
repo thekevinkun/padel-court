@@ -71,14 +71,28 @@
     border-color: hsl(var(--color-border));
   }
 
+  /* Apply custom color ONLY to the main browser window */
+  html {
+    /* Standard: Firefox, Chrome 121+, Edge 121+ */
+    scrollbar-color: #e9ff00 #0d1301;
+    scroll-behavior: smooth;
+  }
+
+  /* WebKit Fallback (Chrome/Edge/Safari) 
+    Target 'html' specifically so it doesn't affect inner divs */
+  html::-webkit-scrollbar-thumb {
+    background-color: #e9ff00;
+  }
+
+  html::-webkit-scrollbar-track {
+    background: #0d1301;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-sans);
     -moz-osx-font-smoothing: grayscale;
-  }
-
-  html {
-    scroll-behavior: smooth;
+    scrollbar-color: auto;
   }
 
   button {

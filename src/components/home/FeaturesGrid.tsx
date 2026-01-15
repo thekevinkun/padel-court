@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 
 import { FeaturesContent } from "@/types";
 import { blurDataURL } from "@/lib/image-blur";
+import { ImagePresets } from "@/lib/supabase/image-transform";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
 
 const TargetIcon = forwardRef<SVGSVGElement, LucideProps>(
@@ -59,7 +60,7 @@ const FeaturesGrid = ({ content }: { content: FeaturesContent }) => {
                 // Image Grid Item
                 <div className="relative aspect-square md:aspect-[4/5] group">
                   <Image
-                    src={feature.src}
+                    src={ImagePresets.features(feature.src)}
                     alt={feature.alt}
                     fill
                     quality={85}
@@ -77,7 +78,7 @@ const FeaturesGrid = ({ content }: { content: FeaturesContent }) => {
                   {/* Background Image with Low Opacity */}
                   <div className="absolute inset-0">
                     <Image
-                      src={feature.bgImage}
+                      src={ImagePresets.featuresBackground(feature.bgImage)}
                       alt=""
                       fill
                       quality={70} // Lower quality (heavy overlay)

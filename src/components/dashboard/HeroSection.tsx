@@ -102,7 +102,10 @@ const HeroSection = ({
       {/* Hero Dialog */}
       <Dialog open={heroDialogOpen} onOpenChange={setHeroDialogOpen}>
         <DialogContent className="max-w-2xl h-[100dvh] sm:h-[90dvh] overflow-hidden p-0">
-          <div className="h-full overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-primary [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-transparent">
+          <div className="h-full overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent 
+            [&::-webkit-scrollbar-thumb]:bg-primary [&::-webkit-scrollbar-thumb]:rounded-full 
+            [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-transparent"
+          >
             <div className="p-6">
               <DialogHeader>
                 <DialogTitle>Edit Hero Section</DialogTitle>
@@ -154,9 +157,10 @@ const HeroSection = ({
                         <Image
                           src={heroPreview}
                           alt="preview"
+                          quality={80}
                           fill
                           className="object-cover"
-                          sizes="(max-width: 768px) 100vw, 680px" // Logic: The Dialog is max-w-2xl (approx 672px). The image will never be larger than ~680px.
+                          sizes="(max-width: 768px) 100vw, 672px"
                         />
                         <button
                           onClick={() => {

@@ -143,6 +143,7 @@ const GallerySection = ({
                         <Image
                           src={image.url}
                           alt={image.alt}
+                          quality={75}
                           fill
                           className="object-cover"
                           // Logic: Mobile (2 cols = 50vw), Tablet (3 cols = 33vw), Desktop (4 cols = 25vw)
@@ -380,6 +381,7 @@ const GallerySection = ({
                       <Image
                         src={imagePreview}
                         alt="preview"
+                        quality={75}
                         fill
                         className="object-cover"
                         sizes="(max-width: 768px) 100vw, 680px"

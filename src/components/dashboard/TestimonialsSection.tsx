@@ -115,6 +115,7 @@ const TestimonialsSection = ({
                     <Image
                       src={testimonials.videoUrl}
                       alt="Video preview"
+                      quality={70}
                       fill
                       className="object-cover"
                       sizes="(max-width: 768px) 100vw, 448px"
@@ -141,6 +142,7 @@ const TestimonialsSection = ({
                     <Image
                       src={testimonials.backgroundImage}
                       alt="Background preview"
+                      quality={75}
                       fill
                       className="object-cover"
                       sizes="(max-width: 768px) 100vw, 448px"
@@ -189,6 +191,7 @@ const TestimonialsSection = ({
                             <Image
                               src={testimonial.avatar}
                               alt={testimonial.name}
+                              quality={70}
                               fill
                               className="rounded-full object-cover"
                               sizes="48px"
@@ -338,6 +341,7 @@ const TestimonialsSection = ({
                           <Image
                             src={videoPreview}
                             alt="preview"
+                            quality={75}
                             fill
                             className="object-cover rounded-lg"
                             sizes="(max-width: 768px) 100vw, 672px"
@@ -387,6 +391,7 @@ const TestimonialsSection = ({
                         <Image
                           src={backgroundPreview}
                           alt="background preview"
+                          quality={75}
                           fill
                           className="object-cover"
                           sizes="(max-width: 768px) 100vw, 672px"

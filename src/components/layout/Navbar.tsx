@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import dynamic from "next/dynamic";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Menu, X } from "lucide-react";
@@ -73,54 +74,59 @@ const Navbar = () => {
           backgroundColor,
         }}
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          isScrolled ? "shadow-lg md:backdrop-blur-[10px]" : ""
+          isScrolled ? "shadow-lg backdrop-blur-sm md:backdrop-blur-[10px]" : ""
         }`}
       >
         <div className="container-custom">
-          <div className="flex items-center justify-between h-20 md:h-24">
-            {/* Logo */}
-            <Link href="/" className="flex items-center gap-3 group">
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="relative"
-              >
-                <div className="absolute inset-0 bg-primary rounded-lg blur-md opacity-50 group-hover:opacity-75 transition-opacity" />
-                <div className="relative bg-black p-2 rounded-lg">
-                  <svg
-                    className={`transition-all duration-300 delay-100 ${
+          {/* PARENT CONTAINER: justify-between handles the spacing */}
+          <div
+            className={`flex items-center justify-between transition-all duration-200
+              ${isScrolled ? "h-20 md:h-24" : "h-18 md:h-22"}`}
+          >
+            {/* LEFT SIDE: LOGO 
+               - flex-1: Grows to fill space
+               - justify-start: Anchors logo to the left 
+            */}
+            <div className="flex-1 flex items-center justify-start gap-2">
+              <Link href="/" className="w-fit">
+                <div className="relative z-50">
+                  {/* White logo */}
+                  <Image
+                    src="/logos/logo-white.webp"
+                    alt="Padel Batu Alam Permai"
+                    width={800}
+                    height={254}
+                    fetchPriority="high"
+                    className={`transition-all duration-500 h-auto ${
                       isScrolled
-                        ? "w-10 h-10 md:w-12 md:h-12"
-                        : "w-8 h-8 md:w-10 md:h-10"
+                        ? "w-46 md:w-52 opacity-0"
+                        : "w-38 md:w-44 opacity-100"
                     }`}
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M13 2L3 14h8l-1 8 10-12h-8l1-8z"
-                      fill="#E9FF00"
-                      stroke="#E9FF00"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </div>
-              </motion.div>
-              <div
-                className={`logo text-sm md:text-base leading-tight transition-all duration-300 delay-100 ${
-                  isScrolled
-                    ? "text-accent-foreground text-lg md:text-xl"
-                    : "text-accent"
-                }`}
-              >
-                <div>PADEL</div>
-                <div className="text-xs md:text-sm">BATU ALAM PERMAI</div>
-              </div>
-            </Link>
+                    priority
+                    quality={100}
+                  />
 
-            {/* Desktop Navigation */}
+                  {/* Black logo (absolute positioned, fades in) */}
+                  <Image
+                    src="/logos/logo-black.webp"
+                    alt="Padel Batu Alam Permai"
+                    width={800}
+                    height={254}
+                    className={`absolute top-0 left-0 transition-all duration-500 h-auto ${
+                      isScrolled
+                        ? "w-46 md:w-52 opacity-100"
+                        : "w-38 md:w-44 opacity-0"
+                    }`}
+                    quality={100}
+                  />
+                </div>
+              </Link>
+            </div>
+
+            {/* CENTER: DESKTOP NAVIGATION 
+               - No flex-1 here. It takes its natural width.
+               - Because left and right neighbors are equal (flex-1), this sits in the center.
+            */}
             <div className="hidden lg:flex items-center gap-8">
               {navLinks.map((link, index) => (
                 <motion.div
@@ -148,39 +154,47 @@ const Navbar = () => {
               ))}
             </div>
 
-            {/* CTA Button - Desktop */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.4, duration: 0.3 }}
-              className="hidden lg:block"
-            >
-              <Button
-                onClick={openBooking}
-                size="lg"
-                className={`rounded-full font-semibold hover:scale-105 hover:!text-accent transition-transform ${
-                  isScrolled && "hover:!text-accent-foreground"
-                }`}
+            {/* RIGHT SIDE: BUTTONS WRAPPER (NEW)
+               - flex-1: Grows to balance the logo side
+               - justify-end: Pushes buttons to the far right
+            */}
+            <div className="flex-1 flex items-center justify-end gap-4">
+              {/* CTA Button - Desktop */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.4, duration: 0.3 }}
+                className="hidden lg:block"
               >
-                BOOK NOW
-              </Button>
-            </motion.div>
+                <Button
+                  onClick={openBooking}
+                  size="lg"
+                  aria-label="Open booking form"
+                  className={`rounded-full font-semibold hover:scale-105 hover:!text-accent transition-transform ${
+                    isScrolled && "hover:!text-accent-foreground"
+                  }`}
+                >
+                  BOOK NOW
+                </Button>
+              </motion.div>
 
-            {/* Mobile Menu Button */}
-            {!isMobileMenuOpen && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleMobileMenu}
-                className={`lg:hidden transition-all ${
-                  isScrolled
-                    ? "text-accent-foreground hover:bg-black/10"
-                    : "text-accent hover:bg-white/10"
-                }`}
-              >
-                <Menu className="!w-6 !h-6" />
-              </Button>
-            )}
+              {/* Mobile Menu Button */}
+              {!isMobileMenuOpen && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleMobileMenu}
+                  aria-label="Open navigation menu"
+                  className={`lg:hidden hover:text-forest transition-all ${
+                    isScrolled
+                      ? "text-accent-foreground hover:bg-black/10"
+                      : "text-accent hover:bg-white/10"
+                  }`}
+                >
+                  <Menu className="!w-6 !h-6" />
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </motion.nav>
@@ -216,40 +230,20 @@ const Navbar = () => {
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.2 }}
               >
-                <Link
-                  href="/"
-                  className="flex items-center gap-3 group"
-                  onClick={closeMobileMenu}
-                >
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="relative"
-                  >
-                    <div className="absolute inset-0 bg-foreground rounded-lg blur-md opacity-50 group-hover:opacity-75 transition-opacity" />
-                    <div className="relative bg-black p-2 rounded-lg">
-                      <svg
-                        className="w-6 h-6"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M13 2L3 14h8l-1 8 10-12h-8l1-8z"
-                          fill="#E9FF00"
-                          stroke="#E9FF00"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
+                <div className="flex items-center">
+                  <Link href="/" className="w-fit">
+                    <div className="relative z-50">
+                      <Image
+                        src="/logos/logo-black.webp"
+                        alt="Padel Batu Alam Permai"
+                        width={800}
+                        height={254}
+                        className="transition-all duration-500 w-38 h-auto"
+                        quality={100}
+                      />
                     </div>
-                  </motion.div>
-                  <div className="logo text-base leading-tight">
-                    <div>PADEL</div>
-                    <div className="text-sm">BATU ALAM PERMAI</div>
-                  </div>
-                </Link>
+                  </Link>
+                </div>
                 <Button
                   variant="ghost"
                   size="icon"

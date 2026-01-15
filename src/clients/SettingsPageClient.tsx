@@ -352,13 +352,17 @@ const SettingsPageClient = () => {
                 <div className="mt-2">
                   {logoPreview ? (
                     <div className="relative inline-block">
-                      <div className="relative w-32 h-32 rounded-lg p-2 border bg-white">
+                      <div className="relative w-34 h-32 rounded-lg p-2 border
+                        bg-gradient-to-br from-black/45 via-gray-800 to-black"
+                      >
                         <Image
                           src={logoPreview}
                           alt="Logo"
+                          quality={75}
                           fill
-                          className="object-contain"
+                          className="object-contain px-1"
                           sizes="128px"
+                          loading="lazy"
                         />
                       </div>
 
@@ -367,10 +371,6 @@ const SettingsPageClient = () => {
                         onClick={() => {
                           setLogoPreview(null);
                           setLogoFile(null);
-                          // If there was an old logo, restore it
-                          if (settings?.logo_url) {
-                            setLogoPreview(settings.logo_url);
-                          }
                         }}
                         className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition-colors"
                       >

@@ -108,6 +108,8 @@ function SortableFeatureItem({
   );
 }
 
+const isDev = process.env.NODE_ENV === "development";
+
 const CourtsPageClient = () => {
   const [courts, setCourts] = useState<Court[]>([]);
   const [loading, setLoading] = useState(true);
@@ -398,9 +400,12 @@ const CourtsPageClient = () => {
                   <Image
                     src={court.image_url}
                     alt={court.name}
+                    quality={70}
                     fill
                     className="object-cover"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 384px, 320px"
+                    loading="lazy"
+                    unoptimized={isDev}
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gray-100">
@@ -517,9 +522,11 @@ const CourtsPageClient = () => {
                         <Image
                           src={imagePreview}
                           alt="Preview"
+                          quality={75}
                           fill
                           className="object-cover rounded-lg"
                           sizes="(max-width: 768px) 100vw, 896px"
+                          loading="lazy"
                         />
                         <button
                           onClick={() => {

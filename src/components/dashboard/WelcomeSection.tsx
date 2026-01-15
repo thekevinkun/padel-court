@@ -69,6 +69,7 @@ const WelcomeSection = ({
                   <Image
                     src={p}
                     alt={`welcome-${idx}`}
+                    quality={75}
                     fill
                     className="object-cover"
                     sizes="(max-width: 768px) 25vw, 25vw" // Logic: Always 1/4 of the screen width
@@ -147,6 +148,7 @@ const WelcomeSection = ({
                             <Image
                               src={p}
                               alt={`welcome-${i}`}
+                              quality={75}
                               fill
                               className="object-cover rounded-lg"
                               sizes="(max-width: 768px) 50vw, 384px" // Logic: Dialog is max 768px. 2 cols = ~384px per image.

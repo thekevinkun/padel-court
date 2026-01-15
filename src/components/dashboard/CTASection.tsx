@@ -66,6 +66,7 @@ const CTASection = ({
                     <Image
                       src={cta.backgroundImage}
                       alt="CTA background"
+                      quality={75}
                       fill
                       className="object-cover"
                       sizes="(max-width: 768px) 100vw, 50vw"
@@ -157,6 +158,7 @@ const CTASection = ({
                         <Image
                           src={backgroundPreview}
                           alt="preview"
+                          quality={75}
                           fill
                           className="object-cover"
                           sizes="(max-width: 768px) 100vw, 672px"

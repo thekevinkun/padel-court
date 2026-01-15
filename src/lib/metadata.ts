@@ -19,7 +19,7 @@ export function generateSiteMetadata(
   const description = pageDescription || settings.meta_description;
   
   // Construct full URL for OG image
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://padelbap.com";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
   const ogImageUrl = settings.og_image.startsWith("http") 
     ? settings.og_image 
     : `${siteUrl}${settings.og_image}`;

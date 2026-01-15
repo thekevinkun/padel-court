@@ -7,6 +7,7 @@ import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 import { CTAContent } from "@/types";
+import { ImagePresets } from "@/lib/supabase/image-transform";
 
 interface CTAProps {
   content: CTAContent;
@@ -16,15 +17,20 @@ const CTA = ({ content }: CTAProps) => {
   return (
     <section className="relative h-[60vh] md:h-[70vh] overflow-hidden mb-16">
       {/* Parallax Background */}
-      <Parallax 
-        speed={-30} 
+      <Parallax
+        speed={-30}
         className="absolute inset-0 z-[-999]"
-        disabled={typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches}
+        disabled={
+          typeof window !== "undefined" &&
+          window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        }
       >
         <div
           className="absolute inset-0 top-[-30px] md:top-[-20px] bg-cover bg-center h-[120%]"
           style={{
-            backgroundImage: `url("${content.backgroundImage}")`,
+            backgroundImage: `url('${ImagePresets.backgroundImage(
+              content.backgroundImage
+            )}')`,
           }}
         />
       </Parallax>
