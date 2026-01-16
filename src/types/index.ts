@@ -327,6 +327,40 @@ export interface CTASectionCMS {
   savingCta: boolean;
 }
 
+export interface PageHero {
+  id: string;
+  page_slug: "activities" | "courts" | "shop" | "pricing" | "contact";
+  title: string;
+  subtitle?: string;
+  image_url: string;
+  is_active: boolean;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PageHeroContent {
+  title: string;
+  subtitle?: string;
+  image_url: string;
+}
+
+export interface PageHeroSectionCMS {
+  pageHeroes: PageHero[];
+  editingPageHero: PageHero | null;
+  setEditingPageHero: (hero: PageHero | null) => void;
+  pageHeroDialogOpen: boolean
+  setPageHeroDialogOpen: (open: boolean) => void;
+  pageHeroImageFile: File | null;
+  setPageHeroImageFile: (file: File | null) => void;
+  pageHeroPreview: string | null;
+  setPageHeroPreview: (preview: string | null) => void;
+  onPageHeroImageSelect:(e: React.ChangeEvent<HTMLInputElement>) => void;
+  openEditPageHero: (hero: PageHero) => void;
+  savePageHero:  () => Promise<void>;
+  savingPageHero: boolean;
+}
+
 export type ContentSections = {
   hero: HeroContent | null;
   welcome: WelcomeContent | null;

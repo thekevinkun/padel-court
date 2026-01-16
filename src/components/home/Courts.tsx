@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
@@ -21,12 +22,17 @@ const CourtLightbox = dynamic(
 );
 
 const Courts = ({ courts }: { courts: Court[] }) => {
+  const pathname = usePathname();
+  const hideBadge = pathname === "/courts";
+  
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [selectedCourt, setSelectedCourt] = useState<Court | null>(null);
 
   // First court is featured, rest are regular
   const featuredCourt = courts[0];
-  const regularCourts = courts.slice(1).filter(c => c.id !== featuredCourt.id);
+  const regularCourts = courts
+    .slice(1)
+    .filter((c) => c.id !== featuredCourt.id);
 
   const openLightbox = (court: Court) => {
     setSelectedCourt(court);
@@ -53,17 +59,19 @@ const Courts = ({ courts }: { courts: Court[] }) => {
             variants={staggerContainer}
             className="text-center mb-12 md:mb-16"
           >
-            <motion.div variants={fadeInUp} className="mb-4">
-              <Badge className="bg-forest/10 text-forest border-forest/20 lg:text-base font-medium px-4 py-2">
-                Our Courts
-              </Badge>
-            </motion.div>
+            {!hideBadge && (
+              <motion.div variants={fadeInUp} className="mb-4">
+                <Badge className="bg-forest/10 text-forest border-forest/20 lg:text-base font-medium px-4 py-2">
+                  Our Courts
+                </Badge>
+              </motion.div>
+            )}
             <motion.h2 variants={fadeInUp} className="heading-2 mb-4">
               World-Class Facilities
             </motion.h2>
             <motion.p
               variants={fadeInUp}
-              className="text-body max-w-2xl mx-auto"
+              className="text-body max-w-3xl mx-auto"
             >
               Experience padel at its finest on our premium courts, designed for
               players of all levels

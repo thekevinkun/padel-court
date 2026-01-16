@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { Clock, Trophy, Info, Zap } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +12,9 @@ import { PricingContent } from "@/types";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
 
 const Pricing = ({ content }: { content: PricingContent }) => {
+  const pathname = usePathname();
+  const hideBadge = pathname === "/pricing";
+
   return (
     <section id="pricing" className="section-py bg-background">
       <div className="container-custom">
@@ -22,11 +26,13 @@ const Pricing = ({ content }: { content: PricingContent }) => {
           variants={staggerContainer}
           className="text-center mb-12 md:mb-16"
         >
-          <motion.div variants={fadeInUp} className="mb-4">
-            <Badge className="bg-forest/10 text-forest border-forest/20 lg:text-base font-medium px-4 py-2">
-              {content.badge}
-            </Badge>
-          </motion.div>
+          {!hideBadge && (
+            <motion.div variants={fadeInUp} className="mb-4">
+              <Badge className="bg-forest/10 text-forest border-forest/20 lg:text-base font-medium px-4 py-2">
+                {content.badge}
+              </Badge>
+            </motion.div>
+          )}
           <motion.h2 variants={fadeInUp} className="heading-2 mb-4">
             {content.heading}
           </motion.h2>

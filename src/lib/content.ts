@@ -8,6 +8,8 @@ import {
   PricingContent,
   GalleryContent,
   CTAContent,
+  PageHero,
+  PageHeroContent,
   ContentSections,
 } from "@/types";
 
@@ -128,5 +130,58 @@ export async function getSectionContent<T>(
   } catch (error) {
     console.error(`Unexpected error fetching ${sectionType}:`, error);
     return null;
+  }
+}
+
+/**
+ * Get page hero content by slug
+ * Runs on server side only
+ */
+export async function getPageHero(
+  slug: "activities" | "courts" | "shop" | "pricing" | "contact"
+): Promise<PageHeroContent | null> {
+  try {
+    const supabase = createServerClient();
+
+    const { data, error } = await supabase
+      .from("page_heroes")
+      .select("title, subtitle, image_url")
+      .eq("page_slug", slug)
+      .eq("is_active", true)
+      .single();
+
+    if (error) {
+      console.error(`Error fetching ${slug} page hero:`, error);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error(`Unexpected error fetching ${slug} page hero:`, error);
+    return null;
+  }
+}
+
+/**
+ * Get all page heroes (for CMS dashboard)
+ */
+export async function getAllPageHeroes(): Promise<PageHero[]> {
+  try {
+    const supabase = createServerClient();
+
+    const { data, error } = await supabase
+      .from("page_heroes")
+      .select("*")
+      .order("display_order", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching all page heroes:", error);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error("Unexpected error fetching all page heroes:", error);
+    return [];
   }
 }

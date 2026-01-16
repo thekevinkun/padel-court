@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
@@ -24,6 +25,9 @@ interface GalleryProps {
 }
 
 const Gallery = ({ content }: GalleryProps) => {
+  const pathname = usePathname();
+  const isActivitiesPage = pathname === "/activities";
+
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
@@ -109,7 +113,9 @@ const Gallery = ({ content }: GalleryProps) => {
     <>
       <section
         id="gallery"
-        className="pb-16 md:pb-24 lg:pb-32 bg-background relative overflow-hidden"
+        className={`bg-background relative overflow-hidden ${
+          isActivitiesPage ? "section-py" : "pb-16 md:pb-24 lg:pb-32"
+        }`}
       >
         {/* Decorative background elements */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -z-10" />
@@ -124,11 +130,13 @@ const Gallery = ({ content }: GalleryProps) => {
             variants={staggerContainer}
             className="text-center mb-12 md:mb-16"
           >
-            <motion.div variants={fadeInUp} className="mb-4">
-              <Badge className="bg-forest/10 text-forest border-forest/20 lg:text-base font-medium px-4 py-2">
-                {content.badge}
-              </Badge>
-            </motion.div>
+            {!isActivitiesPage && (
+              <motion.div variants={fadeInUp} className="mb-4">
+                <Badge className="bg-forest/10 text-forest border-forest/20 lg:text-base font-medium px-4 py-2">
+                  {content.badge}
+                </Badge>
+              </motion.div>
+            )}
             <motion.h2 variants={fadeInUp} className="heading-2 mb-4">
               {content.heading}
             </motion.h2>

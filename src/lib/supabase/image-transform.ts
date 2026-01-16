@@ -34,4 +34,5 @@ export const ImagePresets = {
   features: (url: string) => url,
   featuresBackground: (url: string) => url,
   backgroundImage: (url: string) => url,
+  pageHero: (url: string) => url,
 };

@@ -25,10 +25,11 @@ export const OPERATING_HOURS = {
 };
 
 export const navLinks = [
-  { name: "Activities", href: "#activities" },
-  { name: "Shop", href: "#shop" },
-  { name: "Pricing", href: "#pricing" },
-  { name: "Contact", href: "#contact" },
+  { name: "Activities", href: "/activities" },
+  { name: "Courts", href: "/courts" },
+  { name: "Shop", href: "/shop" },
+  { name: "Pricing", href: "/pricing" },
+  { name: "Contact", href: "/contact" },
 ];
 
 export const heroInitial = {

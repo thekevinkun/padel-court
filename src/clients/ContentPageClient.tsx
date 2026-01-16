@@ -9,6 +9,7 @@ import WelcomeSection from "@/components/dashboard/WelcomeSection";
 import FeaturesGridSection from "@/components/dashboard/FeaturesGridSection";
 import PricingSection from "@/components/dashboard/PricingSection";
 import CTASection from "@/components/dashboard/CTASection";
+import PageHeroesSection from "@/components/dashboard/PageHeroesSection";
 
 import {
   heroInitial,
@@ -39,6 +40,7 @@ import {
   GalleryContent,
   GalleryImage,
   CTAContent,
+  PageHero,
 } from "@/types";
 
 // Lazy load heavy sections
@@ -906,6 +908,111 @@ const ContentPageClient = () => {
     }
   };
 
+  /* PAGE HEROES HANDLERS */
+  // Page hero state
+  const [pageHeroes, setPageHeroes] = useState<PageHero[]>([]);
+  const [editingPageHero, setEditingPageHero] = useState<PageHero | null>(null);
+  const [pageHeroDialogOpen, setPageHeroDialogOpen] = useState(false);
+  const [pageHeroImageFile, setPageHeroImageFile] = useState<File | null>(null);
+  const [pageHeroPreview, setPageHeroPreview] = useState<string | null>(null);
+  const [savingPageHero, setSavingPageHero] = useState(false);
+
+  // Page Hero function
+  const onPageHeroImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+
+    const validation = validateImageFile(f, 5);
+    if (!validation.isValid) {
+      alert(validation.error);
+      return;
+    }
+
+    setPageHeroImageFile(f);
+    readPreview(f, setPageHeroPreview);
+  };
+
+  const openEditPageHero = (hero: PageHero) => {
+    setEditingPageHero({ ...hero });
+    setPageHeroPreview(hero.image_url || null);
+    setPageHeroImageFile(null);
+    setPageHeroDialogOpen(true);
+  };
+
+  const savePageHero = async () => {
+    if (!editingPageHero) return;
+
+    setSavingPageHero(true);
+    try {
+      let imageUrl = editingPageHero.image_url;
+
+      // Upload new image if selected
+      if (heroImageFile) {
+        // Delete old image if updating
+        if (editingPageHero.image_url) {
+          const oldFilePath = extractFilePathFromUrl(
+            editingPageHero.image_url,
+            "content"
+          );
+          if (oldFilePath) {
+            await deleteImage("content", oldFilePath);
+            console.log("🗑 Old hero image deleted");
+          }
+        }
+
+        // Upload new image to content/page-heroes/
+        const uploaded = await uploadImage(
+          "content",
+          heroImageFile,
+          "page-heroes"
+        );
+        if (!uploaded) {
+          throw new Error("Failed to upload image. Please try again.");
+        }
+        imageUrl = uploaded;
+      }
+
+      // Update in database
+      const { error } = await supabase
+        .from("page_heroes")
+        .update({
+          title: editingPageHero.title,
+          subtitle: editingPageHero.subtitle || null,
+          image_url: imageUrl,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", editingPageHero.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setPageHeroes((prev) =>
+        prev.map((h) =>
+          h.id === editingPageHero.id
+            ? { ...editingPageHero, image_url: imageUrl }
+            : h
+        )
+      );
+
+      setHeroDialogOpen(false);
+      setEditingPageHero(null);
+      setPageHeroPreview(null);
+      setPageHeroImageFile(null);
+
+      await triggerRevalidation();
+      console.log("✅ Page hero saved");
+    } catch (err) {
+      console.error("Save hero error:", err);
+      alert(
+        `Failed to save hero: ${
+          err instanceof Error ? err.message : "Unknown error"
+        }`
+      );
+    } finally {
+      setSavingHero(false);
+    }
+  };
+
   /* Fetch all sections from database */
   const fetchAllSections = async () => {
     try {
@@ -951,6 +1058,19 @@ const ContentPageClient = () => {
               break;
           }
         });
+
+        // Fetch page heroes
+        const { data: heroesData, error: heroesError } = await supabase
+          .from("page_heroes")
+          .select("*")
+          .order("display_order");
+
+        if (heroesError) {
+          console.error("Error fetching page heroes:", heroesError);
+        } else if (heroesData) {
+          setPageHeroes(heroesData);
+          console.log("✅ Page heroes loaded");
+        }
 
         console.log("✅ All sections loaded from database");
       }
@@ -1172,6 +1292,23 @@ const ContentPageClient = () => {
         onBackgroundSelect={onCtaBackgroundSelect}
         saveCta={saveCta}
         savingCta={savingCta}
+      />
+
+      {/* Add this NEW section */}
+      <PageHeroesSection
+        pageHeroes={pageHeroes}
+        editingPageHero={editingPageHero}
+        setEditingPageHero={setEditingPageHero}
+        pageHeroDialogOpen={pageHeroDialogOpen}
+        setPageHeroDialogOpen={setPageHeroDialogOpen}
+        pageHeroImageFile={pageHeroImageFile}
+        setPageHeroImageFile={setPageHeroImageFile}
+        pageHeroPreview={pageHeroPreview}
+        setPageHeroPreview={setPageHeroPreview}
+        onPageHeroImageSelect={onPageHeroImageSelect}
+        openEditPageHero={openEditPageHero}
+        savePageHero={savePageHero}
+        savingPageHero={savingPageHero}
       />
     </div>
   );
