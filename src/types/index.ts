@@ -349,16 +349,45 @@ export interface PageHeroSectionCMS {
   pageHeroes: PageHero[];
   editingPageHero: PageHero | null;
   setEditingPageHero: (hero: PageHero | null) => void;
-  pageHeroDialogOpen: boolean
+  pageHeroDialogOpen: boolean;
   setPageHeroDialogOpen: (open: boolean) => void;
   pageHeroImageFile: File | null;
   setPageHeroImageFile: (file: File | null) => void;
   pageHeroPreview: string | null;
   setPageHeroPreview: (preview: string | null) => void;
-  onPageHeroImageSelect:(e: React.ChangeEvent<HTMLInputElement>) => void;
+  onPageHeroImageSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
   openEditPageHero: (hero: PageHero) => void;
-  savePageHero:  () => Promise<void>;
+  savePageHero: () => Promise<void>;
   savingPageHero: boolean;
+}
+
+export interface Activity {
+  id: string;
+  title: string;
+  description: string;
+  image_url: string;
+  is_active: boolean;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ActivitiesSectionCMS {
+  activities: Activity[];
+  editingActivity: Activity | null;
+  setEditingActivity: (activity: Activity | null) => void;
+  activityDialogOpen: boolean;
+  setActivityDialogOpen: (open: boolean) => void;
+  activityImageFile: File | null;
+  setActivityImageFile: (file: File | null) => void;
+  activityPreview: string | null;
+  setActivityPreview: (preview: string | null) => void;
+  onActivityImageSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  openAddActivity: () => void;
+  openEditActivity: (activity: Activity) => void;
+  deleteActivity: (id: string) => void;
+  saveActivity: () => Promise<void>;
+  savingActivity: boolean;
 }
 
 export type ContentSections = {

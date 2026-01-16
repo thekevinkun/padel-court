@@ -10,6 +10,7 @@ import {
   CTAContent,
   PageHero,
   PageHeroContent,
+  Activity,
   ContentSections,
 } from "@/types";
 
@@ -182,6 +183,56 @@ export async function getAllPageHeroes(): Promise<PageHero[]> {
     return data || [];
   } catch (error) {
     console.error("Unexpected error fetching all page heroes:", error);
+    return [];
+  }
+}
+
+/**
+ * Get all active activities
+ * Runs on server side only
+ */
+export async function getActivities(): Promise<Activity[]> {
+  try {
+    const supabase = createServerClient();
+
+    const { data, error } = await supabase
+      .from("activities")
+      .select("*")
+      .eq("is_active", true)
+      .order("display_order", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching activities:", error);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error("Unexpected error fetching activities:", error);
+    return [];
+  }
+}
+
+/**
+ * Get all activities (for CMS dashboard - includes inactive)
+ */
+export async function getAllActivities(): Promise<Activity[]> {
+  try {
+    const supabase = createServerClient();
+
+    const { data, error } = await supabase
+      .from("activities")
+      .select("*")
+      .order("display_order", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching all activities:", error);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error("Unexpected error fetching all activities:", error);
     return [];
   }
 }

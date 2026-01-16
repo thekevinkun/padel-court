@@ -35,4 +35,5 @@ export const ImagePresets = {
   featuresBackground: (url: string) => url,
   backgroundImage: (url: string) => url,
   pageHero: (url: string) => url,
+  activityCard: (url: string) => url,
 };

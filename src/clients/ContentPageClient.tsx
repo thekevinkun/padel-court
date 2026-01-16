@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 
+import CMSTabs from "@/components/dashboard/CMSTabs";
 import SectionOrderManager from "@/components/dashboard/SectionOrderManager";
 import HeroSection from "@/components/dashboard/HeroSection";
 import WelcomeSection from "@/components/dashboard/WelcomeSection";
@@ -10,6 +11,7 @@ import FeaturesGridSection from "@/components/dashboard/FeaturesGridSection";
 import PricingSection from "@/components/dashboard/PricingSection";
 import CTASection from "@/components/dashboard/CTASection";
 import PageHeroesSection from "@/components/dashboard/PageHeroesSection";
+import ActivitiesSection from "@/components/dashboard/ActivitiesSection";
 
 import {
   heroInitial,
@@ -41,6 +43,7 @@ import {
   GalleryImage,
   CTAContent,
   PageHero,
+  Activity,
 } from "@/types";
 
 // Lazy load heavy sections
@@ -947,7 +950,7 @@ const ContentPageClient = () => {
       let imageUrl = editingPageHero.image_url;
 
       // Upload new image if selected
-      if (heroImageFile) {
+      if (pageHeroImageFile) {
         // Delete old image if updating
         if (editingPageHero.image_url) {
           const oldFilePath = extractFilePathFromUrl(
@@ -963,7 +966,7 @@ const ContentPageClient = () => {
         // Upload new image to content/page-heroes/
         const uploaded = await uploadImage(
           "content",
-          heroImageFile,
+          pageHeroImageFile,
           "page-heroes"
         );
         if (!uploaded) {
@@ -994,7 +997,7 @@ const ContentPageClient = () => {
         )
       );
 
-      setHeroDialogOpen(false);
+      setPageHeroDialogOpen(false);
       setEditingPageHero(null);
       setPageHeroPreview(null);
       setPageHeroImageFile(null);
@@ -1009,7 +1012,185 @@ const ContentPageClient = () => {
         }`
       );
     } finally {
-      setSavingHero(false);
+      setSavingPageHero(false);
+    }
+  };
+
+  /* ACTIVITIES HANDLERS */
+  // Activities state
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
+  const [activityDialogOpen, setActivityDialogOpen] = useState(false);
+  const [activityImageFile, setActivityImageFile] = useState<File | null>(null);
+  const [activityPreview, setActivityPreview] = useState<string | null>(null);
+  const [savingActivity, setSavingActivity] = useState(false);
+
+  // Activities functions
+  const onActivityImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+
+    const validation = validateImageFile(f, 5);
+    if (!validation.isValid) {
+      alert(validation.error);
+      return;
+    }
+
+    setActivityImageFile(f);
+    readPreview(f, setActivityPreview);
+  };
+
+  const openAddActivity = () => {
+    setEditingActivity({
+      id: `new-${Date.now()}`,
+      title: "",
+      description: "",
+      image_url: "",
+      is_active: true,
+      display_order: activities.length + 1,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+    setActivityPreview(null);
+    setActivityImageFile(null);
+    setActivityDialogOpen(true);
+  };
+
+  const openEditActivity = (activity: Activity) => {
+    setEditingActivity({ ...activity });
+    setActivityPreview(activity.image_url || null);
+    setActivityImageFile(null);
+    setActivityDialogOpen(true);
+  };
+
+  const deleteActivity = async (id: string) => {
+    if (!confirm("Delete this activity?")) return;
+
+    try {
+      // Find the activity to get image URL
+      const activity = activities.find((a) => a.id === id);
+
+      // Delete from database
+      const { error } = await supabase.from("activities").delete().eq("id", id);
+
+      if (error) throw error;
+
+      // Delete image from storage if exists
+      if (activity?.image_url) {
+        const oldFilePath = extractFilePathFromUrl(
+          activity.image_url,
+          "content"
+        );
+        if (oldFilePath) {
+          await deleteImage("content", oldFilePath);
+          console.log("🗑 Activity image deleted");
+        }
+      }
+
+      // Update local state
+      setActivities((prev) => prev.filter((a) => a.id !== id));
+
+      console.log("✅ Activity deleted");
+    } catch (err) {
+      console.error("Delete activity error:", err);
+      alert("Failed to delete activity");
+    }
+  };
+
+  const saveActivity = async () => {
+    if (!editingActivity) return;
+
+    setSavingActivity(true);
+    try {
+      let imageUrl = editingActivity.image_url;
+
+      // Upload new image if selected
+      if (activityImageFile) {
+        // Delete old image if updating
+        if (
+          editingActivity.image_url &&
+          !editingActivity.id.startsWith("new-")
+        ) {
+          const oldFilePath = extractFilePathFromUrl(
+            editingActivity.image_url,
+            "content"
+          );
+          if (oldFilePath) {
+            await deleteImage("content", oldFilePath);
+            console.log("🗑 Old activity image deleted");
+          }
+        }
+
+        // Upload new image to content/activities/
+        const uploaded = await uploadImage(
+          "content",
+          activityImageFile,
+          "activities"
+        );
+        if (!uploaded) {
+          throw new Error("Failed to upload image. Please try again.");
+        }
+        imageUrl = uploaded;
+      }
+
+      const activityData = {
+        title: editingActivity.title,
+        description: editingActivity.description,
+        image_url: imageUrl,
+        is_active: editingActivity.is_active,
+        display_order: editingActivity.display_order,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (editingActivity.id.startsWith("new-")) {
+        // Create new
+        const { data, error } = await supabase
+          .from("activities")
+          .insert([activityData])
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        setActivities((prev) =>
+          [...prev, data].sort((a, b) => a.display_order - b.display_order)
+        );
+      } else {
+        // Update existing
+        const { error } = await supabase
+          .from("activities")
+          .update(activityData)
+          .eq("id", editingActivity.id);
+
+        if (error) throw error;
+
+        setActivities((prev) =>
+          prev
+            .map((a) =>
+              a.id === editingActivity.id
+                ? { ...editingActivity, image_url: imageUrl }
+                : a
+            )
+            .sort((a, b) => a.display_order - b.display_order)
+        );
+      }
+
+      setActivityDialogOpen(false);
+      setEditingActivity(null);
+      setActivityPreview(null);
+      setActivityImageFile(null);
+
+      await triggerRevalidation();
+      console.log("✅ Activity saved");
+    } catch (err) {
+      console.error("Save activity error:", err);
+      alert(
+        `Failed to save activity: ${
+          err instanceof Error ? err.message : "Unknown error"
+        }`
+      );
+    } finally {
+      setSavingActivity(false);
     }
   };
 
@@ -1070,6 +1251,19 @@ const ContentPageClient = () => {
         } else if (heroesData) {
           setPageHeroes(heroesData);
           console.log("✅ Page heroes loaded");
+        }
+
+        // Fetch activities
+        const { data: activitiesData, error: activitiesError } = await supabase
+          .from("activities")
+          .select("*")
+          .order("display_order");
+
+        if (activitiesError) {
+          console.error("Error fetching activities:", activitiesError);
+        } else if (activitiesData) {
+          setActivities(activitiesData);
+          console.log("✅ Activities loaded");
         }
 
         console.log("✅ All sections loaded from database");
@@ -1177,140 +1371,163 @@ const ContentPageClient = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <SectionOrderManager />
-      <HeroSection
-        hero={hero}
-        setHero={setHero}
-        heroDialogOpen={heroDialogOpen}
-        setHeroDialogOpen={setHeroDialogOpen}
-        heroPreview={heroPreview}
-        setHeroPreview={setHeroPreview}
-        setHeroImageFile={setHeroImageFile}
-        onHeroImageSelect={onHeroImageSelect}
-        saveHero={saveHero}
-        savingHero={savingHero}
-      />
-      <WelcomeSection
-        welcome={welcome}
-        setWelcome={setWelcome}
-        welcomeDialogOpen={welcomeDialogOpen}
-        setWelcomeDialogOpen={setWelcomeDialogOpen}
-        welcomePreviews={welcomePreviews}
-        tempWelcomePreviews={tempWelcomePreviews}
-        setTempWelcomePreviews={setTempWelcomePreviews}
-        welcomeFiles={welcomeFiles}
-        setWelcomeFiles={setWelcomeFiles}
-        onWelcomeImageSelect={onWelcomeImageSelect}
-        saveWelcome={saveWelcome}
-        savingWelcome={savingWelcome}
-        openWelcomeDialog={openWelcomeDialog}
-      />
-      <FeaturesGridSection
-        features={features}
-        openCreateFeature={openCreateFeature}
-        openEditFeature={openEditFeature}
-        deleteFeature={deleteFeature}
-        editingFeature={editingFeature}
-        setEditingFeature={setEditingFeature}
-        featurePreview={featurePreview}
-        setFeaturePreview={setFeaturePreview}
-        setFeatureFile={setFeatureFile}
-        onFeatureImageSelect={onFeatureImageSelect}
-        featuresDialogOpen={featuresDialogOpen}
-        setFeaturesDialogOpen={setFeaturesDialogOpen}
-        saveFeature={saveFeature}
-        savingFeatures={savingFeatures}
-      />
-      <TestimonialsSection
-        testimonials={testimonials}
-        setTestimonials={setTestimonials}
-        testimonialsDialogOpen={testimonialsDialogOpen}
-        setTestimonialsDialogOpen={setTestimonialsDialogOpen}
-        videoPreview={testimonialsVideoPreview}
-        setVideoPreview={setTestimonialsVideoPreview}
-        backgroundPreview={testimonialsBackgroundPreview}
-        setBackgroundPreview={setTestimonialsBackgroundPreview}
-        setVideoFile={setTestimonialsVideoFile}
-        setBackgroundFile={setTestimonialsBackgroundFile}
-        onVideoSelect={onTestimonialsVideoSelect}
-        onBackgroundSelect={onTestimonialsBackgroundSelect}
-        saveTestimonials={saveTestimonials}
-        savingTestimonials={savingTestimonials}
-        testimonialDialogOpen={testimonialDialogOpen}
-        setTestimonialDialogOpen={setTestimonialDialogOpen}
-        editingTestimonial={editingTestimonial}
-        setEditingTestimonial={setEditingTestimonial}
-        openAddTestimonial={openAddTestimonial}
-        openEditTestimonial={openEditTestimonial}
-        deleteTestimonial={deleteTestimonial}
-        saveTestimonial={saveTestimonial}
-        savingTestimonial={savingTestimonials}
-      />
-      <PricingSection
-        pricing={pricing}
-        setPricing={setPricing}
-        pricingDialogOpen={pricingDialogOpen}
-        setPricingDialogOpen={setPricingDialogOpen}
-        updatePricingItem={updatePricingItem}
-        addPricingItem={addPricingItem}
-        removePricingItem={removePricingItem}
-        savingPricing={savingPricing}
-        savePricing={savePricing}
-      />
-      <GallerySection
-        gallery={gallery}
-        setGallery={setGallery}
-        galleryDialogOpen={galleryDialogOpen}
-        setGalleryDialogOpen={setGalleryDialogOpen}
-        imageDialogOpen={galleryImageDialogOpen}
-        setImageDialogOpen={setGalleryImageDialogOpen}
-        noteDialogOpen={galleryNoteDialogOpen}
-        setNoteDialogOpen={setGalleryNoteDialogOpen}
-        editingImage={editingGalleryImage}
-        setEditingImage={setEditingGalleryImage}
-        imageFile={galleryImageFile}
-        setImageFile={setGalleryImageFile}
-        imagePreview={galleryImagePreview}
-        setImagePreview={setGalleryImagePreview}
-        onImageSelect={onGalleryImageSelect}
-        openAddImage={openAddGalleryImage}
-        openEditImage={openEditGalleryImage}
-        deleteImage={deleteGalleryImage}
-        saveImage={saveGalleryImage}
-        saveNote={saveGalleryNote}
-        savingGallery={savingGallery}
-      />
-      <CTASection
-        cta={cta}
-        setCta={setCta}
-        ctaDialogOpen={ctaDialogOpen}
-        setCtaDialogOpen={setCtaDialogOpen}
-        backgroundPreview={ctaBackgroundPreview}
-        setBackgroundPreview={setCtaBackgroundPreview}
-        setBackgroundFile={setCtaBackgroundFile}
-        onBackgroundSelect={onCtaBackgroundSelect}
-        saveCta={saveCta}
-        savingCta={savingCta}
-      />
-
-      {/* Add this NEW section */}
-      <PageHeroesSection
-        pageHeroes={pageHeroes}
-        editingPageHero={editingPageHero}
-        setEditingPageHero={setEditingPageHero}
-        pageHeroDialogOpen={pageHeroDialogOpen}
-        setPageHeroDialogOpen={setPageHeroDialogOpen}
-        pageHeroImageFile={pageHeroImageFile}
-        setPageHeroImageFile={setPageHeroImageFile}
-        pageHeroPreview={pageHeroPreview}
-        setPageHeroPreview={setPageHeroPreview}
-        onPageHeroImageSelect={onPageHeroImageSelect}
-        openEditPageHero={openEditPageHero}
-        savePageHero={savePageHero}
-        savingPageHero={savingPageHero}
-      />
-    </div>
+    <CMSTabs
+      homepageContent={
+        <>
+          <SectionOrderManager />
+          <HeroSection
+            hero={hero}
+            setHero={setHero}
+            heroDialogOpen={heroDialogOpen}
+            setHeroDialogOpen={setHeroDialogOpen}
+            heroPreview={heroPreview}
+            setHeroPreview={setHeroPreview}
+            setHeroImageFile={setHeroImageFile}
+            onHeroImageSelect={onHeroImageSelect}
+            saveHero={saveHero}
+            savingHero={savingHero}
+          />
+          <WelcomeSection
+            welcome={welcome}
+            setWelcome={setWelcome}
+            welcomeDialogOpen={welcomeDialogOpen}
+            setWelcomeDialogOpen={setWelcomeDialogOpen}
+            welcomePreviews={welcomePreviews}
+            tempWelcomePreviews={tempWelcomePreviews}
+            setTempWelcomePreviews={setTempWelcomePreviews}
+            welcomeFiles={welcomeFiles}
+            setWelcomeFiles={setWelcomeFiles}
+            onWelcomeImageSelect={onWelcomeImageSelect}
+            saveWelcome={saveWelcome}
+            savingWelcome={savingWelcome}
+            openWelcomeDialog={openWelcomeDialog}
+          />
+          <FeaturesGridSection
+            features={features}
+            openCreateFeature={openCreateFeature}
+            openEditFeature={openEditFeature}
+            deleteFeature={deleteFeature}
+            editingFeature={editingFeature}
+            setEditingFeature={setEditingFeature}
+            featurePreview={featurePreview}
+            setFeaturePreview={setFeaturePreview}
+            setFeatureFile={setFeatureFile}
+            onFeatureImageSelect={onFeatureImageSelect}
+            featuresDialogOpen={featuresDialogOpen}
+            setFeaturesDialogOpen={setFeaturesDialogOpen}
+            saveFeature={saveFeature}
+            savingFeatures={savingFeatures}
+          />
+          <TestimonialsSection
+            testimonials={testimonials}
+            setTestimonials={setTestimonials}
+            testimonialsDialogOpen={testimonialsDialogOpen}
+            setTestimonialsDialogOpen={setTestimonialsDialogOpen}
+            videoPreview={testimonialsVideoPreview}
+            setVideoPreview={setTestimonialsVideoPreview}
+            backgroundPreview={testimonialsBackgroundPreview}
+            setBackgroundPreview={setTestimonialsBackgroundPreview}
+            setVideoFile={setTestimonialsVideoFile}
+            setBackgroundFile={setTestimonialsBackgroundFile}
+            onVideoSelect={onTestimonialsVideoSelect}
+            onBackgroundSelect={onTestimonialsBackgroundSelect}
+            saveTestimonials={saveTestimonials}
+            savingTestimonials={savingTestimonials}
+            testimonialDialogOpen={testimonialDialogOpen}
+            setTestimonialDialogOpen={setTestimonialDialogOpen}
+            editingTestimonial={editingTestimonial}
+            setEditingTestimonial={setEditingTestimonial}
+            openAddTestimonial={openAddTestimonial}
+            openEditTestimonial={openEditTestimonial}
+            deleteTestimonial={deleteTestimonial}
+            saveTestimonial={saveTestimonial}
+            savingTestimonial={savingTestimonials}
+          />
+          <PricingSection
+            pricing={pricing}
+            setPricing={setPricing}
+            pricingDialogOpen={pricingDialogOpen}
+            setPricingDialogOpen={setPricingDialogOpen}
+            updatePricingItem={updatePricingItem}
+            addPricingItem={addPricingItem}
+            removePricingItem={removePricingItem}
+            savingPricing={savingPricing}
+            savePricing={savePricing}
+          />
+          <GallerySection
+            gallery={gallery}
+            setGallery={setGallery}
+            galleryDialogOpen={galleryDialogOpen}
+            setGalleryDialogOpen={setGalleryDialogOpen}
+            imageDialogOpen={galleryImageDialogOpen}
+            setImageDialogOpen={setGalleryImageDialogOpen}
+            noteDialogOpen={galleryNoteDialogOpen}
+            setNoteDialogOpen={setGalleryNoteDialogOpen}
+            editingImage={editingGalleryImage}
+            setEditingImage={setEditingGalleryImage}
+            imageFile={galleryImageFile}
+            setImageFile={setGalleryImageFile}
+            imagePreview={galleryImagePreview}
+            setImagePreview={setGalleryImagePreview}
+            onImageSelect={onGalleryImageSelect}
+            openAddImage={openAddGalleryImage}
+            openEditImage={openEditGalleryImage}
+            deleteImage={deleteGalleryImage}
+            saveImage={saveGalleryImage}
+            saveNote={saveGalleryNote}
+            savingGallery={savingGallery}
+          />
+          <CTASection
+            cta={cta}
+            setCta={setCta}
+            ctaDialogOpen={ctaDialogOpen}
+            setCtaDialogOpen={setCtaDialogOpen}
+            backgroundPreview={ctaBackgroundPreview}
+            setBackgroundPreview={setCtaBackgroundPreview}
+            setBackgroundFile={setCtaBackgroundFile}
+            onBackgroundSelect={onCtaBackgroundSelect}
+            saveCta={saveCta}
+            savingCta={savingCta}
+          />
+        </>
+      }
+      pagesContent={
+        <>
+          <PageHeroesSection
+            pageHeroes={pageHeroes}
+            editingPageHero={editingPageHero}
+            setEditingPageHero={setEditingPageHero}
+            pageHeroDialogOpen={pageHeroDialogOpen}
+            setPageHeroDialogOpen={setPageHeroDialogOpen}
+            pageHeroImageFile={pageHeroImageFile}
+            setPageHeroImageFile={setPageHeroImageFile}
+            pageHeroPreview={pageHeroPreview}
+            setPageHeroPreview={setPageHeroPreview}
+            onPageHeroImageSelect={onPageHeroImageSelect}
+            openEditPageHero={openEditPageHero}
+            savePageHero={savePageHero}
+            savingPageHero={savingPageHero}
+          />
+          <ActivitiesSection
+            activities={activities}
+            editingActivity={editingActivity}
+            setEditingActivity={setEditingActivity}
+            activityDialogOpen={activityDialogOpen}
+            setActivityDialogOpen={setActivityDialogOpen}
+            activityImageFile={activityImageFile}
+            setActivityImageFile={setActivityImageFile}
+            activityPreview={activityPreview}
+            setActivityPreview={setActivityPreview}
+            onActivityImageSelect={onActivityImageSelect}
+            openAddActivity={openAddActivity}
+            openEditActivity={openEditActivity}
+            deleteActivity={deleteActivity}
+            saveActivity={saveActivity}
+            savingActivity={savingActivity}
+          />
+        </>
+      }
+    />
   );
 };
 
