@@ -12,6 +12,7 @@ import PricingSection from "@/components/dashboard/PricingSection";
 import CTASection from "@/components/dashboard/CTASection";
 import PageHeroesSection from "@/components/dashboard/PageHeroesSection";
 import ActivitiesSection from "@/components/dashboard/ActivitiesSection";
+import ShopSection from "@/components/dashboard/ShopSection";
 
 import {
   heroInitial,
@@ -44,6 +45,8 @@ import {
   CTAContent,
   PageHero,
   Activity,
+  Shop,
+  ShopProduct,
 } from "@/types";
 
 // Lazy load heavy sections
@@ -51,14 +54,14 @@ const GallerySection = dynamic(
   () => import("@/components/dashboard/GallerySection"),
   {
     loading: () => <div className="animate-pulse h-64 bg-muted rounded-lg" />,
-  }
+  },
 );
 
 const TestimonialsSection = dynamic(
   () => import("@/components/dashboard/TestimonialsSection"),
   {
     loading: () => <div className="animate-pulse h-64 bg-muted rounded-lg" />,
-  }
+  },
 );
 
 const ContentPageClient = () => {
@@ -124,7 +127,7 @@ const ContentPageClient = () => {
       alert(
         `Failed to save hero: ${
           err instanceof Error ? err.message : "Unknown error"
-        }`
+        }`,
       );
     } finally {
       setSavingHero(false);
@@ -140,10 +143,10 @@ const ContentPageClient = () => {
   });
   const [welcomeDialogOpen, setWelcomeDialogOpen] = useState(false);
   const [welcomeFiles, setWelcomeFiles] = useState<(File | null)[]>(
-    Array(4).fill(null)
+    Array(4).fill(null),
   );
   const [welcomePreviews, setWelcomePreviews] = useState<string[]>(
-    welcome.images.slice()
+    welcome.images.slice(),
   );
   const [tempWelcomePreviews, setTempWelcomePreviews] = useState<string[]>([]);
   const [savingWelcome, setSavingWelcome] = useState(false);
@@ -151,7 +154,7 @@ const ContentPageClient = () => {
   // Welcome functions
   const onWelcomeImageSelect = (
     index: number,
-    e: React.ChangeEvent<HTMLInputElement>
+    e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const f = e.target.files?.[0];
     if (!f) return;
@@ -193,7 +196,7 @@ const ContentPageClient = () => {
           if (welcome.images[i]) {
             const oldFilePath = extractFilePathFromUrl(
               welcome.images[i],
-              "content"
+              "content",
             );
             if (oldFilePath) {
               await deleteImage("content", oldFilePath);
@@ -215,7 +218,7 @@ const ContentPageClient = () => {
       await saveSectionWithVersion(
         "welcome",
         updatedWelcome,
-        "Updated welcome section"
+        "Updated welcome section",
       );
 
       setWelcome({ ...updatedWelcome, version: welcome.version });
@@ -229,7 +232,7 @@ const ContentPageClient = () => {
       alert(
         `Failed to save welcome: ${
           err instanceof Error ? err.message : "Unknown error"
-        }`
+        }`,
       );
     } finally {
       setSavingWelcome(false);
@@ -245,7 +248,7 @@ const ContentPageClient = () => {
   });
   const [featuresDialogOpen, setFeaturesDialogOpen] = useState(false);
   const [editingFeature, setEditingFeature] = useState<FeatureItem | null>(
-    null
+    null,
   );
   const [featureFile, setFeatureFile] = useState<File | null>(null);
   const [featurePreview, setFeaturePreview] = useState<string | null>(null);
@@ -340,7 +343,7 @@ const ContentPageClient = () => {
       await saveSectionWithVersion(
         "features",
         { items: updatedFeatures },
-        changeDesc
+        changeDesc,
       );
       setFeatures({ items: updatedFeatures, version: features.version });
       setFeaturesDialogOpen(false);
@@ -353,7 +356,7 @@ const ContentPageClient = () => {
       alert(
         `Failed to save feature: ${
           err instanceof Error ? err.message : "Unknown error"
-        }`
+        }`,
       );
     } finally {
       setSavingFeatures(false);
@@ -385,7 +388,7 @@ const ContentPageClient = () => {
 
   // Testimonials functions
   const onTestimonialsVideoSelect = (
-    e: React.ChangeEvent<HTMLInputElement>
+    e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const f = e.target.files?.[0];
     if (!f) return;
@@ -401,7 +404,7 @@ const ContentPageClient = () => {
   };
 
   const onTestimonialsBackgroundSelect = (
-    e: React.ChangeEvent<HTMLInputElement>
+    e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const f = e.target.files?.[0];
     if (!f) return;
@@ -428,7 +431,7 @@ const ContentPageClient = () => {
         if (testimonials.videoUrl) {
           const oldFilePath = extractFilePathFromUrl(
             testimonials.videoUrl,
-            "content"
+            "content",
           );
           if (oldFilePath) {
             await deleteImage("content", oldFilePath);
@@ -440,7 +443,7 @@ const ContentPageClient = () => {
         const uploaded = await uploadImage(
           "content",
           testimonialsVideoFile,
-          "testimonials"
+          "testimonials",
         );
         if (!uploaded) {
           throw new Error("Failed to upload video. Please try again.");
@@ -453,7 +456,7 @@ const ContentPageClient = () => {
         if (testimonials.backgroundImage) {
           const oldFilePath = extractFilePathFromUrl(
             testimonials.backgroundImage,
-            "content"
+            "content",
           );
           if (oldFilePath) {
             await deleteImage("content", oldFilePath);
@@ -465,7 +468,7 @@ const ContentPageClient = () => {
         const uploaded = await uploadImage(
           "content",
           testimonialsBackgroundFile,
-          "testimonials"
+          "testimonials",
         );
         if (!uploaded) {
           throw new Error("Failed to upload background. Please try again.");
@@ -482,7 +485,7 @@ const ContentPageClient = () => {
       await saveSectionWithVersion(
         "testimonials",
         updatedTestimonials,
-        "Updated testimonials section"
+        "Updated testimonials section",
       );
       setTestimonials({
         ...updatedTestimonials,
@@ -497,7 +500,7 @@ const ContentPageClient = () => {
       alert(
         `Failed to save testimonials: ${
           err instanceof Error ? err.message : "Unknown error"
-        }`
+        }`,
       );
     } finally {
       setSavingTestimonials(false);
@@ -539,11 +542,11 @@ const ContentPageClient = () => {
     try {
       const updatedTestimonials = (() => {
         const exists = testimonials.testimonials.find(
-          (t) => t.id === editingTestimonial.id
+          (t) => t.id === editingTestimonial.id,
         );
         if (exists) {
           return testimonials.testimonials.map((t) =>
-            t.id === editingTestimonial.id ? editingTestimonial : t
+            t.id === editingTestimonial.id ? editingTestimonial : t,
           );
         }
         return [...testimonials.testimonials, editingTestimonial];
@@ -559,7 +562,7 @@ const ContentPageClient = () => {
         updatedContent,
         editingTestimonial.id.startsWith("new-")
           ? "Added new testimonial"
-          : "Updated testimonial"
+          : "Updated testimonial",
       );
 
       setTestimonials({ ...updatedContent, version: testimonials.version });
@@ -573,7 +576,7 @@ const ContentPageClient = () => {
       alert(
         `Failed to save testimonial: ${
           err instanceof Error ? err.message : "Unknown error"
-        }`
+        }`,
       );
     } finally {
       setSavingTestimonials(false);
@@ -597,7 +600,7 @@ const ContentPageClient = () => {
       await saveSectionWithVersion(
         "pricing",
         pricing,
-        "Updated pricing section"
+        "Updated pricing section",
       );
 
       setPricingDialogOpen(false);
@@ -618,7 +621,7 @@ const ContentPageClient = () => {
     section: string,
     index: number,
     field: keyof PricingItem,
-    value: string
+    value: string,
   ) => {
     setPricing((prev) => {
       const newPricing = { ...prev };
@@ -669,7 +672,7 @@ const ContentPageClient = () => {
     useState<GalleryImage | null>(null);
   const [galleryImageFile, setGalleryImageFile] = useState<File | null>(null);
   const [galleryImagePreview, setGalleryImagePreview] = useState<string | null>(
-    null
+    null,
   );
   const [savingGallery, setSavingGallery] = useState(false);
 
@@ -737,7 +740,7 @@ const ContentPageClient = () => {
         const uploaded = await uploadImage(
           "content",
           galleryImageFile,
-          "gallery"
+          "gallery",
         );
         if (!uploaded) {
           throw new Error("Failed to upload image. Please try again.");
@@ -768,7 +771,7 @@ const ContentPageClient = () => {
       await saveSectionWithVersion(
         "gallery",
         { ...gallery, images: updatedImages },
-        changeDesc
+        changeDesc,
       );
       setGallery({
         ...gallery,
@@ -787,7 +790,7 @@ const ContentPageClient = () => {
       alert(
         `Failed to save image: ${
           err instanceof Error ? err.message : "Unknown error"
-        }`
+        }`,
       );
     } finally {
       setSavingGallery(false);
@@ -806,7 +809,7 @@ const ContentPageClient = () => {
       await saveSectionWithVersion(
         "gallery",
         gallery,
-        "Updated gallery section"
+        "Updated gallery section",
       );
 
       setGalleryNoteDialogOpen(false);
@@ -868,7 +871,7 @@ const ContentPageClient = () => {
         if (cta.backgroundImage) {
           const oldFilePath = extractFilePathFromUrl(
             cta.backgroundImage,
-            "content"
+            "content",
           );
           if (oldFilePath) {
             await deleteImage("content", oldFilePath);
@@ -903,7 +906,7 @@ const ContentPageClient = () => {
       alert(
         `Failed to save CTA: ${
           err instanceof Error ? err.message : "Unknown error"
-        }`
+        }`,
       );
     } finally {
       setSavingCta(false);
@@ -955,7 +958,7 @@ const ContentPageClient = () => {
         if (editingPageHero.image_url) {
           const oldFilePath = extractFilePathFromUrl(
             editingPageHero.image_url,
-            "content"
+            "content",
           );
           if (oldFilePath) {
             await deleteImage("content", oldFilePath);
@@ -967,7 +970,7 @@ const ContentPageClient = () => {
         const uploaded = await uploadImage(
           "content",
           pageHeroImageFile,
-          "page-heroes"
+          "page-heroes",
         );
         if (!uploaded) {
           throw new Error("Failed to upload image. Please try again.");
@@ -993,8 +996,8 @@ const ContentPageClient = () => {
         prev.map((h) =>
           h.id === editingPageHero.id
             ? { ...editingPageHero, image_url: imageUrl }
-            : h
-        )
+            : h,
+        ),
       );
 
       setPageHeroDialogOpen(false);
@@ -1009,7 +1012,7 @@ const ContentPageClient = () => {
       alert(
         `Failed to save hero: ${
           err instanceof Error ? err.message : "Unknown error"
-        }`
+        }`,
       );
     } finally {
       setSavingPageHero(false);
@@ -1079,7 +1082,7 @@ const ContentPageClient = () => {
       if (activity?.image_url) {
         const oldFilePath = extractFilePathFromUrl(
           activity.image_url,
-          "content"
+          "content",
         );
         if (oldFilePath) {
           await deleteImage("content", oldFilePath);
@@ -1113,7 +1116,7 @@ const ContentPageClient = () => {
         ) {
           const oldFilePath = extractFilePathFromUrl(
             editingActivity.image_url,
-            "content"
+            "content",
           );
           if (oldFilePath) {
             await deleteImage("content", oldFilePath);
@@ -1125,7 +1128,7 @@ const ContentPageClient = () => {
         const uploaded = await uploadImage(
           "content",
           activityImageFile,
-          "activities"
+          "activities",
         );
         if (!uploaded) {
           throw new Error("Failed to upload image. Please try again.");
@@ -1153,7 +1156,7 @@ const ContentPageClient = () => {
         if (error) throw error;
 
         setActivities((prev) =>
-          [...prev, data].sort((a, b) => a.display_order - b.display_order)
+          [...prev, data].sort((a, b) => a.display_order - b.display_order),
         );
       } else {
         // Update existing
@@ -1169,9 +1172,9 @@ const ContentPageClient = () => {
             .map((a) =>
               a.id === editingActivity.id
                 ? { ...editingActivity, image_url: imageUrl }
-                : a
+                : a,
             )
-            .sort((a, b) => a.display_order - b.display_order)
+            .sort((a, b) => a.display_order - b.display_order),
         );
       }
 
@@ -1187,10 +1190,314 @@ const ContentPageClient = () => {
       alert(
         `Failed to save activity: ${
           err instanceof Error ? err.message : "Unknown error"
-        }`
+        }`,
       );
     } finally {
       setSavingActivity(false);
+    }
+  };
+
+  /* SHOP HANDLERS */
+  const [shop, setShop] = useState<Shop | null>(null);
+
+  // Welcome dialog
+  const [shopWelcomeDialogOpen, setShopWelcomeDialogOpen] = useState(false);
+  const [shopWelcomeFiles, setShopWelcomeFiles] = useState<
+    [File | null, File | null]
+  >([null, null]);
+  const [shopWelcomePreviews, setShopWelcomePreviews] = useState<
+    [string, string]
+  >(["", ""]);
+  const [tempShopWelcomePreviews, setTempShopWelcomePreviews] = useState<
+    [string, string]
+  >(["", ""]);
+  const [savingShopWelcome, setSavingShopWelcome] = useState(false);
+
+  // Product dialog
+  const [editingShopProduct, setEditingShopProduct] =
+    useState<ShopProduct | null>(null);
+  const [shopProductDialogOpen, setShopProductDialogOpen] = useState(false);
+  const [shopProductImageFile, setShopProductImageFile] = useState<File | null>(
+    null,
+  );
+  const [shopProductPreview, setShopProductPreview] = useState<string | null>(
+    null,
+  );
+  const [savingShopProduct, setSavingShopProduct] = useState(false);
+
+  // Shop functions
+  const openShopWelcomeDialog = () => {
+    if (!shop) return;
+    setTempShopWelcomePreviews([shop.welcome_image_1, shop.welcome_image_2]);
+    setShopWelcomePreviews([shop.welcome_image_1, shop.welcome_image_2]);
+    setShopWelcomeDialogOpen(true);
+  };
+
+  const onShopWelcomeImageSelect = (
+    index: 0 | 1,
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+
+    const validation = validateImageFile(f, 5);
+    if (!validation.isValid) {
+      alert(`Image ${index + 1}: ${validation.error}`);
+      return;
+    }
+
+    const arr = [...welcomeFiles];
+    arr[index] = f;
+    setShopWelcomeFiles(arr as [File | null, File | null]);
+
+    readPreview(f, (src) => {
+      const p = [...tempShopWelcomePreviews];
+      p[index] = src;
+      setTempShopWelcomePreviews(p as [string, string]);
+    });
+  };
+
+  const saveShopWelcome = async () => {
+    if (!shop) return;
+
+    setSavingShopWelcome(true);
+    try {
+      const images = [...tempShopWelcomePreviews];
+
+      // Upload new images if selected
+      for (let i = 0; i < shopWelcomeFiles.length; i++) {
+        const f = shopWelcomeFiles[i];
+        if (f) {
+          // Delete old image
+          const oldImageUrl =
+            i === 0 ? shop.welcome_image_1 : shop.welcome_image_2;
+          if (oldImageUrl) {
+            const oldFilePath = extractFilePathFromUrl(oldImageUrl, "content");
+            if (oldFilePath) {
+              await deleteImage("content", oldFilePath);
+              console.log(`🗑 Old welcome image ${i + 1} deleted`);
+            }
+          }
+
+          // Upload new image to content/shop-welcome/
+          const uploaded = await uploadImage("content", f, "shop-welcome");
+          if (!uploaded) {
+            throw new Error(`Failed to upload image ${i + 1}`);
+          }
+          images[i] = uploaded;
+        }
+      }
+
+      // Update database
+      const { error } = await supabase
+        .from("shop")
+        .update({
+          welcome_badge: shop.welcome_badge,
+          welcome_heading: shop.welcome_heading,
+          welcome_description: shop.welcome_description,
+          welcome_image_1: images[0],
+          welcome_image_2: images[1],
+          welcome_subheading: shop.welcome_subheading,
+          welcome_subdescription: shop.welcome_subdescription,
+          cta_primary_text: shop.cta_primary_text,
+          cta_primary_href: shop.cta_primary_href,
+          cta_secondary_text: shop.cta_secondary_text,
+          cta_secondary_href: shop.cta_secondary_href,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", shop.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setShop({
+        ...shop,
+        welcome_image_1: images[0],
+        welcome_image_2: images[1],
+      });
+      setShopWelcomePreviews(images as [string, string]);
+      setShopWelcomeDialogOpen(false);
+      setShopWelcomeFiles([null, null]);
+
+      await triggerRevalidation();
+      console.log("✅ Shop welcome saved");
+    } catch (err) {
+      console.error("Save welcome error:", err);
+      alert(
+        `Failed to save welcome: ${
+          err instanceof Error ? err.message : "Unknown error"
+        }`,
+      );
+    } finally {
+      setSavingShopWelcome(false);
+    }
+  };
+
+  const onShopProductImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+
+    const validation = validateImageFile(f, 5);
+    if (!validation.isValid) {
+      alert(validation.error);
+      return;
+    }
+
+    setShopProductImageFile(f);
+    readPreview(f, setShopProductPreview);
+  };
+
+  const openAddShopProduct = () => {
+    if (!shop) return;
+
+    setEditingShopProduct({
+      id: `new-${Date.now()}`,
+      name: "",
+      caption: "",
+      image_url: "",
+      is_active: true,
+      display_order: shop.products.length + 1,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+    setShopProductPreview(null);
+    setShopProductImageFile(null);
+    setShopProductDialogOpen(true);
+  };
+
+  const openEditShopProduct = (product: ShopProduct) => {
+    setEditingShopProduct({ ...product });
+    setShopProductPreview(product.image_url || null);
+    setShopProductImageFile(null);
+    setShopProductDialogOpen(true);
+  };
+
+  const deleteShopProduct = async (id: string) => {
+    if (!shop || !confirm("Delete this product?")) return;
+
+    try {
+      const product = shop.products.find((p) => p.id === id);
+
+      // Delete image from storage
+      if (product?.image_url) {
+        const oldFilePath = extractFilePathFromUrl(
+          product.image_url,
+          "content",
+        );
+        if (oldFilePath) {
+          await deleteImage("content", oldFilePath);
+          console.log("🗑 Product image deleted");
+        }
+      }
+
+      // Update products array
+      const updatedProducts = shop.products.filter((p) => p.id !== id);
+
+      // Update database
+      const { error } = await supabase
+        .from("shop")
+        .update({
+          products: updatedProducts,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", shop.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setShop({ ...shop, products: updatedProducts });
+
+      await triggerRevalidation();
+      console.log("✅ Product deleted");
+    } catch (err) {
+      console.error("Delete product error:", err);
+      alert("Failed to delete product");
+    }
+  };
+
+  const saveShopProduct = async () => {
+    if (!shop || !editingShopProduct) return;
+
+    setSavingShopProduct(true);
+    try {
+      let imageUrl = editingShopProduct.image_url;
+
+      // Upload new image if selected
+      if (shopProductImageFile) {
+        // Delete old image if updating
+        if (
+          editingShopProduct.image_url &&
+          !editingShopProduct.id.startsWith("new-")
+        ) {
+          const oldFilePath = extractFilePathFromUrl(
+            editingShopProduct.image_url,
+            "content",
+          );
+          if (oldFilePath) {
+            await deleteImage("content", oldFilePath);
+            console.log("🗑 Old product image deleted");
+          }
+        }
+
+        // Upload new image to content/shop-products/
+        const uploaded = await uploadImage(
+          "content",
+          shopProductImageFile,
+          "shop-products",
+        );
+        if (!uploaded) {
+          throw new Error("Failed to upload image. Please try again.");
+        }
+        imageUrl = uploaded;
+      }
+
+      const updatedProduct = {
+        ...editingShopProduct,
+        image_url: imageUrl,
+        updated_at: new Date().toISOString(),
+      };
+
+      // Update or add product
+      let updatedShopProducts;
+      if (editingShopProduct.id.startsWith("new-")) {
+        // Add new
+        updatedShopProducts = [...shop.products, updatedProduct];
+      } else {
+        // Update existing
+        updatedShopProducts = shop.products.map((p) =>
+          p.id === editingShopProduct.id ? updatedProduct : p,
+        );
+      }
+
+      // Update database
+      const { error } = await supabase
+        .from("shop")
+        .update({
+          products: updatedShopProducts,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", shop.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setShop({ ...shop, products: updatedShopProducts });
+      setShopProductDialogOpen(false);
+      setEditingShopProduct(null);
+      setShopProductPreview(null);
+      setShopProductImageFile(null);
+
+      await triggerRevalidation();
+      console.log("✅ Product saved");
+    } catch (err) {
+      console.error("Save product error:", err);
+      alert(
+        `Failed to save product: ${
+          err instanceof Error ? err.message : "Unknown error"
+        }`,
+      );
+    } finally {
+      setSavingShopProduct(false);
     }
   };
 
@@ -1266,6 +1573,24 @@ const ContentPageClient = () => {
           console.log("✅ Activities loaded");
         }
 
+        // Fetch shop data
+        const { data: shopData, error: shopError } = await supabase
+          .from("shop")
+          .select("*")
+          .single();
+
+        if (shopError) {
+          console.error("Error fetching shop:", shopError);
+        } else if (shopData) {
+          setShop(shopData as Shop);
+          setShopWelcomePreviews([
+            shopData.welcome_image_1,
+            shopData.welcome_image_2,
+          ]);
+          console.log("✅ Shop loaded");
+        }
+
+        // Last console
         console.log("✅ All sections loaded from database");
       }
     } catch (error) {
@@ -1288,7 +1613,7 @@ const ContentPageClient = () => {
       } else {
         console.warn(
           "⚠️ Revalidation failed but content saved:",
-          await response.text()
+          await response.text(),
         );
       }
     } catch (error) {
@@ -1300,7 +1625,7 @@ const ContentPageClient = () => {
   const saveSectionWithVersion = async (
     sectionType: string,
     content: unknown,
-    changeDescription?: string
+    changeDescription?: string,
   ) => {
     try {
       // Get current section data
@@ -1524,6 +1849,35 @@ const ContentPageClient = () => {
             deleteActivity={deleteActivity}
             saveActivity={saveActivity}
             savingActivity={savingActivity}
+          />
+          <ShopSection
+            shop={shop}
+            setShop={setShop}
+            shopWelcomeDialogOpen={shopWelcomeDialogOpen}
+            setShopWelcomeDialogOpen={setShopWelcomeDialogOpen}
+            shopWelcomeFiles={shopWelcomeFiles}
+            setShopWelcomeFiles={setShopWelcomeFiles}
+            shopWelcomePreviews={shopWelcomePreviews}
+            tempShopWelcomePreviews={tempShopWelcomePreviews}
+            setTempShopWelcomePreviews={setTempShopWelcomePreviews}
+            onShopWelcomeImageSelect={onShopWelcomeImageSelect}
+            saveShopWelcome={saveShopWelcome}
+            savingShopWelcome={savingShopWelcome}
+            openShopWelcomeDialog={openShopWelcomeDialog}
+            editingShopProduct={editingShopProduct}
+            setEditingShopProduct={setEditingShopProduct}
+            shopProductDialogOpen={shopProductDialogOpen}
+            setShopProductDialogOpen={setShopProductDialogOpen}
+            shopProductImageFile={shopProductImageFile}
+            setShopProductImageFile={setShopProductImageFile}
+            shopProductPreview={shopProductPreview}
+            setShopProductPreview={setShopProductPreview}
+            onShopProductImageSelect={onShopProductImageSelect}
+            openAddShopProduct={openAddShopProduct}
+            openEditShopProduct={openEditShopProduct}
+            deleteShopProduct={deleteShopProduct}
+            saveShopProduct={saveShopProduct}
+            savingShopProduct={savingShopProduct}
           />
         </>
       }

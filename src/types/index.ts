@@ -105,7 +105,7 @@ export interface WelcomeSectionCMS {
 
   onWelcomeImageSelect: (
     index: number,
-    e: React.ChangeEvent<HTMLInputElement>
+    e: React.ChangeEvent<HTMLInputElement>,
   ) => void;
 
   saveWelcome: () => Promise<void>;
@@ -250,7 +250,7 @@ export interface PricingSectionCMS {
     section: string,
     index: number,
     field: keyof PricingItem,
-    value: string
+    value: string,
   ) => void;
 
   addPricingItem: (section: string) => void;
@@ -388,6 +388,88 @@ export interface ActivitiesSectionCMS {
   deleteActivity: (id: string) => void;
   saveActivity: () => Promise<void>;
   savingActivity: boolean;
+}
+
+export interface ShopProduct {
+  id: string;
+  name: string;
+  caption: string; // Short caption for hover
+  image_url: string;
+  is_active: boolean;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Shop {
+  id: string;
+  // Welcome
+  welcome_badge: string;
+  welcome_heading: string;
+  welcome_description: string;
+  welcome_image_1: string;
+  welcome_image_2: string;
+  welcome_subheading: string;
+  welcome_subdescription: string;
+  // CTAs
+  cta_primary_text: string;
+  cta_primary_href: string;
+  cta_secondary_text: string;
+  cta_secondary_href: string;
+  // Products section
+  products: ShopProduct[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ShopWelcomeContent {
+  badge: string;
+  heading: string;
+  description: string;
+  images: [string, string]; // [image_1, image_2]
+  subheading: string;
+  subdescription: string;
+  cta: {
+    primary: { text: string; href: string };
+    secondary: { text: string; href: string };
+  };
+}
+
+export interface ShopSectionCMS {
+  shop: Shop | null;
+  setShop: (shop: Shop) => void;
+
+  // Welcome dialog
+  shopWelcomeDialogOpen: boolean;
+  setShopWelcomeDialogOpen: (open: boolean) => void;
+  shopWelcomeFiles: [File | null, File | null];
+  setShopWelcomeFiles: (files: [File | null, File | null]) => void;
+  shopWelcomePreviews: [string, string];
+  tempShopWelcomePreviews: [string, string];
+  setTempShopWelcomePreviews: (previews: [string, string]) => void;
+  onShopWelcomeImageSelect: (
+    index: 0 | 1,
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => void;
+  saveShopWelcome: () => Promise<void>;
+  savingShopWelcome: boolean;
+  openShopWelcomeDialog: () => void;
+
+  // Product dialog
+  editingShopProduct: ShopProduct | null;
+  setEditingShopProduct: (product: ShopProduct | null) => void;
+  shopProductDialogOpen: boolean;
+  setShopProductDialogOpen: (open: boolean) => void;
+  shopProductImageFile: File | null;
+  setShopProductImageFile: (file: File | null) => void;
+  shopProductPreview: string | null;
+  setShopProductPreview: (preview: string | null) => void;
+  onShopProductImageSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  openAddShopProduct: () => void;
+  openEditShopProduct: (product: ShopProduct) => void;
+  deleteShopProduct: (id: string) => void;
+  saveShopProduct: () => Promise<void>;
+  savingShopProduct: boolean;
 }
 
 export type ContentSections = {

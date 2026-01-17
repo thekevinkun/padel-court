@@ -36,4 +36,6 @@ export const ImagePresets = {
   backgroundImage: (url: string) => url,
   pageHero: (url: string) => url,
   activityCard: (url: string) => url,
+  shopWelcome: (url: string) => url,
+  shopProduct: (url: string) => url,
 };

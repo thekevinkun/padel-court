@@ -11,6 +11,9 @@ import {
   PageHero,
   PageHeroContent,
   Activity,
+  Shop,
+  ShopProduct,
+  ShopWelcomeContent,
   ContentSections,
 } from "@/types";
 
@@ -233,6 +236,80 @@ export async function getAllActivities(): Promise<Activity[]> {
     return data || [];
   } catch (error) {
     console.error("Unexpected error fetching all activities:", error);
+    return [];
+  }
+}
+
+/**
+ * Get shop data (single row) - For CMS
+ */
+export async function getShop(): Promise<Shop | null> {
+  try {
+    const supabase = createServerClient();
+
+    const { data, error } = await supabase.from("shop").select("*").single();
+
+    if (error || !data) {
+      console.error("Error fetching shop:", error);
+      return null;
+    }
+
+    return data as Shop;
+  } catch (error) {
+    console.error("Unexpected error fetching shop:", error);
+    return null;
+  }
+}
+
+/**
+ * Get shop welcome content - For frontend
+ */
+export async function getShopWelcome(): Promise<ShopWelcomeContent | null> {
+  try {
+    const shop = await getShop();
+    if (!shop) return null;
+
+    return {
+      badge: shop.welcome_badge,
+      heading: shop.welcome_heading,
+      description: shop.welcome_description,
+      images: [shop.welcome_image_1, shop.welcome_image_2],
+      subheading: shop.welcome_subheading,
+      subdescription: shop.welcome_subdescription,
+      cta: {
+        primary: {
+          text: shop.cta_primary_text,
+          href: shop.cta_primary_href,
+        },
+        secondary: {
+          text: shop.cta_secondary_text,
+          href: shop.cta_secondary_href,
+        },
+      },
+    };
+  } catch (error) {
+    console.error("Unexpected error getting shop welcome:", error);
+    return null;
+  }
+}
+
+/**
+ * Get shop products (active only)
+ * For frontend ShopProducts component
+ */
+export async function getShopProducts(): Promise<ShopProduct[]> {
+  try {
+    const shop = await getShop();
+    if (!shop || !shop.products) return [];
+
+    // Filter active products and sort
+    return shop.products
+      .filter((p: ShopProduct) => p.is_active)
+      .sort(
+        (a: ShopProduct, b: ShopProduct) => a.display_order - b.display_order
+      );
+  } catch (error) {
+    console.error("Unexpected error getting shop products:", error);
     return [];
   }
 }
