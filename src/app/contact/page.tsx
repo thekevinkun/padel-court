@@ -1,11 +1,13 @@
 import Navbar from "@/components/layout/Navbar";
 import PageHero from "@/components/pages/PageHero";
+import Contact from "@/components/pages/Contact";
 import Footer from "@/components/layout/Footer";
 import BookingDialogWrapper from "@/components/booking/BookingDialogWrapper";
 
 import { getPageHero } from "@/lib/content";
 
 export default async function ContactPage() {
+  // Fetch page hero
   const pageHero = await getPageHero("contact");
 
   const heroContent = pageHero || {
@@ -19,7 +21,7 @@ export default async function ContactPage() {
       <main className="min-h-screen">
         <Navbar />
         <PageHero content={heroContent} />
-        {/* Contact content will be added later */}
+        <Contact />
         <Footer />
       </main>
       <BookingDialogWrapper />
