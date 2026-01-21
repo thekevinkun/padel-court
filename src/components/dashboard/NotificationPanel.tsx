@@ -65,16 +65,39 @@ const NotificationPanel = ({ isOpen, onClose }: NotificationPanelProps) => {
         return "bg-green-100 text-green-600";
       case "PAYMENT_FAILED":
         return "bg-red-100 text-red-600";
+      case "REFUND_PROCESSED":
+        return "bg-purple-100 text-purple-600";
       case "CANCELLATION":
         return "bg-orange-100 text-orange-600";
       case "SESSION_STARTED":
         return "bg-forest-100 text-forest-600";
       case "SESSION_COMPLETED":
-        return "bg-purple-100 text-purple-600";
+        return "bg-gray-100 text-gray-600";
       default:
         return "bg-gray-100 text-gray-600";
     }
   };
+
+  const getNotificationStatusIcon = (type: string) => {
+    switch (type) {
+      case "NEW_BOOKING":
+        return "📅";
+      case "PAYMENT_RECEIVED":
+        return "💰";
+      case "PAYMENT_FAILED":
+        return "❌";
+      case "REFUND_PROCESSED":
+        return "💸";
+      case "CANCELLATION":
+        return "🚫";
+      case "SESSION_STARTED":
+        return "🎾";
+      case "SESSION_COMPLETED":
+        return "🏁";
+      default:
+        return "bg-gray-100 text-gray-600";
+    }
+  }
 
   return (
     <>
@@ -185,13 +208,7 @@ const NotificationPanel = ({ isOpen, onClose }: NotificationPanelProps) => {
                                   notification.type
                                 )}`}
                               >
-                                {notification.type === "NEW_BOOKING" && "📅"}
-                                {notification.type === "PAYMENT_RECEIVED" &&
-                                  "💰"}
-                                {notification.type === "PAYMENT_FAILED" && "❌"}
-                                {notification.type === "CANCELLATION" && "🚫"}
-                                {notification.type === "SESSION_STARTED" && "🎾"}
-                                {notification.type === "SESSION_COMPLETED" && "🏁"}
+                               {getNotificationStatusIcon(notification.type)}
                               </div>
 
                               {/* Content */}

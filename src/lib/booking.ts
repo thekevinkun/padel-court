@@ -95,22 +95,11 @@ export function getSessionStatusColor(status: SessionStatus): string {
  * Get the display status for a booking (combines payment + venue payment state)
  */
 export function getDisplayStatus(booking: Booking): string {
-  // Cancelled bookings
-  if (booking.status === "CANCELLED") return "CANCELLED";
-
-  // Expired bookings (online payment expired)
-  if (booking.status === "EXPIRED") return "EXPIRED";
-
-  // Pending online payment
-  if (booking.status === "PENDING") return "PENDING";
-
-  // Full payment bookings (no deposit required)
-  if (booking.status === "PAID" && !booking.require_deposit) {
-    return "PAID";
-  }
+  console.log("Booking: ", booking.require_deposit);
 
   // Deposit bookings - check venue payment state
   if (booking.status === "PAID" && booking.require_deposit) {
+    console.log("IT booking deposit!");
     // Venue payment expired
     if (booking.venue_payment_expired) {
       return "PAYMENT EXPIRED";
@@ -123,6 +112,23 @@ export function getDisplayStatus(booking: Booking): string {
 
     // Venue payment still pending
     return "DEPOSIT PAID";
+  }
+
+  // ADD REFUNDED STATUS FIRST
+  if (booking.status === "REFUNDED") return "REFUNDED";
+
+  // Expired bookings (online payment expired)
+  if (booking.status === "EXPIRED") return "EXPIRED";
+
+  // Cancelled bookings
+  if (booking.status === "CANCELLED") return "CANCELLED";
+
+  // Pending online payment
+  if (booking.status === "PENDING") return "PENDING";
+
+  // Full payment bookings (no deposit required)
+  if (booking.status === "PAID" && !booking.require_deposit) {
+    return "PAID";
   }
 
   // Fallback to original status
@@ -140,6 +146,7 @@ export function getDisplayStatusStyle(displayStatus: string): string {
     PENDING: "bg-yellow-100 text-yellow-800",
     CANCELLED: "bg-red-100 text-red-800",
     EXPIRED: "bg-gray-100 text-gray-800",
+    REFUNDED: "bg-purple-100 text-purple-800",
   };
 
   return styles[displayStatus] || "bg-gray-100 text-gray-800";
@@ -156,6 +163,7 @@ export function getDisplayStatusIcon(displayStatus: string): string {
     PENDING: "Clock",
     CANCELLED: "XCircle",
     EXPIRED: "XCircle",
+    REFUNDED: "DollarSign",
   };
 
   return icons[displayStatus] || "Clock";

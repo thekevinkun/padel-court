@@ -1,12 +1,18 @@
 import { VenuePayment } from "./reports";
 
-export type BookingStatus = "PENDING" | "PAID" | "CANCELLED" | "EXPIRED";
+export type BookingStatus = "PENDING" | "PAID" | "CANCELLED" | "EXPIRED" | "REFUNDED";
 
-export type SessionStatus = "UPCOMING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+export type SessionStatus =
+  | "UPCOMING"
+  | "IN_PROGRESS"
+  | "COMPLETED"
+  | "CANCELLED";
 
 export type PaymentChoice = "DEPOSIT" | "FULL";
 
 export type VenuePaymentStatus = "PENDING" | "COMPLETED" | "EXPIRED";
+
+export type RefundStatus = "PENDING" | "APPROVED" | "REJECTED" | "COMPLETED";
 
 export interface Booking {
   // Existing fields
@@ -30,19 +36,19 @@ export interface Booking {
   paid_at: string | null;
   created_at: string;
   updated_at: string;
-  
+
   // Deposit fields
   require_deposit: boolean;
   deposit_amount: number;
   full_amount: number;
   remaining_balance: number;
-  
+
   // Venue payment fields
   venue_payment_received: boolean;
   venue_payment_amount: number;
   venue_payment_date: string | null;
   venue_payment_method: string | null;
-  
+
   // Status fields
   session_status: SessionStatus;
   customer_payment_choice: PaymentChoice | null;
@@ -50,7 +56,7 @@ export interface Booking {
   checked_in_at: string | null;
   checked_out_at: string | null;
   session_notes: string | null;
-  
+
   // Relations (when joined)
   courts?: {
     id: string;
@@ -58,8 +64,17 @@ export interface Booking {
     description: string;
     available: boolean;
   };
-  
+
   venue_payments?: VenuePayment[];
+
+  // REFUND FIELDS
+  refund_status: RefundStatus;
+  refund_amount: number;
+  refund_date: string | null;
+  refund_reason: string | null;
+  refund_method: string | null;
+  refunded_by: string | null;
+  refund_notes: string | null;
 }
 
 export interface BookingWithVenuePayment {
@@ -89,6 +104,5 @@ export interface BookingFormData {
   whatsapp?: string;
   notes?: string;
   agreeTerms?: boolean;
-  // NEW: Payment choice
   paymentChoice?: PaymentChoice;
 }

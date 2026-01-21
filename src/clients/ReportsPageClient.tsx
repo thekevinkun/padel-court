@@ -101,7 +101,7 @@ const ReportsPageClient = () => {
       const { startDate, endDate } = getDateRange();
 
       const response = await fetch(
-        `/api/reports/analytics?startDate=${startDate}&endDate=${endDate}&period=${dateRange}`
+        `/api/reports/analytics?startDate=${startDate}&endDate=${endDate}&period=${dateRange}`,
       );
 
       if (!response.ok) {
@@ -190,6 +190,22 @@ const ReportsPageClient = () => {
       subtitle: "Deposits + full payments",
     },
     {
+      title: "Total Refunds",
+      value: analytics.summary.totalRefunds || 0,
+      icon: TrendingDown,
+      color: "text-purple-600",
+      bgColor: "bg-purple-100",
+      subtitle: `IDR ${(analytics.summary.totalRefundAmount || 0).toLocaleString("id-ID")}`,
+    },
+    {
+      title: "Net After Refunds",
+      value: `IDR ${(analytics.summary.netRevenueAfterRefunds || 0).toLocaleString("id-ID")}`,
+      icon: DollarSign,
+      color: "text-emerald-600",
+      bgColor: "bg-emerald-100",
+      subtitle: "Revenue minus refunds",
+    },
+    {
       title: "Venue Revenue",
       value: `IDR ${analytics.summary.venueRevenue.toLocaleString("id-ID")}`,
       icon: DollarSign,
@@ -204,13 +220,13 @@ const ReportsPageClient = () => {
       color: "text-orange-600",
       bgColor: "bg-orange-100",
       subtitle: `Avg: IDR ${Math.round(
-        analytics.summary.averageBookingValue
+        analytics.summary.averageBookingValue,
       ).toLocaleString("id-ID")}`,
     },
     {
       title: "Fees Absorbed",
       value: `IDR ${analytics.summary.totalFeesAbsorbed.toLocaleString(
-        "id-ID"
+        "id-ID",
       )}`,
       icon: TrendingDown,
       color: "text-red-600",

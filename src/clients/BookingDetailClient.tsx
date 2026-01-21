@@ -25,6 +25,10 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
@@ -33,8 +37,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -42,7 +44,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 
 import { Booking } from "@/types/booking";
 import { supabase } from "@/lib/supabase/client";
@@ -69,6 +70,13 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
   const [cancelReason, setCancelReason] = useState("");
   const [cancelling, setCancelling] = useState(false);
 
+  const [refundDialogOpen, setRefundDialogOpen] = useState(false);
+  const [refundAmount, setRefundAmount] = useState("");
+  const [refundMethod, setRefundMethod] = useState("MIDTRANS");
+  const [refundReason, setRefundReason] = useState("");
+  const [refundNotes, setRefundNotes] = useState("");
+  const [refunding, setRefunding] = useState(false);
+
   useEffect(() => {
     fetchBooking();
   }, [bookingId]);
@@ -82,7 +90,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
           *,
           courts (name, description),
           venue_payments (*)
-        `
+        `,
         )
         .eq("id", bookingId)
         .single();
@@ -134,8 +142,8 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
 
       alert(
         `💵 Payment recorded successfully!\n\nIDR ${booking.remaining_balance.toLocaleString(
-          "id-ID"
-        )} received via ${paymentMethod}`
+          "id-ID",
+        )} received via ${paymentMethod}`,
       );
     } catch (error: unknown) {
       const err = error as Error;
@@ -163,7 +171,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
         // Handle specific error codes
         if (errorData.code === "VENUE_PAYMENT_REQUIRED") {
           alert(
-            `❌ ${errorData.error}\n\nPlease record the venue payment first before checking in the customer.`
+            `❌ ${errorData.error}\n\nPlease record the venue payment first before checking in the customer.`,
           );
           setCheckInDialogOpen(false);
           // Optionally open payment dialog
@@ -173,7 +181,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
 
         if (errorData.code === "VENUE_PAYMENT_EXPIRED") {
           alert(
-            `⏰ ${errorData.error}\n\nThe booking time has passed and venue payment was not collected.`
+            `⏰ ${errorData.error}\n\nThe booking time has passed and venue payment was not collected.`,
           );
           setCheckInDialogOpen(false);
           return;
@@ -250,6 +258,68 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
       alert(`❌ Error: ${err.message}`);
     } finally {
       setCancelling(false);
+    }
+  };
+
+  // Handle refund processing
+  const handleProcessRefund = async () => {
+    if (!booking) return;
+
+    const amount = parseFloat(refundAmount);
+    if (isNaN(amount) || amount <= 0) {
+      alert("Please enter a valid refund amount");
+      return;
+    }
+
+    if (amount > booking.total_amount) {
+      alert(
+        `Refund amount cannot exceed IDR ${booking.total_amount.toLocaleString(
+          "id-ID",
+        )}`,
+      );
+      return;
+    }
+
+    if (!refundReason.trim()) {
+      alert("Please provide a refund reason");
+      return;
+    }
+
+    setRefunding(true);
+    try {
+      const response = await fetch(`/api/bookings/${bookingId}/refund`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          refundAmount: amount,
+          refundMethod,
+          reason: refundReason,
+          notes: refundNotes,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to process refund");
+      }
+
+      await fetchBooking(); // Refresh booking data
+      setRefundDialogOpen(false);
+      setRefundAmount("");
+      setRefundMethod("MIDTRANS");
+      setRefundReason("");
+      setRefundNotes("");
+      alert(
+        `✅ Refund processed successfully!\n\nAmount: IDR ${amount.toLocaleString(
+          "id-ID",
+        )}\nMethod: ${refundMethod}`,
+      );
+    } catch (error: unknown) {
+      const err = error as Error;
+      console.error("Error processing refund:", err);
+      alert(`❌ Error: ${err.message}`);
+    } finally {
+      setRefunding(false);
     }
   };
 
@@ -642,6 +712,77 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
             </CardContent>
           </Card>
 
+          {/* Refund Section */}
+          {booking.status === "PAID" && booking.session_status === "UPCOMING" && !booking.refund_status && (
+            <Card className="border-purple-200 bg-purple-50">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="font-semibold text-purple-900 text-sm">
+                      Process Refund
+                    </p>
+                    <p className="text-xs text-purple-700 mt-1">
+                      Refund payment to customer
+                    </p>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      setRefundDialogOpen(true);
+                      setRefundAmount(booking.total_amount.toString());
+                    }}
+                    variant="outline"
+                    size="sm"
+                    className="border-purple-300 text-purple-700 hover:bg-purple-700 hover:text-white"
+                  >
+                    <DollarSign className="w-4 h-4 mr-2" />
+                    Process Refund
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Refund Completed Badge */}
+          {booking.refund_status === "COMPLETED" && (
+            <Card className="border-green-200 bg-green-50">
+              <CardContent className="p-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                    <p className="font-semibold text-green-900 text-sm">
+                      ✅ Refund Completed
+                    </p>
+                  </div>
+                  <div className="text-xs text-green-800 space-y-1">
+                    <p>
+                      <strong>Amount:</strong> IDR{" "}
+                      {booking.refund_amount?.toLocaleString("id-ID")}
+                    </p>
+                    <p>
+                      <strong>Method:</strong> {booking.refund_method}
+                    </p>
+                    <p>
+                      <strong>Date:</strong>{" "}
+                      {booking.refund_date
+                        ? new Date(booking.refund_date).toLocaleString("id-ID")
+                        : "-"}
+                    </p>
+                    {booking.refund_reason && (
+                      <p>
+                        <strong>Reason:</strong> {booking.refund_reason}
+                      </p>
+                    )}
+                    {booking.refund_notes && (
+                      <p>
+                        <strong>Notes:</strong> {booking.refund_notes}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Cancel Booking Button */}
           {booking.session_status === "UPCOMING" &&
             booking.status !== "CANCELLED" && (
@@ -681,12 +822,69 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                 Payment Summary
               </CardTitle>
             </CardHeader>
+
             <CardContent className="space-y-4">
-              {/* Court Booking */}
+              {/* Show Refund Notice First if Refunded */}
+              {booking.refund_status === "COMPLETED" && (
+                <>
+                  <div className="bg-purple-50 border-2 border-purple-300 p-4 rounded-lg">
+                    <div className="flex items-center gap-2 mb-3">
+                      <DollarSign className="w-5 h-5 text-purple-600" />
+                      <h4 className="font-semibold text-purple-900">
+                        💰 REFUNDED
+                      </h4>
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-purple-800">Refund Amount:</span>
+                        <span className="font-bold text-purple-900">
+                          IDR {booking.refund_amount?.toLocaleString("id-ID")}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-purple-800">Refund Method:</span>
+                        <span className="font-medium">
+                          {booking.refund_method}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-purple-800">Refund Date:</span>
+                        <span className="font-medium">
+                          {booking.refund_date
+                            ? new Date(booking.refund_date).toLocaleString(
+                                "id-ID",
+                              )
+                            : "-"}
+                        </span>
+                      </div>
+                      {booking.refund_reason && (
+                        <div className="pt-2 border-t border-purple-200">
+                          <span className="text-purple-800 text-xs">
+                            Reason:
+                          </span>
+                          <p className="text-purple-900 text-xs mt-1">
+                            {booking.refund_reason}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <Separator />
+                </>
+              )}
+
+              {/* Original Payment Details (Historical Record) */}
               <div className="bg-gray-50 p-3 rounded-lg">
+                <p className="text-xs text-muted-foreground mb-2 font-semibold">
+                  {booking.refund_status === "COMPLETED"
+                    ? "Original Payment (Refunded)"
+                    : "Court Booking"}
+                </p>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Court Booking</span>
-                  <span className="font-medium">
+                  <span
+                    className={`font-medium ${booking.refund_status === "COMPLETED" ? "line-through text-gray-400" : ""}`}
+                  >
                     IDR {booking.subtotal.toLocaleString("id-ID")}
                   </span>
                 </div>
@@ -694,47 +892,41 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
 
               <Separator />
 
-              {/* Deposit or Full Payment */}
+              {/* REST OF PAYMENT DETAILS - Keep showing for audit trail */}
               {booking.customer_payment_choice === "DEPOSIT" ? (
                 <>
                   {/* Online Deposit */}
-                  <div className="bg-blue-50 border border-blue-200 p-3 rounded-lg space-y-2">
+                  <div
+                    className={`bg-blue-50 border border-blue-200 p-3 rounded-lg space-y-2 ${booking.refund_status === "COMPLETED" ? "opacity-60" : ""}`}
+                  >
                     <h4 className="font-semibold text-blue-900 text-sm">
-                      Online Deposit Payment
+                      Online Deposit Payment{" "}
+                      {booking.refund_status === "COMPLETED" && "(Refunded)"}
                     </h4>
                     <div className="flex justify-between text-sm">
                       <span className="text-blue-800">Deposit Paid</span>
-                      <span className="font-medium">
+                      <span
+                        className={`font-medium ${booking.refund_status === "COMPLETED" ? "line-through" : ""}`}
+                      >
                         IDR {booking.deposit_amount.toLocaleString("id-ID")}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-blue-700">Midtrans Fee</span>
-                      <span className="text-red-600">
-                        - IDR {booking.payment_fee.toLocaleString("id-ID")}
-                      </span>
-                    </div>
-                    <Separator className="bg-blue-200" />
-                    <div className="flex justify-between text-sm font-semibold text-green-700">
-                      <span>Net Received</span>
-                      <span>
-                        IDR{" "}
-                        {(
-                          booking.deposit_amount - booking.payment_fee
-                        ).toLocaleString("id-ID")}
                       </span>
                     </div>
                   </div>
 
                   {/* Venue Payment */}
                   {booking.venue_payment_received ? (
-                    <div className="bg-green-50 border border-green-200 p-3 rounded-lg">
+                    <div
+                      className={`bg-green-50 border border-green-200 p-3 rounded-lg ${booking.refund_status === "COMPLETED" ? "opacity-60" : ""}`}
+                    >
                       <h4 className="font-semibold text-green-900 text-sm mb-2">
-                        Venue Payment (Cash)
+                        Venue Payment (Cash){" "}
+                        {booking.refund_status === "COMPLETED" && "(Refunded)"}
                       </h4>
                       <div className="flex justify-between text-sm font-semibold">
                         <span className="text-green-800">Collected</span>
-                        <span className="text-green-700">
+                        <span
+                          className={`text-green-700 ${booking.refund_status === "COMPLETED" ? "line-through" : ""}`}
+                        >
                           IDR{" "}
                           {booking.venue_payment_amount.toLocaleString("id-ID")}
                         </span>
@@ -771,17 +963,28 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                   <Separator />
 
                   {/* Total Revenue */}
-                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border-2 border-green-300">
+                  <div
+                    className={`bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border-2 ${
+                      booking.refund_status === "COMPLETED"
+                        ? "border-purple-300 opacity-60"
+                        : "border-green-300"
+                    }`}
+                  >
                     <div className="flex justify-between items-center">
                       <div>
                         <p className="text-sm text-green-800 font-medium">
-                          Total Business Revenue
-                        </p>
-                        <p className="text-xs text-green-700 mt-1">
-                          Booking value (excl. fees)
+                          {booking.refund_status === "COMPLETED"
+                            ? "Original Booking Value (Refunded)"
+                            : "Total Business Revenue"}
                         </p>
                       </div>
-                      <span className="text-2xl font-bold text-green-700">
+                      <span
+                        className={`text-2xl font-bold ${
+                          booking.refund_status === "COMPLETED"
+                            ? "text-purple-700 line-through"
+                            : "text-green-700"
+                        }`}
+                      >
                         IDR {booking.subtotal.toLocaleString("id-ID")}
                       </span>
                     </div>
@@ -790,42 +993,45 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
               ) : (
                 <>
                   {/* Full Payment */}
-                  <div className="bg-blue-50 border border-blue-200 p-3 rounded-lg space-y-2">
+                  <div
+                    className={`bg-blue-50 border border-blue-200 p-3 rounded-lg space-y-2 ${booking.refund_status === "COMPLETED" ? "opacity-60" : ""}`}
+                  >
                     <h4 className="font-semibold text-blue-900 text-sm">
-                      Full Payment Online
+                      Full Payment Online{" "}
+                      {booking.refund_status === "COMPLETED" && "(Refunded)"}
                     </h4>
                     <div className="flex justify-between text-sm">
-                      <span className="text-blue-800">Customer Paid</span>
-                      <span className="font-medium">
+                      <span className="text-blue-800">Paid Online</span>
+                      <span
+                        className={`font-medium ${booking.refund_status === "COMPLETED" ? "line-through" : ""}`}
+                      >
                         IDR {booking.total_amount.toLocaleString("id-ID")}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-blue-700">Midtrans Fee</span>
-                      <span className="text-red-600">
-                        - IDR {booking.payment_fee.toLocaleString("id-ID")}
-                      </span>
-                    </div>
-                    <Separator className="bg-blue-200" />
-                    <div className="flex justify-between text-sm font-semibold text-green-700">
-                      <span>Net Received</span>
-                      <span>
-                        IDR{" "}
-                        {(
-                          booking.total_amount - booking.payment_fee
-                        ).toLocaleString("id-ID")}
                       </span>
                     </div>
                   </div>
 
                   <Separator />
 
-                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border-2 border-green-300">
+                  <div
+                    className={`bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border-2 ${
+                      booking.refund_status === "COMPLETED"
+                        ? "border-purple-300 opacity-60"
+                        : "border-green-300"
+                    }`}
+                  >
                     <div className="flex justify-between items-center">
                       <p className="text-sm text-green-800 font-medium">
-                        Total Business Revenue
+                        {booking.refund_status === "COMPLETED"
+                          ? "Original Booking Value (Refunded)"
+                          : "Total Booking Value"}
                       </p>
-                      <span className="text-2xl font-bold text-green-700">
+                      <span
+                        className={`text-2xl font-bold ${
+                          booking.refund_status === "COMPLETED"
+                            ? "text-purple-700 line-through"
+                            : "text-green-700"
+                        }`}
+                      >
                         IDR {booking.subtotal.toLocaleString("id-ID")}
                       </span>
                     </div>
@@ -833,10 +1039,27 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                 </>
               )}
 
+              {/* Net Revenue Impact (if refunded) */}
+              {booking.refund_status === "COMPLETED" && (
+                <div className="bg-red-50 border-2 border-red-300 p-4 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <p className="text-sm text-red-800 font-medium">
+                      Net Revenue Impact
+                    </p>
+                    <span className="text-2xl font-bold text-red-700">
+                      - IDR {booking.refund_amount?.toLocaleString("id-ID")}
+                    </span>
+                  </div>
+                  <p className="text-xs text-red-600 mt-1">
+                    Revenue reduced by refund amount
+                  </p>
+                </div>
+              )}
+
               {/* Payment Method */}
               <div className="text-xs text-muted-foreground bg-gray-50 p-2 rounded">
                 <div className="flex justify-between mb-1">
-                  <span>Online Payment Method:</span>
+                  <span>Original Payment Method:</span>
                   <span className="font-medium uppercase">
                     {booking.payment_method || "N/A"}
                   </span>
@@ -1023,7 +1246,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                 Cancel
               </Button>
               <Button
-                className="flex-1 bg-blue-600 hover:bg-blue-700"
+                className="flex-1 bg-blue-600 hover:border-blue-700"
                 onClick={handleCheckIn}
                 disabled={processing}
               >
@@ -1156,7 +1379,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                 Keep Booking
               </Button>
               <Button
-                className="flex-1 bg-red-600 hover:bg-red-700"
+                className="flex-1 bg-red-600 hover:border-red-700"
                 onClick={handleCancelBooking}
                 disabled={cancelling || !cancelReason.trim()}
               >
@@ -1169,6 +1392,144 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                   <>
                     <XCircle className="w-4 h-4 mr-2" />
                     Cancel Booking
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Refund Dialog */}
+      <Dialog open={refundDialogOpen} onOpenChange={setRefundDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Process Refund</DialogTitle>
+            <DialogDescription>
+              Refund payment for booking <strong>{booking.booking_ref}</strong>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Refund Amount */}
+            <div>
+              <Label htmlFor="refundAmount">Refund Amount *</Label>
+              <div className="relative mt-2">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                  IDR
+                </span>
+                <Input
+                  id="refundAmount"
+                  type="number"
+                  value={refundAmount}
+                  onChange={(e) => setRefundAmount(e.target.value)}
+                  placeholder="0"
+                  className="pl-12"
+                  min="0"
+                  max={booking.total_amount}
+                  step="1000"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Maximum: IDR {booking.total_amount.toLocaleString("id-ID")}
+              </p>
+            </div>
+
+            {/* Refund Method */}
+            <div>
+              <Label htmlFor="refundMethod">Refund Method *</Label>
+              <Select value={refundMethod} onValueChange={setRefundMethod}>
+                <SelectTrigger id="refundMethod" className="mt-2">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="MIDTRANS">
+                    💳 Midtrans (Auto Refund)
+                  </SelectItem>
+                  <SelectItem value="MANUAL_TRANSFER">
+                    🏦 Manual Bank Transfer
+                  </SelectItem>
+                  <SelectItem value="CASH">💵 Cash Refund</SelectItem>
+                  <SelectItem value="STORE_CREDIT">
+                    🎫 Store Credit/Voucher
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              {refundMethod === "MIDTRANS" && (
+                <p className="text-xs text-blue-600 mt-1">
+                  ⚠️ You&apos;ll need to process this in Midtrans dashboard
+                  separately
+                </p>
+              )}
+            </div>
+
+            {/* Refund Reason */}
+            <div>
+              <Label htmlFor="refundReason">Refund Reason *</Label>
+              <Textarea
+                id="refundReason"
+                value={refundReason}
+                onChange={(e) => setRefundReason(e.target.value)}
+                placeholder="Why is this refund being processed?"
+                className="mt-2"
+                rows={3}
+              />
+            </div>
+
+            {/* Admin Notes */}
+            <div>
+              <Label htmlFor="refundNotes">Admin Notes (Optional)</Label>
+              <Textarea
+                id="refundNotes"
+                value={refundNotes}
+                onChange={(e) => setRefundNotes(e.target.value)}
+                placeholder="Internal notes about this refund..."
+                className="mt-2"
+                rows={2}
+              />
+            </div>
+
+            {/* Warning */}
+            <Alert className="bg-yellow-50 border-yellow-200">
+              <AlertCircle className="h-4 w-4 text-yellow-600" />
+              <AlertDescription className="text-xs text-yellow-800">
+                <strong>Important:</strong> This will mark the booking as
+                refunded and release the time slot. This action records the
+                refund in the system but does NOT automatically process payment
+                refunds. You must manually process the refund through your
+                payment provider.
+              </AlertDescription>
+            </Alert>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 pt-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  setRefundDialogOpen(false);
+                  setRefundAmount("");
+                  setRefundMethod("MIDTRANS");
+                  setRefundReason("");
+                  setRefundNotes("");
+                }}
+                disabled={refunding}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="flex-1 bg-orange-600 hover:border-orange-700"
+                onClick={handleProcessRefund}
+                disabled={refunding || !refundAmount || !refundReason.trim()}
+              >
+                {refunding ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <DollarSign className="w-4 h-4 mr-2" />
+                    Process Refund
                   </>
                 )}
               </Button>

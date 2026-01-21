@@ -8,6 +8,8 @@ export interface DashboardStats {
   inProgressSessions?: number;
   upcomingSessions?: number;
   completedToday?: number;
+  todayRefunds?: number;
+  todayRefundAmount?: number;
 }
 
 export interface Court {

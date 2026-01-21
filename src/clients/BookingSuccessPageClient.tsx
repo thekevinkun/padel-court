@@ -5,10 +5,12 @@ import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   CheckCircle2,
-  Download,
   MessageCircle,
+  Download,
+  Search,
   Info,
   Home,
+  Mail,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -20,7 +22,7 @@ import { supabase } from "@/lib/supabase/client";
 import { generateBookingReceipt } from "@/lib/pdf-generator";
 import { sendWhatsAppReceipt } from "@/lib/whatsapp";
 
-export default function BookingSuccessPageClient() {
+const BookingSuccessPageClient = () => {
   const params = useParams();
   const router = useRouter();
   const bookingRef = params.bookingRef as string;
@@ -93,7 +95,7 @@ export default function BookingSuccessPageClient() {
           `
           *,
           courts (name, description)
-        `
+        `,
         )
         .eq("booking_ref", bookingRef)
         .single();
@@ -236,11 +238,28 @@ export default function BookingSuccessPageClient() {
             >
               <CheckCircle2 className="w-10 h-10 text-forest" />
             </motion.div>
-
             <h1 className="heading-2 mb-2">Payment Successful!</h1>
-            <p className="text-body">
-              Your booking has been confirmed. See you on the court! 🎾
+            <p className="text-body mb-4">
+              Your booking has been confirmed. See you on the court!
             </p>
+
+            {/* ✅ NEW - Email Confirmation Message */}
+            {booking && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="inline-flex items-center gap-2 bg-blue-50 text-blue-800 px-4 py-2 rounded-full text-sm"
+              >
+                <Mail className="w-4 h-4" />
+                <span>
+                  Confirmation sent to{" "}
+                  <strong className="font-semibold">
+                    {booking.customer_email}
+                  </strong>
+                </span>
+              </motion.div>
+            )}
           </div>
 
           {/* Booking Details Card */}
@@ -309,7 +328,7 @@ export default function BookingSuccessPageClient() {
                         <span className="text-muted-foreground">
                           Deposit Paid (
                           {Math.round(
-                            (booking.deposit_amount / booking.subtotal) * 100
+                            (booking.deposit_amount / booking.subtotal) * 100,
                           )}
                           %):
                         </span>
@@ -386,6 +405,23 @@ export default function BookingSuccessPageClient() {
 
           {/* Action Buttons */}
           <div className="space-y-3 mb-6">
+            {/* Direct Link to Booking Details */}
+            <Button
+              onClick={() => {
+                const url = `/my-booking?email=${encodeURIComponent(
+                  booking.customer_email,
+                )}&booking_ref=${booking.booking_ref}`;
+                router.push(url);
+              }}
+              variant="outline"
+              size="lg"
+              className="w-full rounded-full bg-blue-50 border-blue-200 hover:bg-blue-100"
+            >
+              <Search className="mr-2 h-5 w-5" />
+              View Booking Details
+            </Button>
+
+            {/* Download pdf of booking details */}
             <Button
               onClick={handleDownloadPDF}
               size="lg"
@@ -394,7 +430,8 @@ export default function BookingSuccessPageClient() {
               <Download className="mr-2 h-5 w-5" />
               Download PDF Receipt
             </Button>
-
+            
+            {/* Share booking details to whatsapp */}
             <Button
               onClick={handleShareWhatsApp}
               variant="outline"
@@ -434,4 +471,6 @@ export default function BookingSuccessPageClient() {
       </div>
     </div>
   );
-}
+};
+
+export default BookingSuccessPageClient;

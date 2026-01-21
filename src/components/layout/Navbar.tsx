@@ -14,7 +14,7 @@ import { backdropVariants } from "@/lib/animations";
 
 const AnimatePresence = dynamic(
   () => import("framer-motion").then((mod) => mod.AnimatePresence),
-  { ssr: false }
+  { ssr: false },
 );
 
 const Navbar = () => {
@@ -38,7 +38,7 @@ const Navbar = () => {
   const backgroundColor = useTransform(
     scrollY,
     [0, 100],
-    ["rgba(0, 0, 0, 0)", "rgba(233, 255, 0, 0.98)"]
+    ["rgba(0, 0, 0, 0)", "rgba(233, 255, 0, 0.98)"],
   );
 
   // Close menu on escape key or outside click
@@ -166,6 +166,24 @@ const Navbar = () => {
                 transition={{ delay: 0.4, duration: 0.3 }}
                 className="hidden lg:block"
               >
+                <Link
+                  href="/my-booking"
+                  aria-label="Go to my booking page"
+                  className={`relative font-display font-semibold text-primary hover:text-primary-dark transition-colors group ${
+                    isScrolled && "!text-forest hover:!text-forest-dark"
+                  }`}
+                >
+                  My Booking
+                </Link>
+              </motion.div>
+
+              {/* CTA Button - Desktop */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.4, duration: 0.3 }}
+                className="hidden lg:block"
+              >
                 <Button
                   onClick={openBooking}
                   size="lg"
@@ -281,7 +299,25 @@ const Navbar = () => {
 
               {/* CTA Button - Mobile */}
               <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.4, duration: 0.3 }}
                 className="p-6 border-t border-foreground/20"
+              >
+                <Link
+                  href="/my-booking"
+                  aria-label="Go to my booking page"
+                  className="block text-lg font-display font-semibold text-forest text-center hover:text-forest-dark transition-colors group"
+                >
+                  <span className="relative">
+                    My Booking
+                    <span className="absolute inset-0 bg-foreground/10 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity -z-10" />
+                  </span>
+                </Link>
+              </motion.div>
+
+              <motion.div
+                className="px-6 pb-6"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 20 }}
@@ -290,7 +326,7 @@ const Navbar = () => {
                 <Button
                   onClick={handleBookNowClick}
                   size="lg"
-                  className="w-full rounded-full font-semibold text-foreground hover:scale-105 transition-transform"
+                  className="w-full rounded-full font-semibold hover:scale-105 transition-transform"
                 >
                   BOOK NOW
                 </Button>

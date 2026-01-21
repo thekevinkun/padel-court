@@ -68,7 +68,7 @@ const BookingsPageClient = () => {
           `
           *,
           courts (name, description)
-        `
+        `,
         )
         .order("created_at", { ascending: false });
 
@@ -103,7 +103,7 @@ const BookingsPageClient = () => {
         (b) =>
           b.customer_name.toLowerCase().includes(query) ||
           b.booking_ref.toLowerCase().includes(query) ||
-          b.customer_email.toLowerCase().includes(query)
+          b.customer_email.toLowerCase().includes(query),
       );
     }
 
@@ -376,11 +376,12 @@ const BookingsPageClient = () => {
                         </div>
                         {booking.require_deposit &&
                           booking.remaining_balance > 0 &&
+                          booking.status !== "REFUNDED" &&
                           !booking.venue_payment_expired && (
                             <div className="text-xs text-orange-600 mt-1">
                               Balance: IDR{" "}
                               {booking.remaining_balance.toLocaleString(
-                                "id-ID"
+                                "id-ID",
                               )}
                             </div>
                           )}

@@ -16,9 +16,8 @@ export async function POST(request: NextRequest) {
     });
 
     // Verify notification authenticity
-    const statusResponse = await apiClient.transaction.notification(
-      notification
-    );
+    const statusResponse =
+      await apiClient.transaction.notification(notification);
 
     const orderId = statusResponse.order_id;
     const transactionStatus = statusResponse.transaction_status;
@@ -26,7 +25,7 @@ export async function POST(request: NextRequest) {
     const paymentType = statusResponse.payment_type;
 
     console.log(
-      `📊 Transaction ${orderId}: ${transactionStatus}, Fraud: ${fraudStatus}`
+      `📊 Transaction ${orderId}: ${transactionStatus}, Fraud: ${fraudStatus}`,
     );
 
     const supabase = createServerClient();
@@ -37,7 +36,12 @@ export async function POST(request: NextRequest) {
     // Get booking
     const { data: booking, error: bookingError } = await supabase
       .from("bookings")
-      .select("*")
+      .select(
+        `
+          *,
+          courts (name, description)
+        `,
+      )
       .eq("booking_ref", bookingRef)
       .single();
 
@@ -153,12 +157,12 @@ export async function POST(request: NextRequest) {
       // Create admin notification
       const notificationMessage = isDepositPayment
         ? `Booking ${bookingRef} has been paid. Total: IDR ${booking.total_amount.toLocaleString(
-            "id-ID"
+            "id-ID",
           )} via ${paymentType}. Type: Deposit. Customer: ${
             booking.customer_name
           }.`
         : `Booking ${bookingRef} has been paid. Total: IDR ${booking.total_amount.toLocaleString(
-            "id-ID"
+            "id-ID",
           )} via ${paymentType}. Type: Full Payment. Customer: ${
             booking.customer_name
           }.`;
@@ -171,6 +175,34 @@ export async function POST(request: NextRequest) {
         message: notificationMessage,
         read: false,
       });
+
+      // Send confirmation email
+      try {
+        const { sendBookingConfirmation } = await import("@/lib/email");
+        await sendBookingConfirmation({
+          customerName: booking.customer_name,
+          customerEmail: booking.customer_email,
+          bookingRef: booking.booking_ref,
+          courtName: booking.courts.name,
+          date: new Date(booking.date).toLocaleDateString("id-ID", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          }),
+          time: booking.time,
+          numberOfPlayers: booking.number_of_players,
+          totalAmount: booking.total_amount,
+          requireDeposit: booking.require_deposit,
+          depositAmount: booking.deposit_amount,
+          remainingBalance: booking.remaining_balance,
+          paymentMethod: paymentType,
+        });
+        console.log("✅ Confirmation email sent");
+      } catch (emailError) {
+        console.error("❌ Failed to send confirmation email:", emailError);
+        // Don't fail the webhook if email fails
+      }
     }
     // Handle PENDING
     else if (paymentStatus === "PENDING") {
@@ -234,7 +266,7 @@ export async function POST(request: NextRequest) {
     // The failed page will handle the cancellation
     if (err.httpStatusCode || err.ApiResponse) {
       console.log(
-        "⚠️ Midtrans API error - returning success to prevent webhook retry"
+        "⚠️ Midtrans API error - returning success to prevent webhook retry",
       );
       return NextResponse.json({
         success: true,
@@ -247,7 +279,7 @@ export async function POST(request: NextRequest) {
         error: "Webhook processing failed",
         details: err.message,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

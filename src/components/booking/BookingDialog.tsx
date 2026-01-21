@@ -121,7 +121,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
         id: slot.id,
         time: `${slot.time_start.substring(0, 5)} - ${slot.time_end.substring(
           0,
-          5
+          5,
         )}`,
         available: slot.available,
         period: slot.period,
@@ -220,9 +220,29 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
 
       // Redirect to Midtrans payment page
       window.location.href = paymentUrl;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Booking error:", error);
-      alert("An error occurred during booking. Please try again.");
+
+      // IMPROVED ERROR HANDLING
+      const err = error as {
+        message?: string;
+        code?: string;
+        retryAfter?: number;
+      };
+
+      if (
+        err.code === "RATE_LIMIT_EXCEEDED" ||
+        err.code === "EMAIL_RATE_LIMIT_EXCEEDED"
+      ) {
+        alert(
+          `⏱️ Rate Limit Exceeded\n\n${
+            err.message || "Too many attempts. Please try again later."
+          }\n\nThis is a security measure to prevent spam.`,
+        );
+      } else {
+        alert("An error occurred during booking. Please try again.");
+      }
+
       setIsProcessing(false);
     }
   };
@@ -230,7 +250,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
   // Helper to check if time slot has already passed
   const isTimeSlotPassed = (
     slot: { time: string },
-    bookingDate: Date
+    bookingDate: Date,
   ): boolean => {
     const now = new Date();
     const slotDateTime = new Date(bookingDate);
@@ -248,7 +268,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
   // Helper function to check if time slot is allowed (too soon)
   const isTimeSlotTooSoon = (
     slot: { time: string },
-    bookingDate: Date
+    bookingDate: Date,
   ): boolean => {
     if (!settings) return false;
 
@@ -381,7 +401,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                         settings
                           ? addDays(
                               new Date(),
-                              settings.max_advance_booking
+                              settings.max_advance_booking,
                             ).toLocaleDateString("en-CA")
                           : undefined
                       }
@@ -412,8 +432,8 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                             formData.courtId === court.id
                               ? "border-forest ring-2 ring-forest/20"
                               : court.available
-                              ? "hover:border-forest/50"
-                              : "opacity-50 cursor-not-allowed"
+                                ? "hover:border-forest/50"
+                                : "opacity-50 cursor-not-allowed"
                           }`}
                         >
                           <CardContent className="p-4">
@@ -449,7 +469,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                   {/* Time Slot Selection */}
                   <div>
                     <Label>Select Time Slot</Label>
-                    {settings && (
+                    {(settings && settings.min_advance_booking > 0) && (
                       <p className="text-xs text-muted-foreground mt-1 mb-2">
                         Slots must be booked at least{" "}
                         {settings.min_advance_booking} hours in advance
@@ -498,8 +518,8 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                                 formData.slotId === slot.id
                                   ? "border-forest ring-2 ring-forest/20"
                                   : isAllowed
-                                  ? "hover:border-forest/50"
-                                  : "opacity-50 cursor-not-allowed"
+                                    ? "hover:border-forest/50"
+                                    : "opacity-50 cursor-not-allowed"
                               }`}
                             >
                               <CardContent className="p-3">
@@ -525,7 +545,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                                   </Badge>
                                   <div className="text-xs font-bold text-forest">
                                     {slot.pricePerPerson.toLocaleString(
-                                      "id-ID"
+                                      "id-ID",
                                     )}
                                     /pax
                                   </div>
@@ -588,6 +608,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                   </div>
                 </motion.div>
               )}
+              
               {/* Step 2: Personal Information */}
               {currentStep === 2 && (
                 <motion.div
@@ -796,7 +817,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                                           <span className="font-bold text-blue-600">
                                             IDR{" "}
                                             {calculateDeposit().toLocaleString(
-                                              "id-ID"
+                                              "id-ID",
                                             )}
                                           </span>
                                         </div>
@@ -859,7 +880,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                                           <span className="font-bold text-green-600">
                                             IDR{" "}
                                             {calculateTotal().toLocaleString(
-                                              "id-ID"
+                                              "id-ID",
                                             )}
                                           </span>
                                         </div>

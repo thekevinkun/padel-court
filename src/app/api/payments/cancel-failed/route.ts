@@ -1,15 +1,43 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
+import {
+  cancelIpLimiter,
+  getClientIp,
+  createRateLimitResponse,
+} from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {
+    // RATE LIMITING
+    const clientIp = getClientIp(request);
+    const { success, reset, remaining } = await cancelIpLimiter.limit(clientIp);
+
+    if (!success) {
+      const error = createRateLimitResponse(
+        false,
+        reset,
+        remaining,
+        "cancellation",
+      );
+      console.log(`🚫 Cancel rate limit exceeded for IP: ${clientIp}`);
+      return NextResponse.json(error, {
+        status: 429,
+        headers: {
+          "Retry-After": error!.retryAfter.toString(),
+          "X-RateLimit-Limit": "10",
+          "X-RateLimit-Remaining": remaining.toString(),
+          "X-RateLimit-Reset": reset.toString(),
+        },
+      });
+    }
+
     const body = await request.json();
     const { bookingRef, statusCode, reason } = body;
 
     if (!bookingRef) {
       return NextResponse.json(
         { error: "bookingRef is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -47,7 +75,7 @@ export async function POST(request: NextRequest) {
           success: false,
           error: "Cannot cancel a paid booking through this endpoint",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -94,7 +122,7 @@ export async function POST(request: NextRequest) {
     if (updatePaymentError) {
       console.log(
         "⚠️ No payment record found or error updating:",
-        updatePaymentError.message
+        updatePaymentError.message,
       );
       // This is okay - payment might not have been created yet
     } else {
@@ -143,7 +171,7 @@ export async function POST(request: NextRequest) {
         error: "Failed to process cancellation",
         details: err.message || "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

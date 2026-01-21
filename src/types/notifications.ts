@@ -1,7 +1,7 @@
 export interface AdminNotification {
   id: string;
   booking_id: string | null;
-  type: "NEW_BOOKING" | "PAYMENT_RECEIVED" | "PAYMENT_FAILED" | "CANCELLATION" | "SESSION_STARTED" | "SESSION_COMPLETED";
+  type: "NEW_BOOKING" | "PAYMENT_RECEIVED" | "PAYMENT_FAILED" | "CANCELLATION" | "SESSION_STARTED" | "SESSION_COMPLETED" | "REFUND_PROCESSED";
   title: string;
   message: string;
   read: boolean;
@@ -24,7 +24,8 @@ export type NotificationSoundType =
   | "PAYMENT_FAILED"
   | "CANCELLATION"
   | "SESSION_STARTED"
-  | "SESSION_COMPLETED";
+  | "SESSION_COMPLETED"
+  | "REFUND_PROCESSED";
 
 export interface SoundSettings {
   enabled: boolean;

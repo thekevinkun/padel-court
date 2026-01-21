@@ -41,6 +41,9 @@ interface FinancialSummary {
   averageBookingValue: number;
   depositBookings: number;
   fullPaymentBookings: number;
+  totalRefunds?: number;
+  totalRefundAmount?: number;
+  netRevenueAfterRefunds?: number;
 }
 
 export interface AnalyticsData {

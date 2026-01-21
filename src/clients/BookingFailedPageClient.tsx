@@ -3,12 +3,12 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { XCircle, Home, RefreshCcw, Loader2 } from "lucide-react";
+import { XCircle, Home, RefreshCcw, Loader2, MailX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
-export default function BookingFailedPageClient() {
+const BookingFailedPageClient = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -98,9 +98,21 @@ export default function BookingFailedPageClient() {
               <XCircle className="w-10 h-10 text-error" />
             </motion.div>
             <h1 className="heading-2 mb-2 text-error">Payment Failed</h1>
-            <p className="text-body">
+            <p className="text-body mb-4">
               Your payment could not be processed. Please try again.
             </p>
+
+            {/* Email Note for Failed Payments */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="inline-flex items-center gap-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-full text-sm mb-4"
+            >
+              <MailX className="w-4 h-4" />
+              <span>No charges were made - no email was sent</span>
+            </motion.div>
+
             {bookingRef && (
               <p className="text-sm text-muted-foreground mt-2">
                 Booking Reference: <strong>{bookingRef}</strong>
@@ -216,4 +228,6 @@ export default function BookingFailedPageClient() {
       </div>
     </div>
   );
-}
+};
+
+export default BookingFailedPageClient;

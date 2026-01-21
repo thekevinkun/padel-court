@@ -1,8 +1,41 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
+import {
+  bookingIpLimiter,
+  bookingEmailLimiter,
+  getClientIp,
+  createRateLimitResponse,
+} from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {
+    // RATE LIMITING - Check IP-based limit
+    const clientIp = getClientIp(request);
+    const {
+      success: ipSuccess,
+      reset: ipReset,
+      remaining: ipRemaining,
+    } = await bookingIpLimiter.limit(clientIp);
+
+    if (!ipSuccess) {
+      const error = createRateLimitResponse(
+        false,
+        ipReset,
+        ipRemaining,
+        "booking",
+      );
+      console.log(`🚫 Rate limit exceeded for IP: ${clientIp}`);
+      return NextResponse.json(error, {
+        status: 429,
+        headers: {
+          "Retry-After": error!.retryAfter.toString(),
+          "X-RateLimit-Limit": "5",
+          "X-RateLimit-Remaining": ipRemaining.toString(),
+          "X-RateLimit-Reset": ipReset.toString(),
+        },
+      });
+    }
+
     const body = await request.json();
     const {
       courtId,
@@ -25,7 +58,31 @@ export async function POST(request: NextRequest) {
       paymentChoice,
     } = body;
 
-    console.log("bookings-create body: ", body);
+    // RATE LIMITING - Check email-based rate limit
+    const emailKey = customerEmail.toLowerCase().trim();
+    const {
+      success: emailSuccess,
+      reset: emailReset,
+      remaining: emailRemaining,
+    } = await bookingEmailLimiter.limit(emailKey);
+
+    if (!emailSuccess) {
+      const error = createRateLimitResponse(
+        false,
+        emailReset,
+        emailRemaining,
+        "booking for this email",
+      );
+      console.log(`🚫 Rate limit exceeded for email: ${customerEmail}`);
+      return NextResponse.json(error, {
+        status: 429,
+        headers: {
+          "X-RateLimit-Limit": "3",
+          "X-RateLimit-Remaining": emailRemaining.toString(),
+          "X-RateLimit-Reset": emailReset.toString(),
+        },
+      });
+    }
 
     // Validate required fields
     if (
@@ -38,7 +95,7 @@ export async function POST(request: NextRequest) {
     ) {
       return NextResponse.json(
         { error: "Missing required fields" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -54,14 +111,14 @@ export async function POST(request: NextRequest) {
     if (slotError || !slot) {
       return NextResponse.json(
         { error: "Time slot not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     if (!slot.available) {
       return NextResponse.json(
         { error: "Time slot is no longer available" },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -125,11 +182,11 @@ export async function POST(request: NextRequest) {
       .select()
       .single();
 
-   if (bookingError) {
+    if (bookingError) {
       console.error("Error creating booking:", bookingError);
       return NextResponse.json(
         { error: "Failed to create booking" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -142,10 +199,10 @@ export async function POST(request: NextRequest) {
     // Create admin notification
     const notificationMessage = actualRequireDeposit
       ? `Booking ${bookingRef} created. Customer: ${customerName}. Deposit: IDR ${totalAmount.toLocaleString(
-          "id-ID"
+          "id-ID",
         )}. Balance: IDR ${actualRemainingBalance.toLocaleString("id-ID")}.`
       : `Booking ${bookingRef} created. Customer: ${customerName}. Full payment: IDR ${totalAmount.toLocaleString(
-          "id-ID"
+          "id-ID",
         )}.`;
 
     await supabase.from("admin_notifications").insert({
@@ -172,7 +229,7 @@ export async function POST(request: NextRequest) {
     console.error("Unexpected error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

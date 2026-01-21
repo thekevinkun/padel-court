@@ -1,17 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
+import {
+  paymentIpLimiter,
+  getClientIp,
+  createRateLimitResponse,
+} from "@/lib/rate-limit";
 
-import midtransClient from "midtrans-client";
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const midtransClient = require("midtrans-client");
 
 export async function POST(request: NextRequest) {
   try {
+    // RATE LIMITING - Prevent payment fraud
+    const clientIp = getClientIp(request);
+    const { success, reset, remaining } =
+      await paymentIpLimiter.limit(clientIp);
+
+    if (!success) {
+      const error = createRateLimitResponse(false, reset, remaining, "payment");
+      console.log(`🚫 Payment rate limit exceeded for IP: ${clientIp}`);
+      return NextResponse.json(error, {
+        status: 429,
+        headers: {
+          "Retry-After": error!.retryAfter.toString(),
+          "X-RateLimit-Limit": "10",
+          "X-RateLimit-Remaining": remaining.toString(),
+          "X-RateLimit-Reset": reset.toString(),
+        },
+      });
+    }
+
     const body = await request.json();
     const { bookingId } = body;
 
     if (!bookingId) {
       return NextResponse.json(
         { error: "bookingId is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -24,7 +49,7 @@ export async function POST(request: NextRequest) {
         `
         *,
         courts (name)
-      `
+      `,
       )
       .eq("id", bookingId)
       .single();
@@ -37,7 +62,7 @@ export async function POST(request: NextRequest) {
     if (booking.status === "PAID") {
       return NextResponse.json(
         { error: "Booking already paid" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -150,7 +175,7 @@ export async function POST(request: NextRequest) {
             ? JSON.stringify(errorDetails)
             : errorDetails,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

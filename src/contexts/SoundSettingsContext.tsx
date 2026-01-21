@@ -1,7 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { NotificationSoundType, SoundSettings, SoundSettingsContextType } from "@/types/notifications";
+import {
+  NotificationSoundType,
+  SoundSettings,
+  SoundSettingsContextType,
+} from "@/types/notifications";
 
-const SoundSettingsContext = createContext<SoundSettingsContextType | undefined>(undefined);
+const SoundSettingsContext = createContext<
+  SoundSettingsContextType | undefined
+>(undefined);
 
 const SOUND_FILES: Record<NotificationSoundType, string> = {
   NEW_BOOKING: "/sounds/new-booking.mp3",
@@ -10,11 +16,16 @@ const SOUND_FILES: Record<NotificationSoundType, string> = {
   CANCELLATION: "/sounds/cancellation.mp3",
   SESSION_STARTED: "/sounds/session-started.mp3",
   SESSION_COMPLETED: "/sounds/session-completed.mp3",
+  REFUND_PROCESSED: "/sounds/session-completed.mp3",
 };
 
 const STORAGE_KEY = "admin_sound_settings";
 
-export function SoundSettingsProvider({ children }: { children: React.ReactNode }) {
+export function SoundSettingsProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [volume, setVolume] = useState(0.7); // 70% default
 
@@ -65,9 +76,14 @@ export function SoundSettingsProvider({ children }: { children: React.ReactNode 
       const audio = new Audio(SOUND_FILES[type]);
       audio.volume = volume;
       audio.play().catch((error) => {
-        console.warn("Sound play failed (this is normal on first load):", error);
+        console.warn(
+          "Sound play failed (this is normal on first load):",
+          error,
+        );
       });
-      console.log(`Playing sound: ${type} at volume ${Math.round(volume * 100)}%`);
+      console.log(
+        `Playing sound: ${type} at volume ${Math.round(volume * 100)}%`,
+      );
     } catch (error) {
       console.error("Error playing sound:", error);
     }
@@ -96,14 +112,20 @@ export function SoundSettingsProvider({ children }: { children: React.ReactNode 
     testSound,
   };
 
-  return <SoundSettingsContext.Provider value={value}>{children}</SoundSettingsContext.Provider>;
+  return (
+    <SoundSettingsContext.Provider value={value}>
+      {children}
+    </SoundSettingsContext.Provider>
+  );
 }
 
 // Hook to use sound settings
 export function useSoundSettings() {
   const context = useContext(SoundSettingsContext);
   if (context === undefined) {
-    throw new Error("useSoundSettings must be used within a SoundSettingsProvider");
+    throw new Error(
+      "useSoundSettings must be used within a SoundSettingsProvider",
+    );
   }
   return context;
 }

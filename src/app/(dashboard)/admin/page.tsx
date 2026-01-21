@@ -48,7 +48,7 @@ export default function DashboardPage() {
   const { isSubscribed } = useRealtimeDashboardStats(
     stats,
     (newStats) => setStats(newStats),
-    (newBookings) => setRecentBookings(newBookings) // Pass recent bookings updater
+    (newBookings) => setRecentBookings(newBookings), // Pass recent bookings updater
   );
 
   useEffect(() => {
@@ -69,22 +69,25 @@ export default function DashboardPage() {
       const { data: todayData } = await supabase
         .from("bookings")
         .select(
-          "total_amount, status, require_deposit, deposit_amount, subtotal, payment_fee, session_status"
+          "total_amount, status, require_deposit, deposit_amount, subtotal, payment_fee, session_status, refund_amount",
         )
         .eq("date", today)
         .neq("status", "CANCELLED"); // Exclude cancelled bookings
 
-      const todayBookings = todayData?.length || 0;
-
+      // Revenue = actual booking revenue (excluding refunded)
       const todayRevenue =
         todayData
-          ?.filter((b) => b.status === "PAID")
+          ?.filter((b) => b.status === "PAID") // Only PAID, not REFUNDED
           .reduce((sum, b) => {
             const bookingRevenue = b.require_deposit
               ? b.deposit_amount
               : b.subtotal;
             return sum + bookingRevenue;
           }, 0) || 0;
+
+      // Count only non-refunded bookings
+      const todayBookings =
+        todayData?.filter((b) => b.status !== "REFUNDED").length || 0;
 
       // Fetch total bookings (EXCLUDE CANCELLED)
       const { count: totalBookings } = await supabase
@@ -141,6 +144,14 @@ export default function DashboardPage() {
         .order("created_at", { ascending: false })
         .limit(5);
 
+      // Track refunds separately
+      const todayRefundedBookings =
+        todayData?.filter((b) => b.status === "REFUNDED").length || 0;
+      const todayRefundAmount =
+        todayData
+          ?.filter((b) => b.status === "REFUNDED")
+          .reduce((sum, b) => sum + (b.refund_amount || 0), 0) || 0;
+
       setStats({
         todayBookings,
         todayRevenue,
@@ -151,6 +162,8 @@ export default function DashboardPage() {
         inProgressSessions: inProgressSessions || 0,
         upcomingSessions: upcomingSessions || 0,
         completedToday: completedToday || 0,
+        todayRefunds: todayRefundedBookings,
+        todayRefundAmount,
       });
       setRecentBookings(recent || []);
     } catch (error) {
@@ -378,14 +391,14 @@ export default function DashboardPage() {
                           booking.session_status === "IN_PROGRESS"
                             ? "bg-green-100"
                             : booking.session_status === "COMPLETED"
-                            ? "bg-gray-100"
-                            : booking.session_status === "CANCELLED"
-                            ? "bg-red-100"
-                            : getDisplayStatus(booking) === "PAID"
-                            ? "bg-blue-100"
-                            : getDisplayStatus(booking) === "DEPOSIT PAID"
-                            ? "bg-orange-100"
-                            : "bg-yellow-100"
+                              ? "bg-gray-100"
+                              : booking.session_status === "CANCELLED"
+                                ? "bg-red-100"
+                                : getDisplayStatus(booking) === "PAID"
+                                  ? "bg-blue-100"
+                                  : getDisplayStatus(booking) === "DEPOSIT PAID"
+                                    ? "bg-orange-100"
+                                    : "bg-yellow-100"
                         }`}
                       >
                         {booking.session_status === "IN_PROGRESS" ? (

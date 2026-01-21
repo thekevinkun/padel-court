@@ -1,0 +1,79 @@
+export interface BookingConfirmationEmailProps {
+  customerName: string;
+  customerEmail: string;
+  bookingRef: string;
+  courtName: string;
+  date: string;
+  time: string;
+  numberOfPlayers: number;
+  totalAmount: number;
+  requireDeposit: boolean;
+  depositAmount?: number;
+  remainingBalance?: number;
+  paymentMethod: string;
+}
+
+export interface BookingReminderEmailProps {
+  customerName: string;
+  customerEmail: string;
+  bookingRef: string;
+  courtName: string;
+  date: string;
+  time: string;
+  requireDeposit: boolean;
+  remainingBalance?: number;
+  venuePaymentReceived?: boolean;
+}
+
+export interface BookingEmailData {
+  customerName: string;
+  customerEmail: string;
+  bookingRef: string;
+  courtName: string;
+  date: string;
+  time: string;
+  numberOfPlayers: number;
+  totalAmount: number;
+  requireDeposit: boolean;
+  depositAmount?: number;
+  remainingBalance?: number;
+  paymentMethod: string;
+}
+
+export interface ReminderEmailData {
+  customerName: string;
+  customerEmail: string;
+  bookingRef: string;
+  courtName: string;
+  date: string;
+  time: string;
+  requireDeposit: boolean;
+  remainingBalance?: number;
+  venuePaymentReceived?: boolean;
+}
+
+export interface RefundConfirmationEmailProps {
+  customerName: string;
+  customerEmail: string;
+  bookingRef: string;
+  courtName: string;
+  date: string;
+  time: string;
+  originalAmount: number;
+  refundAmount: number;
+  refundMethod: string;
+  refundReason: string;
+}
+
+export interface RefundEmailData {
+  customerName: string;
+  customerEmail: string;
+  bookingRef: string;
+  courtName: string;
+  date: string;
+  time: string;
+  originalAmount: number;
+  refundAmount: number;
+  refundMethod: string;
+  refundReason: string;
+}
