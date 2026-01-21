@@ -192,7 +192,7 @@ const Testimonials = ({ content }: TestimonialsProps) => {
 
                       {/* Comment */}
                       <p className="text-xl md:text-2xl leading-relaxed mb-8 text-white font-light italic">
-                        &quot;{currentTestimonial.comment}&quot;
+                        "{currentTestimonial.comment}"
                       </p>
 
                       {/* Author Info */}

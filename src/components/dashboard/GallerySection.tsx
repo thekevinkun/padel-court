@@ -432,7 +432,7 @@ const GallerySection = ({
                   className="mt-1"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Describe what&apos;s in the image (for accessibility and SEO)
+                  Describe what's in the image (for accessibility and SEO)
                 </p>
               </div>
 

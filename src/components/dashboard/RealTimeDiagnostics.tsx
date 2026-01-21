@@ -129,7 +129,7 @@ const RealtimeDiagnostic = () => {
             <li>Keep this page open</li>
             <li>Open another browser/incognito tab</li>
             <li>Create a new booking</li>
-            <li>Watch the &quot;Last event&quot; times update here</li>
+            <li>Watch the "Last event" times update here</li>
             <li>Check browser console for detailed logs</li>
           </ol>
         </div>

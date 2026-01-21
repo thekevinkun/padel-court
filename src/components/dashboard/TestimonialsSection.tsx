@@ -230,7 +230,7 @@ const TestimonialsSection = ({
                             </div>
                           </div>
                           <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-                            &quot;{testimonial.comment}&quot;
+                            "{testimonial.comment}"
                           </p>
                           <div className="flex gap-2">
                             <Button

@@ -257,7 +257,7 @@ export default function DashboardPage() {
           <div>
             <h2 className="text-2xl font-bold mb-2">Welcome back!</h2>
             <p className="text-white/80">
-              Here&apos;s what&apos;s happening with your padel courts today.
+              Here's what's happening with your padel courts today.
             </p>
             <div className="flex items-center gap-2 mt-3">
               {isSubscribed ? (

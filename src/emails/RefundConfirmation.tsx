@@ -96,9 +96,9 @@ export default function RefundConfirmationEmail({
           <Section style={section}>
             <Text style={greeting}>Hi {customerName},</Text>
             <Text style={paragraph}>
-              We&lsquo;ve processed your refund request for your Padel court
-              booking. We&lsquo;re sorry we couldn&lsquo;t accommodate your
-              session and hope to see you again soon.
+              We've processed your refund request for your Padel court booking.
+              We're sorry we couldn't accommodate your session and hope to see
+              you again soon.
             </Text>
           </Section>
 
@@ -238,8 +238,8 @@ export default function RefundConfirmationEmail({
                   </tr>
                   <tr>
                     <td style={listItem}>
-                      3. You&lsquo;ll see the credit in your bank statement as
-                      &ldquo;REFUND - PADEL BAP&ldquo;
+                      3. You'll see the credit in your bank statement as
+                      "REFUND - PADEL BAP"
                     </td>
                   </tr>
                 </>
@@ -260,7 +260,7 @@ export default function RefundConfirmationEmail({
                   </tr>
                   <tr>
                     <td style={listItem}>
-                      3. You&lsquo;ll receive a transfer confirmation
+                      3. You'll receive a transfer confirmation
                     </td>
                   </tr>
                 </>
@@ -308,9 +308,7 @@ export default function RefundConfirmationEmail({
             <table width="100%" cellPadding="16" cellSpacing="0" style={ctaBox}>
               <tr>
                 <td align="center">
-                  <Heading style={h3}>
-                    We&lsquo;d Love to See You Again!
-                  </Heading>
+                  <Heading style={h3}>We'd Love to See You Again!</Heading>
                   <Text
                     style={{
                       ...paragraph,

@@ -364,7 +364,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
         <AlertCircle className="w-12 h-12 text-muted-foreground mb-4" />
         <h3 className="text-lg font-semibold mb-2">Booking Not Found</h3>
         <p className="text-muted-foreground mb-4">
-          This booking doesn&apos;t exist or has been deleted.
+          This booking doesn't exist or has been deleted.
         </p>
         <Button
           onClick={() => router.push("/admin/bookings")}
@@ -794,7 +794,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                         Cancel This Booking
                       </p>
                       <p className="text-xs text-red-700 mt-1">
-                        Customer can&apos;t make it or didn&apos;t show up
+                        Customer can't make it or didn't show up
                       </p>
                     </div>
                     <Button
@@ -1273,7 +1273,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
           <DialogHeader>
             <DialogTitle>Check Out Customer</DialogTitle>
             <DialogDescription>
-              Mark {booking.customer_name}&apos;s session as completed
+              Mark {booking.customer_name}'s session as completed
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -1456,7 +1456,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
               </Select>
               {refundMethod === "MIDTRANS" && (
                 <p className="text-xs text-blue-600 mt-1">
-                  ⚠️ You&apos;ll need to process this in Midtrans dashboard
+                  ⚠️ You'll need to process this in Midtrans dashboard
                   separately
                 </p>
               )}
