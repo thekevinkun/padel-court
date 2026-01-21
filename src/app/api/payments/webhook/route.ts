@@ -203,6 +203,52 @@ export async function POST(request: NextRequest) {
         console.error("❌ Failed to send confirmation email:", emailError);
         // Don't fail the webhook if email fails
       }
+
+      // Check if booking is < 24 hours away - send reminder immediately
+      try {
+        const bookingDateTime = new Date(booking.date);
+        const [hours, minutes] = booking.time
+          .split(" - ")[0]
+          .split(":")
+          .map(Number);
+        bookingDateTime.setHours(hours, minutes, 0, 0);
+
+        const hoursUntilBooking =
+          (bookingDateTime.getTime() - new Date().getTime()) / (1000 * 60 * 60);
+
+        if (hoursUntilBooking < 24 && hoursUntilBooking > 0) {
+          console.log(
+            `⚡ Booking is in ${hoursUntilBooking.toFixed(1)} hours - sending immediate reminder`,
+          );
+
+          const { sendBookingReminder } = await import("@/lib/email");
+          await sendBookingReminder({
+            customerName: booking.customer_name,
+            customerEmail: booking.customer_email,
+            bookingRef: booking.booking_ref,
+            courtName: booking.courts.name,
+            date: new Date(booking.date).toLocaleDateString("id-ID", {
+              weekday: "long",
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            }),
+            time: booking.time,
+            requireDeposit: booking.require_deposit,
+            remainingBalance: booking.remaining_balance,
+            venuePaymentReceived: booking.venue_payment_received,
+          });
+
+          console.log("✅ Immediate reminder email sent");
+        } else {
+          console.log(
+            `📅 Booking is in ${hoursUntilBooking.toFixed(1)} hours - cron will handle reminder`,
+          );
+        }
+      } catch (reminderError) {
+        console.error("❌ Failed to send immediate reminder:", reminderError);
+        // Don't fail the webhook if reminder fails
+      }
     }
     // Handle PENDING
     else if (paymentStatus === "PENDING") {
