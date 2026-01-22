@@ -22,15 +22,13 @@ export default function BookingReminderEmail({
   requireDeposit,
   remainingBalance,
   venuePaymentReceived,
+  logoUrl,
 }: BookingReminderEmailProps) {
   const needsPayment =
     requireDeposit &&
     !venuePaymentReceived &&
     remainingBalance &&
     remainingBalance > 0;
-
-  // Get logos
-  const logoUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/logos/logo-black.webp`;
 
   return (
     <Html>

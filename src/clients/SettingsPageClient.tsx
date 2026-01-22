@@ -353,7 +353,7 @@ const SettingsPageClient = () => {
                   {logoPreview ? (
                     <div className="relative inline-block">
                       <div className="relative w-34 h-32 rounded-lg p-2 border
-                        bg-gradient-to-br from-black/45 via-gray-800 to-black"
+                        bg-gradient-to-br from-white/55 via-gray-200 to-white"
                       >
                         <Image
                           src={logoPreview}

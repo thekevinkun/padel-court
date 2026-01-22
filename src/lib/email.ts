@@ -9,6 +9,7 @@ import {
   ReminderEmailData,
   RefundEmailData,
 } from "@/types/email";
+import { createServerClient } from "@/lib/supabase/server";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const emailUser = process.env.EMAIL_USER;
@@ -18,6 +19,16 @@ const emailUser = process.env.EMAIL_USER;
  */
 export async function sendBookingConfirmation(data: BookingEmailData) {
   try {
+    const supabase = createServerClient();
+    const { data: settings } = await supabase
+      .from("site_settings")
+      .select("logo_url")
+      .single();
+
+    const logoUrl =
+      settings?.logo_url ||
+      `${process.env.NEXT_PUBLIC_SITE_URL}/logos/logo-black.webp`;
+
     const emailHtml = await render(
       BookingConfirmationEmail({
         customerName: data.customerName,
@@ -32,6 +43,7 @@ export async function sendBookingConfirmation(data: BookingEmailData) {
         depositAmount: data.depositAmount,
         remainingBalance: data.remainingBalance,
         paymentMethod: data.paymentMethod,
+        logoUrl,
       }),
     );
 
@@ -69,6 +81,16 @@ export async function sendBookingConfirmation(data: BookingEmailData) {
  */
 export async function sendBookingReminder(data: ReminderEmailData) {
   try {
+    const supabase = createServerClient();
+    const { data: settings } = await supabase
+      .from("site_settings")
+      .select("logo_url")
+      .single();
+
+    const logoUrl =
+      settings?.logo_url ||
+      `${process.env.NEXT_PUBLIC_SITE_URL}/logos/logo-black.webp`;
+
     const emailHtml = await render(
       BookingReminderEmail({
         customerName: data.customerName,
@@ -80,6 +102,7 @@ export async function sendBookingReminder(data: ReminderEmailData) {
         requireDeposit: data.requireDeposit,
         remainingBalance: data.remainingBalance,
         venuePaymentReceived: data.venuePaymentReceived,
+        logoUrl,
       }),
     );
 
@@ -116,6 +139,16 @@ export async function sendBookingReminder(data: ReminderEmailData) {
  */
 export async function sendRefundConfirmation(data: RefundEmailData) {
   try {
+    const supabase = createServerClient();
+    const { data: settings } = await supabase
+      .from("site_settings")
+      .select("logo_url")
+      .single();
+
+    const logoUrl =
+      settings?.logo_url ||
+      `${process.env.NEXT_PUBLIC_SITE_URL}/logos/logo-black.webp`;
+
     const emailHtml = await render(
       RefundConfirmationEmail({
         customerName: data.customerName,
@@ -128,6 +161,7 @@ export async function sendRefundConfirmation(data: RefundEmailData) {
         refundAmount: data.refundAmount,
         refundMethod: data.refundMethod,
         refundReason: data.refundReason,
+        logoUrl,
       }),
     );
 

@@ -22,9 +22,8 @@ export default function RefundConfirmationEmail({
   refundAmount,
   refundMethod,
   refundReason,
+  logoUrl,
 }: RefundConfirmationEmailProps) {
-  const logoUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/logos/logo-black.webp`;
-
   // Calculate refund timeline based on method
   const getRefundTimeline = (method: string) => {
     switch (method) {

@@ -11,6 +11,7 @@ export interface BookingConfirmationEmailProps {
   depositAmount?: number;
   remainingBalance?: number;
   paymentMethod: string;
+  logoUrl: string;
 }
 
 export interface BookingReminderEmailProps {
@@ -23,6 +24,7 @@ export interface BookingReminderEmailProps {
   requireDeposit: boolean;
   remainingBalance?: number;
   venuePaymentReceived?: boolean;
+  logoUrl: string;
 }
 
 export interface BookingEmailData {
@@ -63,6 +65,7 @@ export interface RefundConfirmationEmailProps {
   refundAmount: number;
   refundMethod: string;
   refundReason: string;
+  logoUrl: string;
 }
 
 export interface RefundEmailData {

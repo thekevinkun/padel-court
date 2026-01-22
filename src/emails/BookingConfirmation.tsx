@@ -25,10 +25,8 @@ export default function BookingConfirmationEmail({
   depositAmount,
   remainingBalance,
   paymentMethod,
+  logoUrl,
 }: BookingConfirmationEmailProps) {
-  // Get logos
-  const logoUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/logos/logo-black.webp`;
-
   return (
     <Html>
       <Head />
@@ -47,7 +45,7 @@ export default function BookingConfirmationEmail({
                   style={{ margin: "0 auto 16px" }}
                 />
                 <Heading style={h1}>Booking Confirmed!</Heading>
-                <Text style={headerText}>PADEL BATU ALAM PERMAI</Text>
+                <Text style={headerText}>YOU’RE BOOKED! GET READY FOR AN AMAZING PADEL SESSION!</Text>
               </td>
             </tr>
           </table>
