@@ -204,7 +204,7 @@ export async function POST(request: NextRequest) {
         // Don't fail the webhook if email fails
       }
 
-      // Check if booking is < 24 hours away - send reminder immediately
+      // Check if booking is < 3 hours away - send reminder immediately
       try {
         const bookingDateTime = new Date(booking.date);
         const [hours, minutes] = booking.time
@@ -217,7 +217,7 @@ export async function POST(request: NextRequest) {
           (bookingDateTime.getTime() - new Date().getTime()) / (1000 * 60 * 60),
         );
 
-        if (hoursUntilBooking < 24 && hoursUntilBooking > 0) {
+        if (hoursUntilBooking < 3 && hoursUntilBooking > 0) {
           console.log(
             `⚡ Booking is in ${hoursUntilBooking} hours - sending immediate reminder`,
           );
@@ -239,6 +239,15 @@ export async function POST(request: NextRequest) {
             remainingBalance: booking.remaining_balance,
             venuePaymentReceived: booking.venue_payment_received,
           });
+
+          // Mark reminder as sent
+          await supabase
+            .from("bookings")
+            .update({
+              reminder_sent: true,
+              reminder_sent_at: new Date().toISOString(),
+            })
+            .eq("id", booking.id);
 
           console.log("✅ Immediate reminder email sent");
         } else {

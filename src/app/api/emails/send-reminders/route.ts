@@ -4,7 +4,7 @@ import { sendBookingReminder } from "@/lib/email";
 
 export async function GET(request: NextRequest) {
   try {
-    // Verify cron secret (Vercel adds this automatically)
+    // Verify cron secret
     const authHeader = request.headers.get("authorization");
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -15,19 +15,16 @@ export async function GET(request: NextRequest) {
     const supabase = createServerClient();
     const now = new Date();
 
-    // Calculate time window: 24-26 hours from now
-    // (2-hour window to catch everything once per day)
-    const windowStart = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-    const windowEnd = new Date(now.getTime() + 26 * 60 * 60 * 1000);
-
-    const dateStart = windowStart.toLocaleDateString("en-CA");
-    const dateEnd = windowEnd.toLocaleDateString("en-CA");
+    // Calculate time window: 3-4 hours from now
+    // (1-hour window to catch everything, runs every hour)
+    const windowStart = new Date(now.getTime() + 3 * 60 * 60 * 1000);
+    const windowEnd = new Date(now.getTime() + 4 * 60 * 60 * 1000);
 
     console.log(
       `📅 Checking bookings between ${windowStart.toISOString()} and ${windowEnd.toISOString()}`,
     );
 
-    // Fetch bookings in the window
+    // Fetch paid, upcoming bookings that haven't received reminder yet
     const { data: bookings, error } = await supabase
       .from("bookings")
       .select(
@@ -37,16 +34,15 @@ export async function GET(request: NextRequest) {
       `,
       )
       .eq("status", "PAID")
-      .in("session_status", ["UPCOMING"])
-      .gte("date", dateStart)
-      .lte("date", dateEnd);
+      .eq("session_status", "UPCOMING")
+      .eq("reminder_sent", false); // Only bookings without reminder
 
     if (error) {
       console.error("❌ Error fetching bookings:", error);
       throw error;
     }
 
-    console.log(`📋 Found ${bookings?.length || 0} potential bookings`);
+    console.log(`📋 Found ${bookings?.length || 0} bookings without reminders`);
 
     let sentCount = 0;
     let skippedCount = 0;
@@ -54,7 +50,7 @@ export async function GET(request: NextRequest) {
     if (bookings && bookings.length > 0) {
       for (const booking of bookings) {
         try {
-          // Check if booking time is within 24-26 hour window
+          // Check if booking time is within 3-4 hour window
           const bookingDateTime = new Date(booking.date);
           const [hours, minutes] = booking.time
             .split(" - ")[0]
@@ -65,7 +61,8 @@ export async function GET(request: NextRequest) {
           const hoursUntil =
             (bookingDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
 
-          if (hoursUntil >= 24 && hoursUntil <= 26) {
+          // Send if within 3-4 hour window
+          if (hoursUntil >= 3 && hoursUntil <= 4) {
             await sendBookingReminder({
               customerName: booking.customer_name,
               customerEmail: booking.customer_email,
@@ -82,6 +79,15 @@ export async function GET(request: NextRequest) {
               remainingBalance: booking.remaining_balance,
               venuePaymentReceived: booking.venue_payment_received,
             });
+
+            // Mark as sent
+            await supabase
+              .from("bookings")
+              .update({
+                reminder_sent: true,
+                reminder_sent_at: now.toISOString(),
+              })
+              .eq("id", booking.id);
 
             sentCount++;
             console.log(
