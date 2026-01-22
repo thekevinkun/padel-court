@@ -80,3 +80,32 @@ export interface RefundEmailData {
   refundMethod: string;
   refundReason: string;
 }
+
+export interface CancellationConfirmationEmailProps {
+  customerName: string;
+  customerEmail: string;
+  bookingRef: string;
+  courtName: string;
+  date: string;
+  time: string;
+  originalAmount: number;
+  refundAmount: number;
+  refundEligible: boolean;
+  cancellationReason: string;
+  hoursBeforeBooking: number;
+  logoUrl: string;
+}
+
+export interface CancellationEmailData {
+  customerName: string;
+  customerEmail: string;
+  bookingRef: string;
+  courtName: string;
+  date: string;
+  time: string;
+  originalAmount: number;
+  refundAmount: number;
+  refundEligible: boolean;
+  cancellationReason: string;
+  hoursBeforeBooking: number;
+}

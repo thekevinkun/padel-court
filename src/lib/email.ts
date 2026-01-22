@@ -3,11 +3,13 @@ import { render } from "@react-email/components";
 import BookingConfirmationEmail from "@/emails/BookingConfirmation";
 import BookingReminderEmail from "@/emails/BookingReminder";
 import RefundConfirmationEmail from "@/emails/RefundConfirmation";
+import CancellationConfirmationEmail from "@/emails/CancellationConfirmation";
 
 import {
   BookingEmailData,
   ReminderEmailData,
   RefundEmailData,
+  CancellationEmailData,
 } from "@/types/email";
 import { createServerClient } from "@/lib/supabase/server";
 
@@ -189,6 +191,73 @@ export async function sendRefundConfirmation(data: RefundEmailData) {
     return { success: true, emailId: result?.id };
   } catch (error) {
     console.error("❌ Error sending refund confirmation:", error);
+    return { success: false, error };
+  }
+}
+
+/**
+ * Send cancellation confirmation email
+ */
+export async function sendCancellationConfirmation(
+  data: CancellationEmailData,
+) {
+  try {
+    // Fetch logo URL from settings
+    const { createServerClient } = await import("@/lib/supabase/server");
+    const supabase = createServerClient();
+
+    const { data: settings } = await supabase
+      .from("site_settings")
+      .select("logo_url")
+      .single();
+
+    const logoUrl =
+      settings?.logo_url ||
+      `${process.env.NEXT_PUBLIC_SITE_URL}/logos/logo-black.webp`;
+
+    const emailHtml = await render(
+      CancellationConfirmationEmail({
+        customerName: data.customerName,
+        customerEmail: data.customerEmail,
+        bookingRef: data.bookingRef,
+        courtName: data.courtName,
+        date: data.date,
+        time: data.time,
+        originalAmount: data.originalAmount,
+        refundAmount: data.refundAmount,
+        refundEligible: data.refundEligible,
+        cancellationReason: data.cancellationReason,
+        hoursBeforeBooking: data.hoursBeforeBooking,
+        logoUrl,
+      }),
+    );
+
+    const recipientEmail =
+      process.env.NODE_ENV === "production"
+        ? data.customerEmail
+        : process.env.EMAIL_USER;
+
+    if (!recipientEmail) {
+      console.error("Error. No recipient email provided.");
+      return { success: false };
+    }
+
+    const { data: result, error } = await resend.emails.send({
+      from: "Padel Batu Alam Permai <onboarding@resend.dev>",
+      to: [recipientEmail],
+      subject: `Cancellation Confirmed - ${data.bookingRef}`,
+      html: emailHtml,
+    });
+
+    if (error) {
+      console.error("❌ Cancellation email send failed:", error);
+      return { success: false, error };
+    }
+
+    console.log("✅ Cancellation confirmation email sent:", result?.id);
+    return { success: true, emailId: result?.id };
+  } catch (error) {
+    console.error("❌ Error sending cancellation confirmation:", error);
     return { success: false, error };
   }
 }

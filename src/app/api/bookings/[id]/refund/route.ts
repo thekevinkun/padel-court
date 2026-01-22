@@ -127,7 +127,7 @@ export async function POST(
     await supabase.from("admin_notifications").insert({
       booking_id: bookingId,
       type: "REFUND_PROCESSED",
-      title: "💰 Refund Processed",
+      title: "💲 Refund Processed",
       message: `Refund of IDR ${refundAmount.toLocaleString(
         "id-ID",
       )} processed for booking ${

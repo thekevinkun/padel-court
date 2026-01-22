@@ -213,12 +213,13 @@ export async function POST(request: NextRequest) {
           .map(Number);
         bookingDateTime.setHours(hours, minutes, 0, 0);
 
-        const hoursUntilBooking =
-          (bookingDateTime.getTime() - new Date().getTime()) / (1000 * 60 * 60);
+        const hoursUntilBooking = Math.round(
+          (bookingDateTime.getTime() - new Date().getTime()) / (1000 * 60 * 60),
+        );
 
         if (hoursUntilBooking < 24 && hoursUntilBooking > 0) {
           console.log(
-            `⚡ Booking is in ${hoursUntilBooking.toFixed(1)} hours - sending immediate reminder`,
+            `⚡ Booking is in ${hoursUntilBooking} hours - sending immediate reminder`,
           );
 
           const { sendBookingReminder } = await import("@/lib/email");
@@ -242,7 +243,7 @@ export async function POST(request: NextRequest) {
           console.log("✅ Immediate reminder email sent");
         } else {
           console.log(
-            `📅 Booking is in ${hoursUntilBooking.toFixed(1)} hours - cron will handle reminder`,
+            `📅 Booking is in ${hoursUntilBooking} hours - cron will handle reminder`,
           );
         }
       } catch (reminderError) {

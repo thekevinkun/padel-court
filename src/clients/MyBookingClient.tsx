@@ -23,13 +23,21 @@ import {
   Phone,
   LucideIcon,
 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
 
 import { Booking } from "@/types/booking";
 import { getDisplayStatus, getDisplayStatusStyle } from "@/lib/booking";
@@ -49,6 +57,11 @@ const MyBookingClient = () => {
   const [isAlreadyLookup, setIsAlreadyLookup] = useState(false);
   const [error, setError] = useState("");
   const [booking, setBooking] = useState<Booking | null>(null);
+
+  // Cancellation dialog state
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelling, setCancelling] = useState(false);
 
   // Auto-lookup if URL has params
   useEffect(() => {
@@ -122,6 +135,106 @@ const MyBookingClient = () => {
     setError("");
     setBooking(null);
     router.push("/my-booking"); // Clear URL params
+  };
+
+  // Handle customer cancellation
+  const handleCancelBooking = async () => {
+    if (!booking) return;
+
+    if (!cancelReason.trim()) {
+      alert("Please provide a reason for cancellation");
+      return;
+    }
+
+    if (
+      !confirm(
+        "Are you sure you want to cancel this booking? This action cannot be undone.",
+      )
+    ) {
+      return;
+    }
+
+    setCancelling(true);
+
+    try {
+      const response = await fetch(
+        `/api/bookings/${booking.id}/cancel-customer`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reason: cancelReason }),
+        },
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to cancel booking");
+      }
+
+      // Show success message
+      alert(data.message);
+
+      // Refresh booking data
+      await handleLookup(null, booking.customer_email, booking.booking_ref);
+
+      // Close dialog
+      setCancelDialogOpen(false);
+      setCancelReason("");
+    } catch (error: unknown) {
+      const err = error as Error;
+      console.error("Error cancelling booking:", err);
+      alert(`Failed to cancel booking: ${err.message}`);
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  // Check if booking can be cancelled
+  const canCancelBooking = (booking: Booking): boolean => {
+    // Cannot cancel if already cancelled/refunded
+    if (booking.status === "CANCELLED" || booking.status === "REFUNDED") {
+      return false;
+    }
+
+    // Cannot cancel if not paid
+    if (booking.status !== "PAID") {
+      return false;
+    }
+
+    // Cannot cancel if already started or completed
+    if (
+      booking.session_status === "IN_PROGRESS" ||
+      booking.session_status === "COMPLETED"
+    ) {
+      return false;
+    }
+
+    // Cannot cancel if booking time has passed
+    if (isBookingExpired(booking)) {
+      return false;
+    }
+
+    return true;
+  };
+
+  // Calculate hours until booking
+  const getHoursUntilBooking = (booking: Booking): number => {
+    const bookingDateTime = new Date(booking.date);
+    const [hours, minutes] = booking.time
+      .split(" - ")[0]
+      .split(":")
+      .map(Number);
+    bookingDateTime.setHours(hours, minutes, 0, 0);
+
+    const diffInHours = (bookingDateTime.getTime() - new Date().getTime()) / (1000 * 60 * 60);
+
+    return Math.round(diffInHours);
+  };
+
+  // Check if refund eligible (> 24hrs)
+  const isRefundEligible = (booking: Booking): boolean => {
+    return getHoursUntilBooking(booking) > 24;
   };
 
   // Check if booking has expired (date passed)
@@ -334,7 +447,8 @@ const MyBookingClient = () => {
                       💲BOOKING REFUNDED
                     </strong>
                     <p className="text-sm text-purple-800 mt-1">
-                      This booking has been refunded due to customer cancellation.
+                      This booking has been refunded due to customer
+                      cancellation.
                     </p>
                   </AlertDescription>
                 </Alert>
@@ -391,6 +505,32 @@ const MyBookingClient = () => {
                     </AlertDescription>
                   </Alert>
                 )}
+
+              {/* Cancellation Policy Info */}
+              {canCancelBooking(booking) && (
+                <Alert className="bg-blue-50 border-blue-200">
+                  <Info className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="text-blue-800">
+                    <strong>Cancellation Policy</strong>
+                    <p className="text-sm mt-1">
+                      {isRefundEligible(booking) ? (
+                        <>
+                          ✅ You can cancel with <strong>full refund</strong> (
+                          {getHoursUntilBooking(booking)} hours until
+                          booking - more than 24 hours)
+                        </>
+                      ) : (
+                        <>
+                          ⚠️ Cancellation available but{" "}
+                          <strong>no refund</strong> (
+                          {getHoursUntilBooking(booking)} hours until
+                          booking - less than 24 hours)
+                        </>
+                      )}
+                    </p>
+                  </AlertDescription>
+                </Alert>
+              )}
 
               {/* REST OF THE BOOKING DETAILS COMPONENT - KEEP AS IS */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -545,7 +685,17 @@ const MyBookingClient = () => {
                   )}
 
                   {/* Actions */}
-                  <div className="flex justify-end">
+                  <div className="flex flex-col sm:flex-row justify-end gap-3">
+                    {canCancelBooking(booking) && (
+                      <Button
+                        onClick={() => setCancelDialogOpen(true)}
+                        variant="destructive"
+                        size="lg"
+                      >
+                        <XCircle className="w-4 h-4 mr-2" />
+                        Request Cancellation
+                      </Button>
+                    )}
                     <Button onClick={handleReset} variant="outline" size="lg">
                       <Search className="w-4 h-4 mr-2" />
                       Look Up Another Booking
@@ -834,6 +984,151 @@ const MyBookingClient = () => {
                 </div>
               </div>
             </div>
+          )}
+
+          {/* Cancellation Dialog */}
+          {booking && (
+            <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Cancel Booking</DialogTitle>
+                  <DialogDescription>
+                    Cancel booking {booking.booking_ref}
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-4">
+                  {/* Cancellation Policy Notice */}
+                  <Alert
+                    className={
+                      isRefundEligible(booking)
+                        ? "bg-green-50 border-green-200"
+                        : "bg-orange-50 border-orange-200"
+                    }
+                  >
+                    <AlertCircle
+                      className={`h-4 w-4 ${isRefundEligible(booking) ? "text-green-600" : "text-orange-600"}`}
+                    />
+                    <AlertDescription
+                      className={
+                        isRefundEligible(booking)
+                          ? "text-green-800"
+                          : "text-orange-800"
+                      }
+                    >
+                      {isRefundEligible(booking) ? (
+                        <>
+                          <strong>✅ Full Refund Eligible</strong>
+                          <p className="text-sm mt-1">
+                            Your booking is{" "}
+                            {getHoursUntilBooking(booking).toFixed(1)} hours
+                            away. You will receive a full refund of IDR{" "}
+                            {booking.total_amount.toLocaleString("id-ID")}.
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <strong>⚠️ No Refund Available</strong>
+                          <p className="text-sm mt-1">
+                            Your booking is{" "}
+                            {getHoursUntilBooking(booking)} hours
+                            away (less than 24 hours). Per our policy, no refund
+                            can be issued.
+                          </p>
+                        </>
+                      )}
+                    </AlertDescription>
+                  </Alert>
+
+                  {/* Booking Details Summary */}
+                  <div className="p-3 bg-gray-50 rounded-lg text-sm space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Court:</span>
+                      <span className="font-medium">
+                        {booking.courts?.name}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Date:</span>
+                      <span className="font-medium">
+                        {new Date(booking.date).toLocaleDateString("id-ID")}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Time:</span>
+                      <span className="font-medium">{booking.time}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">
+                        Amount Paid:
+                      </span>
+                      <span className="font-medium">
+                        IDR {booking.total_amount.toLocaleString("id-ID")}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Cancellation Reason */}
+                  <div>
+                    <Label htmlFor="cancelReason">
+                      Reason for Cancellation *
+                    </Label>
+                    <Textarea
+                      id="cancelReason"
+                      value={cancelReason}
+                      onChange={(e) => setCancelReason(e.target.value)}
+                      placeholder="Please tell us why you need to cancel (e.g., scheduling conflict, emergency, etc.)"
+                      className="mt-2"
+                      rows={4}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      This helps us improve our service
+                    </p>
+                  </div>
+
+                  {/* Warning */}
+                  <Alert className="bg-red-50 border-red-200">
+                    <AlertCircle className="h-4 w-4 text-red-600" />
+                    <AlertDescription className="text-red-800 text-sm">
+                      <strong>Warning:</strong> This action cannot be undone.
+                      Your booking will be cancelled immediately.
+                    </AlertDescription>
+                  </Alert>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-3 pt-4">
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => {
+                        setCancelDialogOpen(false);
+                        setCancelReason("");
+                      }}
+                      disabled={cancelling}
+                    >
+                      Keep Booking
+                    </Button>
+                    <Button
+                      className="flex-1 bg-red-600 hover:border-red-700"
+                      onClick={handleCancelBooking}
+                      disabled={cancelling || !cancelReason.trim()}
+                    >
+                      {cancelling ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Cancelling...
+                        </>
+                      ) : (
+                        <>
+                          <XCircle className="w-4 h-4 mr-2" />
+                          Cancel Booking
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           )}
         </motion.div>
       </div>
