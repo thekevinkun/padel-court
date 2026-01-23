@@ -1,17 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 
+// Endpoint to handle customer-initiated booking cancellations
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    // Extract booking ID and cancellation reason
     const { id: bookingId } = await params;
     const body = await request.json();
     const { reason } = body;
 
-    console.log("🚫 Customer cancellation request:", bookingId);
+    console.log("Customer cancellation request:", bookingId);
 
+    // Initialize Supabase client
     const supabase = createServerClient();
 
     // Get booking details
@@ -26,6 +29,7 @@ export async function POST(
     }
 
     // Validation checks
+    // If it's already cancelled or refunded, then it's already cancelled
     if (booking.status === "CANCELLED" || booking.status === "REFUNDED") {
       return NextResponse.json(
         { error: "Booking is already cancelled" },
@@ -33,6 +37,7 @@ export async function POST(
       );
     }
 
+    // If it's not paid yet, can't be cancelled
     if (booking.status !== "PAID") {
       return NextResponse.json(
         { error: "Only paid bookings can be cancelled" },
@@ -40,6 +45,7 @@ export async function POST(
       );
     }
 
+    // If session is in progress or completed, can't be cancelled
     if (
       booking.session_status === "IN_PROGRESS" ||
       booking.session_status === "COMPLETED"
@@ -128,7 +134,7 @@ export async function POST(
         customerEmail: booking.customer_email,
         bookingRef: booking.booking_ref,
         courtName: booking.courts.name,
-        date: new Date(booking.date).toLocaleDateString("id-ID", {
+        date: new Date(booking.date).toLocaleDateString("en-ID", {
           weekday: "long",
           year: "numeric",
           month: "long",

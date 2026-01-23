@@ -245,7 +245,7 @@ export default function CancellationConfirmationEmail({
                     <Heading style={h3}>⚠️ Cancellation Policy</Heading>
                     <Text style={warningTextFull}>
                       Your booking was cancelled{" "}
-                      <strong>{hoursBeforeBooking.toFixed(1)} hours</strong>{" "}
+                      <strong>{hoursBeforeBooking} hours</strong>{" "}
                       before the scheduled time.
                     </Text>
                     <Text style={warningTextFull}>

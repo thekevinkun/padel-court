@@ -33,7 +33,7 @@ export default function BookingReminderEmail({
   return (
     <Html>
       <Head />
-      <Preview>Your Padel session is tomorrow!</Preview>
+      <Preview>Your Padel session is coming up soon!</Preview>
       <Body style={main}>
         <Container style={container}>
           {/* Header with Logo */}
@@ -48,7 +48,7 @@ export default function BookingReminderEmail({
                   style={{ margin: "0 auto 16px" }}
                 />
                 <Heading style={h1}>Session Reminder</Heading>
-                <Text style={headerText}>YOUR BOOKING IS TOMORROW!</Text>
+                <Text style={headerText}>YOUR BOOKING IS COMING SOON!</Text>
               </td>
             </tr>
           </table>
@@ -58,7 +58,7 @@ export default function BookingReminderEmail({
             <Text style={greeting}>Hi {customerName},</Text>
             <Text style={paragraph}>
               This is a friendly reminder that your Padel court session is
-              scheduled for <strong>tomorrow</strong>!
+              <strong> coming up soon</strong>!
             </Text>
           </Section>
 
@@ -247,7 +247,7 @@ export default function BookingReminderEmail({
                 >
                   <tr>
                     <td align="center">
-                      <Text style={footerText}>See you tomorrow!</Text>
+                      <Text style={footerText}>Looking forward to seeing you on the court!</Text>
                       <Text style={footerTextSmall}>
                         Padel Batu Alam Permai
                         <br />
@@ -304,7 +304,7 @@ const headerText = {
 
 const section = {
   padding: "0 24px",
-  marginBottom: "16px",
+  margin: "16px 0",
 };
 
 const greeting = {

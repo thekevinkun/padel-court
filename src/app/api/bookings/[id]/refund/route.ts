@@ -2,18 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { createAuthClient } from "@/lib/supabase/auth-server";
 
+// Endpoint to process a refund for a booking
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    // Extract booking ID and refund details from request
     const { id: bookingId } = await params;
     const body = await request.json();
     const { refundAmount, refundMethod, reason, notes } = body;
 
-    console.log("💰 Processing refund for booking:", bookingId);
+    console.log("Processing refund for booking:", bookingId);
 
-    // Authenticate admin
+    // Initialize Supabase only for Authenticate admin
     const authSupabase = await createAuthClient();
     const {
       data: { user },
@@ -24,6 +26,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Initialize Supabase client
     const supabase = createServerClient();
 
     // Verify admin role
@@ -54,6 +57,7 @@ export async function POST(
     }
 
     // Validation checks
+    // If it's not paid yet, nothing to refund
     if (booking.status !== "PAID") {
       return NextResponse.json(
         { error: "Can only refund paid bookings" },
@@ -61,6 +65,7 @@ export async function POST(
       );
     }
 
+    // If it's already refunded, nothing to refund more
     if (booking.refund_status === "COMPLETED") {
       return NextResponse.json(
         { error: "Booking already refunded" },
@@ -70,6 +75,8 @@ export async function POST(
 
     // Validate refund amount
     const maxRefundAmount = booking.total_amount;
+
+    // Check refund amount boundaries
     if (refundAmount > maxRefundAmount) {
       return NextResponse.json(
         {
@@ -144,7 +151,7 @@ export async function POST(
         customerEmail: booking.customer_email,
         bookingRef: booking.booking_ref,
         courtName: booking.courts.name,
-        date: new Date(booking.date).toLocaleDateString("id-ID", {
+        date: new Date(booking.date).toLocaleDateString("en-ID", {
           weekday: "long",
           year: "numeric",
           month: "long",

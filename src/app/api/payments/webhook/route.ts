@@ -4,8 +4,10 @@ import { createServerClient } from "@/lib/supabase/server";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const midtransClient = require("midtrans-client");
 
+// Webhook endpoint to handle Midtrans payment notifications
 export async function POST(request: NextRequest) {
   try {
+    // Parse notification payload
     const notification = await request.json();
     console.log("📩 Webhook received:", notification);
 
@@ -19,6 +21,7 @@ export async function POST(request: NextRequest) {
     const statusResponse =
       await apiClient.transaction.notification(notification);
 
+    // Extract relevant fields
     const orderId = statusResponse.order_id;
     const transactionStatus = statusResponse.transaction_status;
     const fraudStatus = statusResponse.fraud_status;
@@ -28,6 +31,7 @@ export async function POST(request: NextRequest) {
       `📊 Transaction ${orderId}: ${transactionStatus}, Fraud: ${fraudStatus}`,
     );
 
+    // Initialize Supabase client
     const supabase = createServerClient();
 
     // Extract booking reference from order ID
@@ -105,6 +109,7 @@ export async function POST(request: NextRequest) {
       updateData.completed_at = new Date().toISOString();
     }
 
+    // Perform payment record update
     await supabase
       .from("payments")
       .update(updateData)
@@ -184,7 +189,7 @@ export async function POST(request: NextRequest) {
           customerEmail: booking.customer_email,
           bookingRef: booking.booking_ref,
           courtName: booking.courts.name,
-          date: new Date(booking.date).toLocaleDateString("id-ID", {
+          date: new Date(booking.date).toLocaleDateString("en-ID", {
             weekday: "long",
             year: "numeric",
             month: "long",
@@ -228,7 +233,7 @@ export async function POST(request: NextRequest) {
             customerEmail: booking.customer_email,
             bookingRef: booking.booking_ref,
             courtName: booking.courts.name,
-            date: new Date(booking.date).toLocaleDateString("id-ID", {
+            date: new Date(booking.date).toLocaleDateString("en-ID", {
               weekday: "long",
               year: "numeric",
               month: "long",

@@ -15,14 +15,11 @@ import {
   Users,
   MapPin,
   DollarSign,
-  CheckCircle,
   XCircle,
   Info,
-  PlayCircle,
-  Trophy,
   Phone,
-  LucideIcon,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -40,7 +37,13 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 
 import { Booking } from "@/types/booking";
-import { getDisplayStatus, getDisplayStatusStyle } from "@/lib/booking";
+import {
+  getSessionStatusColor,
+  getSessionStatusIcon,
+  getDisplayStatus,
+  getDisplayStatusStyle,
+  getDisplayStatusIcon,
+} from "@/lib/booking";
 
 const MyBookingClient = () => {
   const router = useRouter();
@@ -50,12 +53,17 @@ const MyBookingClient = () => {
   const urlEmail = searchParams.get("email");
   const urlBookingRef = searchParams.get("booking_ref");
 
+  // Email and Booking Ref state
   const [email, setEmail] = useState(urlEmail || "");
   const [bookingRef, setBookingRef] = useState(urlBookingRef || "");
   const [loading, setLoading] = useState(false);
+
+  // Lookup state
   const [loadingLookup, setLoadingLookup] = useState(false);
   const [isAlreadyLookup, setIsAlreadyLookup] = useState(false);
   const [error, setError] = useState("");
+
+  // Booking data state
   const [booking, setBooking] = useState<Booking | null>(null);
 
   // Cancellation dialog state
@@ -73,9 +81,11 @@ const MyBookingClient = () => {
       }
     };
 
+    // Prevent duplicate lookup between URL and form
     if (!isAlreadyLookup) checkUrlForLookup();
   }, [urlEmail, urlBookingRef]);
 
+  // Function to handle lookup
   const handleLookup = async (
     e: React.FormEvent | null,
     paramEmail?: string,
@@ -83,15 +93,20 @@ const MyBookingClient = () => {
   ) => {
     if (e) e.preventDefault();
 
+    // Start prevent duplicate lookup
     setIsAlreadyLookup(false);
+
+    // Start loading
     setLoading(true);
     setError("");
     setBooking(null);
 
+    // Determine which email and booking ref to use
     const lookupEmail = paramEmail || email;
     const lookupRef = paramBookingRef || bookingRef;
 
     try {
+      // API call to lookup booking
       const response = await fetch("/api/bookings/lookup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -120,32 +135,39 @@ const MyBookingClient = () => {
         )}&booking_ref=${lookupRef.toUpperCase()}`;
         router.push(newUrl);
       }
-    } catch (err) {
-      console.error("Lookup error:", err);
-      setError("Something went wrong. Please try again.");
+    } catch (error: unknown) {
+      const err = error as Error;
+      toast.error("Failed to lookup booking.", {
+        description: err.message,
+        duration: 5000,
+      });
     } finally {
       setLoading(false);
       setIsAlreadyLookup(true);
     }
   };
 
+  // Reset form and booking data
   const handleReset = () => {
     setEmail("");
     setBookingRef("");
     setError("");
     setBooking(null);
-    router.push("/my-booking"); // Clear URL params
+    // Clear URL params
+    router.push("/my-booking");
   };
 
   // Handle customer cancellation
   const handleCancelBooking = async () => {
     if (!booking) return;
 
+    // Validate reason
     if (!cancelReason.trim()) {
-      alert("Please provide a reason for cancellation");
+      toast.error("Please provide a reason for cancellation");
       return;
     }
 
+    // Confirm cancellation
     if (
       !confirm(
         "Are you sure you want to cancel this booking? This action cannot be undone.",
@@ -157,6 +179,7 @@ const MyBookingClient = () => {
     setCancelling(true);
 
     try {
+      // API call to cancel booking
       const response = await fetch(
         `/api/bookings/${booking.id}/cancel-customer`,
         {
@@ -173,7 +196,7 @@ const MyBookingClient = () => {
       }
 
       // Show success message
-      alert(data.message);
+      toast.success(data.message);
 
       // Refresh booking data
       await handleLookup(null, booking.customer_email, booking.booking_ref);
@@ -184,7 +207,10 @@ const MyBookingClient = () => {
     } catch (error: unknown) {
       const err = error as Error;
       console.error("Error cancelling booking:", err);
-      alert(`Failed to cancel booking: ${err.message}`);
+      toast.error("Failed to cancel booking", {
+        description: err.message,
+        duration: 5000,
+      });
     } finally {
       setCancelling(false);
     }
@@ -227,7 +253,8 @@ const MyBookingClient = () => {
       .map(Number);
     bookingDateTime.setHours(hours, minutes, 0, 0);
 
-    const diffInHours = (bookingDateTime.getTime() - new Date().getTime()) / (1000 * 60 * 60);
+    const diffInHours =
+      (bookingDateTime.getTime() - new Date().getTime()) / (1000 * 60 * 60);
 
     return Math.round(diffInHours);
   };
@@ -248,54 +275,28 @@ const MyBookingClient = () => {
     return new Date() > bookingDate;
   };
 
-  // Get display status badge
   const getStatusBadge = (booking: Booking) => {
     const displayStatus = getDisplayStatus(booking);
     const style = getDisplayStatusStyle(displayStatus);
-
-    const icons: Record<string, LucideIcon> = {
-      PAID: CheckCircle,
-      "DEPOSIT PAID": Clock,
-      "PAYMENT EXPIRED": AlertCircle,
-      PENDING: Clock,
-      CANCELLED: XCircle,
-      EXPIRED: XCircle,
-    };
-
-    const Icon = icons[displayStatus] || Clock;
+    const Icon = getDisplayStatusIcon(displayStatus);
 
     return (
-      <Badge className={`${style} text-sm`}>
-        <Icon className="w-4 h-4 mr-1" />
+      <Badge className={style}>
+        <Icon className="w-3 h-3 mr-1" />
         {displayStatus}
       </Badge>
     );
   };
 
-  // Get session status badge
+  // Session status badge
   const getSessionBadge = (sessionStatus: string) => {
-    const styles: Record<string, string> = {
-      UPCOMING: "bg-blue-100 text-blue-800",
-      IN_PROGRESS: "bg-green-100 text-green-800",
-      COMPLETED: "bg-gray-100 text-gray-800",
-      CANCELLED: "bg-red-100 text-red-800",
-    };
-
-    const icons = {
-      UPCOMING: Clock,
-      IN_PROGRESS: PlayCircle,
-      COMPLETED: Trophy,
-      CANCELLED: XCircle,
-    };
-
-    const Icon = icons[sessionStatus as keyof typeof icons] || Clock;
+    const styles = getSessionStatusColor(sessionStatus);
+    const Icon = getSessionStatusIcon(sessionStatus);
     const label = sessionStatus.replace("_", " ");
 
     return (
-      <Badge
-        className={`${styles[sessionStatus as keyof typeof styles]} text-sm`}
-      >
-        <Icon className="w-4 h-4 mr-1" />
+      <Badge className={`${styles} text-xs`}>
+        <Icon className="w-3 h-3 mr-1" />
         {label}
       </Badge>
     );
@@ -345,9 +346,14 @@ const MyBookingClient = () => {
               <CardContent className="p-6">
                 <form onSubmit={(e) => handleLookup(e)} className="space-y-4">
                   {error && (
-                    <Alert variant="destructive">
+                    <Alert
+                      variant="destructive"
+                      className="bg-red-100 border-red-800"
+                    >
                       <AlertCircle className="h-4 w-4" />
-                      <AlertDescription>{error}</AlertDescription>
+                      <AlertDescription className="text-accent-foreground">
+                        {error}
+                      </AlertDescription>
                     </Alert>
                   )}
 
@@ -435,7 +441,7 @@ const MyBookingClient = () => {
                 </div>
               </div>
 
-              {/* EXPIRED Badge (if booking date passed) */}
+              {/* Alerts */}
               {booking.status === "REFUNDED" ? (
                 <Alert
                   variant="destructive"
@@ -462,6 +468,18 @@ const MyBookingClient = () => {
                     <p className="text-sm text-red-800 mt-1">
                       The booking time has passed. Remaining balance was not
                       collected.
+                    </p>
+                  </AlertDescription>
+                </Alert>
+              ) : booking.status === "CANCELLED" ? (
+                <Alert className="bg-red-50 border-red-300">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    <strong className="text-red-900">
+                      ⏰ Booking Cancelled
+                    </strong>
+                    <p className="text-sm text-red-800 mt-1">
+                      This booking has been cancelled without refund.
                     </p>
                   </AlertDescription>
                 </Alert>
@@ -516,15 +534,15 @@ const MyBookingClient = () => {
                       {isRefundEligible(booking) ? (
                         <>
                           ✅ You can cancel with <strong>full refund</strong> (
-                          {getHoursUntilBooking(booking)} hours until
-                          booking - more than 24 hours)
+                          {getHoursUntilBooking(booking)} hours until booking -
+                          more than 24 hours)
                         </>
                       ) : (
                         <>
                           ⚠️ Cancellation available but{" "}
                           <strong>no refund</strong> (
-                          {getHoursUntilBooking(booking)} hours until
-                          booking - less than 24 hours)
+                          {getHoursUntilBooking(booking)} hours until booking -
+                          less than 24 hours)
                         </>
                       )}
                     </p>
@@ -595,8 +613,9 @@ const MyBookingClient = () => {
                           <p className="text-sm text-muted-foreground">Date</p>
                           <p className="font-medium">
                             {new Date(booking.date).toLocaleDateString(
-                              "id-ID",
+                              "en-ID",
                               {
+                                timeZone: "Asia/Makassar",
                                 weekday: "long",
                                 year: "numeric",
                                 month: "long",
@@ -653,7 +672,7 @@ const MyBookingClient = () => {
                           </span>
                           <span className="font-medium">
                             {new Date(booking.checked_in_at).toLocaleString(
-                              "id-ID",
+                              "en-ID",
                             )}
                           </span>
                         </div>
@@ -664,7 +683,7 @@ const MyBookingClient = () => {
                             </span>
                             <span className="font-medium">
                               {new Date(booking.checked_out_at).toLocaleString(
-                                "id-ID",
+                                "en-ID",
                               )}
                             </span>
                           </div>
@@ -753,7 +772,7 @@ const MyBookingClient = () => {
                                   {booking.refund_date
                                     ? new Date(
                                         booking.refund_date,
-                                      ).toLocaleString("id-ID")
+                                      ).toLocaleString("en-ID")
                                     : "-"}
                                 </span>
                               </div>
@@ -956,7 +975,7 @@ const MyBookingClient = () => {
                             <span>Paid At:</span>
                             <span className="font-medium">
                               {new Date(booking.paid_at).toLocaleString(
-                                "id-ID",
+                                "en-ID",
                               )}
                             </span>
                           </div>
@@ -1030,10 +1049,9 @@ const MyBookingClient = () => {
                         <>
                           <strong>⚠️ No Refund Available</strong>
                           <p className="text-sm mt-1">
-                            Your booking is{" "}
-                            {getHoursUntilBooking(booking)} hours
-                            away (less than 24 hours). Per our policy, no refund
-                            can be issued.
+                            Your booking is {getHoursUntilBooking(booking)}{" "}
+                            hours away (less than 24 hours). Per our policy, no
+                            refund can be issued.
                           </p>
                         </>
                       )}

@@ -2,18 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { createAuthClient } from "@/lib/supabase/auth-server";
 
+// Endpoint to handle admin-initiated booking check-ins
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Extract booking ID and optional notes from admin
     const { id: bookingId } = await params;
     const body = await request.json();
-    const { notes } = body; // Optional notes from admin
+    const { notes } = body;
 
     console.log("Checking in booking:", bookingId);
 
-    // Authenticate admin
+    // Initialize Supabase only for Authenticate admin
     const authSupabase = await createAuthClient();
     const {
       data: { user },
@@ -24,6 +26,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Initialize Supabase client
     const supabase = createServerClient();
 
     // Verify admin role
@@ -48,7 +51,8 @@ export async function POST(
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
     }
 
-    // Validate booking can be checked in
+    // Validation checks
+    // If it's not paid yet, can't checked in
     if (booking.status !== "PAID") {
       return NextResponse.json(
         { error: "Booking must be paid before check-in" },
@@ -56,6 +60,7 @@ export async function POST(
       );
     }
 
+    // If session is in progress, already checked in
     if (booking.session_status === "IN_PROGRESS") {
       return NextResponse.json(
         { error: "Booking already checked in" },
@@ -63,6 +68,7 @@ export async function POST(
       );
     }
 
+    // If session is completed, already checked in
     if (booking.session_status === "COMPLETED") {
       return NextResponse.json(
         { error: "Booking session already completed" },

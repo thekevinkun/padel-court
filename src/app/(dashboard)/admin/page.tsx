@@ -26,7 +26,7 @@ import { useRealtimeDashboardStats } from "@/hooks/userRealtimeDashboardStats";
 import { DashboardStats } from "@/types";
 import { Booking } from "@/types/booking";
 import { supabase } from "@/lib/supabase/client";
-import { getDisplayStatus } from "@/lib/booking";
+import { formatRelativeDate, getDisplayStatus } from "@/lib/booking";
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats>({
@@ -107,6 +107,7 @@ export default function DashboardPage() {
         .from("bookings")
         .select("remaining_balance")
         .eq("status", "PAID")
+        .eq("session_status", "UPCOMING")
         .eq("require_deposit", true)
         .eq("venue_payment_received", false)
         .eq("venue_payment_expired", false)
@@ -185,7 +186,7 @@ export default function DashboardPage() {
       console.error("Status update failed:", error);
     }
   };
-
+  
   const statCards = [
     {
       title: "Today's Bookings",
@@ -388,20 +389,24 @@ export default function DashboardPage() {
                     <div className="flex items-center gap-4">
                       <div
                         className={`p-2 rounded-full ${
-                          booking.session_status === "IN_PROGRESS"
-                            ? "bg-green-100"
+                          getDisplayStatus(booking) === "REFUNDED" 
+                            ? "bg-purple-100"
+                          : booking.session_status === "IN_PROGRESS"
+                              ? "bg-green-100"
                             : booking.session_status === "COMPLETED"
-                              ? "bg-gray-100"
+                                ? "bg-gray-100"
                               : booking.session_status === "CANCELLED"
-                                ? "bg-red-100"
+                                  ? "bg-red-100"
                                 : getDisplayStatus(booking) === "PAID"
-                                  ? "bg-blue-100"
+                                    ? "bg-blue-100"
                                   : getDisplayStatus(booking) === "DEPOSIT PAID"
-                                    ? "bg-orange-100"
-                                    : "bg-yellow-100"
+                                      ? "bg-orange-100"
+                                      : "bg-yellow-100"
                         }`}
                       >
-                        {booking.session_status === "IN_PROGRESS" ? (
+                        {getDisplayStatus(booking) === "REFUNDED" ? (
+                          <DollarSign className="h-5 w-5 text-purple-600" />
+                        ) : booking.session_status === "IN_PROGRESS" ? (
                           <PlayCircle className="h-5 w-5 text-green-600" />
                         ) : booking.session_status === "COMPLETED" ? (
                           <CheckCircle className="h-5 w-5 text-gray-600" />
@@ -417,23 +422,28 @@ export default function DashboardPage() {
                       </div>
                       <div>
                         <p className="font-medium">{booking.customer_name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {booking.courts?.name} • {booking.time}
+                        <p className="text-sm text-muted-foreground capitalize">
+                          {booking.courts?.name} • {formatRelativeDate(booking.date)} • {booking.time}
                         </p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-medium">
+                      <p className={`font-medium ${booking.status === "REFUNDED" ? "line-through" : ""}`}>
                         IDR{" "}
                         {(booking.require_deposit
                           ? booking.deposit_amount
                           : booking.subtotal
                         ).toLocaleString("id-ID")}
                       </p>
-                      {getDisplayStatus(booking) === "DEPOSIT PAID" && (
+
+                      {(booking.require_deposit || getDisplayStatus(booking) === "DEPOSIT PAID") && (
                         <p className="text-xs text-orange-600">
-                          +{booking.remaining_balance.toLocaleString("id-ID")}{" "}
-                          at venue
+                          <span 
+                            className={`${booking.venue_payment_expired || booking.session_status === "CANCELLED" ? "line-through" : ""}`}
+                          >
+                            +{booking.remaining_balance.toLocaleString("id-ID")} at venue
+                          </span>
+                          {" "}{booking.venue_payment_expired ? "(Expired)" : booking.session_status === "CANCELLED" ? "(Not collected)" : ""}
                         </p>
                       )}
                       <p className="text-sm text-muted-foreground">

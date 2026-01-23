@@ -2,21 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import {
-  Search,
-  Download,
-  Eye,
-  CheckCircle,
-  Clock,
-  XCircle,
-  PlayCircle,
-  Trophy,
-  AlertCircle,
-  LucideIcon,
-} from "lucide-react";
+import { Search, Download, Eye } from "lucide-react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -32,12 +23,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
 
 import { useRealtimeBookings } from "@/hooks/useRealtimeBookings";
 import { Booking } from "@/types/booking";
 import { supabase } from "@/lib/supabase/client";
-import { getDisplayStatus, getDisplayStatusStyle } from "@/lib/booking";
+import {
+  getSessionStatusColor,
+  getSessionStatusIcon,
+  getDisplayStatus,
+  getDisplayStatusStyle,
+  getDisplayStatusIcon,
+} from "@/lib/booking";
 
 const BookingsPageClient = () => {
   // Original bookings from fetch
@@ -46,20 +42,27 @@ const BookingsPageClient = () => {
   // Real-time bookings (synced automatically)
   const { bookings } = useRealtimeBookings(fetchedBookings);
 
-  const [filteredBookings, setFilteredBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Store bookings after filet
+  const [filteredBookings, setFilteredBookings] = useState<Booking[]>([]);
+
+  // State for all booking dashboard tools
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [sessionFilter, setSessionFilter] = useState("ALL");
 
+  // Get bookings on initial
   useEffect(() => {
     fetchBookings();
   }, []);
 
+  // Get and show filter bookings whenever one of the tools (on dependecies) execute/change
   useEffect(() => {
     filterBookings();
   }, [searchQuery, statusFilter, sessionFilter, bookings]);
 
+  // Function to fetch bookings
   const fetchBookings = async () => {
     try {
       const { data, error } = await supabase
@@ -76,13 +79,19 @@ const BookingsPageClient = () => {
         setFetchedBookings(data || []);
         setFilteredBookings(data);
       }
-    } catch (error) {
-      console.error("Error fetching bookings:", error);
+    } catch (error: unknown) {
+      const err = error as Error;
+      console.error("Error fetching bookings:", err);
+      toast.error("Failed to fetch bookings", {
+        description: err.message,
+        duration: 5000,
+      });
     } finally {
       setLoading(false);
     }
   };
 
+  // Function to fetch bookings by/after filtered
   const filterBookings = () => {
     let filtered = [...bookings];
 
@@ -110,6 +119,7 @@ const BookingsPageClient = () => {
     setFilteredBookings(filtered);
   };
 
+  // Function for export to csv
   const exportToCSV = () => {
     const headers = [
       "Booking Ref",
@@ -140,7 +150,7 @@ const BookingsPageClient = () => {
       b.total_amount,
       getDisplayStatus(b),
       b.session_status,
-      new Date(b.created_at).toLocaleString("id-ID"),
+      new Date(b.created_at).toLocaleString("en-ID"),
     ]);
 
     const csv = [headers, ...rows].map((row) => row.join(",")).join("\n");
@@ -153,20 +163,11 @@ const BookingsPageClient = () => {
     URL.revokeObjectURL(url);
   };
 
+  // Badge for booking status
   const getStatusBadge = (booking: Booking) => {
     const displayStatus = getDisplayStatus(booking);
     const style = getDisplayStatusStyle(displayStatus);
-
-    const icons: Record<string, LucideIcon> = {
-      PAID: CheckCircle,
-      "DEPOSIT PAID": Clock,
-      "PAYMENT EXPIRED": AlertCircle,
-      PENDING: Clock,
-      CANCELLED: XCircle,
-      EXPIRED: XCircle,
-    };
-
-    const Icon = icons[displayStatus] || Clock;
+    const Icon = getDisplayStatusIcon(displayStatus);
 
     return (
       <Badge className={style}>
@@ -176,28 +177,15 @@ const BookingsPageClient = () => {
     );
   };
 
-  // Session status badge
+  // Badge for session status
   const getSessionBadge = (sessionStatus: string) => {
-    const styles = {
-      UPCOMING: "bg-blue-100 text-blue-800",
-      IN_PROGRESS: "bg-green-100 text-green-800",
-      COMPLETED: "bg-gray-100 text-gray-800",
-      CANCELLED: "bg-red-100 text-red-800",
-    };
-
-    const icons = {
-      UPCOMING: Clock,
-      IN_PROGRESS: PlayCircle,
-      COMPLETED: Trophy,
-      CANCELLED: XCircle,
-    };
-
-    const Icon = icons[sessionStatus as keyof typeof icons] || Clock;
+    const styles = getSessionStatusColor(sessionStatus);
+    const Icon = getSessionStatusIcon(sessionStatus);
     const label = sessionStatus.replace("_", " ");
 
     return (
       <Badge
-        className={`${styles[sessionStatus as keyof typeof styles]} text-xs`}
+        className={`${styles} text-xs`}
       >
         <Icon className="w-3 h-3 mr-1" />
         {label}
@@ -213,41 +201,8 @@ const BookingsPageClient = () => {
     );
   }
 
-  // // Calculate pending venue payments (DEPOSIT PAID status)
-  // const pendingVenuePayments = bookings.filter(
-  //   (b) => getDisplayStatus(b) === "DEPOSIT PAID"
-  // ).length;
-
   return (
     <div className="space-y-6">
-      {/* Pending Venue Payments Alert */}
-      {/* {pendingVenuePayments > 0 && (
-        <Card className="bg-orange-50 border-orange-200">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <Wallet className="w-5 h-5 text-orange-600" />
-              <div className="flex-1">
-                <p className="font-semibold text-orange-900">
-                  {pendingVenuePayments} Booking
-                  {pendingVenuePayments > 1 ? "s" : ""} Awaiting Venue Payment
-                </p>
-                <p className="text-sm text-orange-700">
-                  Customers need to pay remaining balance at venue
-                </p>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setVenuePaymentFilter("PENDING")}
-                className="border-orange-300 hover:bg-orange-100"
-              >
-                View All
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )} */}
-
       {/* Filters */}
       <Card>
         <CardContent className="p-6">
@@ -274,6 +229,7 @@ const BookingsPageClient = () => {
                 <SelectItem value="ALL">All Status</SelectItem>
                 <SelectItem value="PAID">✓ Paid</SelectItem>
                 <SelectItem value="DEPOSIT PAID">💰 Deposit Paid</SelectItem>
+                <SelectItem value="REFUNDED">💲 Refunded</SelectItem>
                 <SelectItem value="PAYMENT EXPIRED">
                   ⏰ Payment Expired
                 </SelectItem>
@@ -364,7 +320,7 @@ const BookingsPageClient = () => {
                       </TableCell>
                       <TableCell className="text-sm">
                         <div>
-                          {new Date(booking.date).toLocaleDateString("id-ID")}
+                          {new Date(booking.date).toLocaleDateString("en-ID")}
                         </div>
                         <div className="text-xs text-muted-foreground">
                           {booking.time}
@@ -375,14 +331,16 @@ const BookingsPageClient = () => {
                           IDR {booking.total_amount.toLocaleString("id-ID")}
                         </div>
                         {booking.require_deposit &&
-                          booking.remaining_balance > 0 &&
-                          booking.status !== "REFUNDED" &&
-                          !booking.venue_payment_expired && (
+                          booking.remaining_balance > 0 && (
                             <div className="text-xs text-orange-600 mt-1">
                               Balance: IDR{" "}
                               {booking.remaining_balance.toLocaleString(
                                 "id-ID",
-                              )}
+                              )}{"\n"}
+                              {booking.venue_payment_expired ? "(Expired)" : 
+                               booking.status === "REFUNDED" || booking.session_status === "CANCELLED" ? "(Cancelled)" 
+                               : ""
+                              }
                             </div>
                           )}
                       </TableCell>

@@ -6,12 +6,14 @@ import {
   createRateLimitResponse,
 } from "@/lib/rate-limit";
 
+// Endpoint to lookup a booking by email and booking reference
 export async function POST(request: NextRequest) {
   try {
     // RATE LIMITING - Prevent brute-force attacks
     const clientIp = getClientIp(request);
     const { success, reset, remaining } = await lookupIpLimiter.limit(clientIp);
 
+    // If rate limit exceeded, return 429 response
     if (!success) {
       const error = createRateLimitResponse(false, reset, remaining, "lookup");
       console.log(`🚫 Lookup rate limit exceeded for IP: ${clientIp}`);

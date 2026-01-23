@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { createAuthClient } from "@/lib/supabase/auth-server";
 
+// Endpoint to handle admin-initiated booking cancellations
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Extract booking ID and cancellation reason
     const { id: bookingId } = await params;
     const body = await request.json();
     const { reason } = body;

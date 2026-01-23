@@ -5,6 +5,7 @@ import { createServerClient } from "@/lib/supabase/server";
 let lastRunTimestamp = 0;
 const DEBOUNCE_MS = 3000; // 3 seconds
 
+// Endpoint to automatically update booking statuses
 export async function POST(_request: NextRequest) {
   try {
     // Prevent duplicate calls within 3 seconds
@@ -21,22 +22,21 @@ export async function POST(_request: NextRequest) {
 
     console.log("🔄 Starting automatic status update...");
 
+    // Initialize Supabase client
     const supabase = createServerClient();
     const nowDate = new Date();
     const options = { timeZone: "Asia/Makassar" };
     const today = nowDate.toLocaleDateString("en-CA", options);
 
-    console.log(
-      "🕐 Current time (WITA):",
-      nowDate.toLocaleString("id-ID", options)
-    );
+    console.log("🕐 Current time (WITA):", nowDate.toLocaleString("en-CA"));
     console.log("📅 Today date:", today);
 
-    // EXPIRE VENUE PAYMENTS & CANCEL SESSIONS
+    // EXPIRE VENUE PAYMENTS
     const { data: bookingsToExpire, error: fetchError } = await supabase
       .from("bookings")
       .select("id, booking_ref, customer_name, date, time, remaining_balance")
       .eq("status", "PAID")
+      .eq("session_status", "UPCOMING")
       .eq("require_deposit", true)
       .eq("venue_payment_received", false)
       .eq("venue_payment_expired", false)
@@ -46,14 +46,17 @@ export async function POST(_request: NextRequest) {
       console.error("Error fetching bookings to expire:", fetchError);
     }
 
+    // Expire venue payments for bookings where booking time has passed
     let expiredCount = 0;
     if (bookingsToExpire) {
+      // Check each booking's date and time
       for (const booking of bookingsToExpire) {
         const bookingDate = new Date(booking.date);
         const timeEnd = booking.time.split(" - ")[1];
         const [hours, minutes] = timeEnd.split(":").map(Number);
         bookingDate.setHours(hours, minutes, 0, 0);
 
+        // If booking time has passed, expire venue payment and cancel session
         if (nowDate > bookingDate) {
           await supabase
             .from("bookings")
@@ -71,14 +74,14 @@ export async function POST(_request: NextRequest) {
             message: `Booking ${booking.booking_ref} - ${
               booking.customer_name
             } failed to pay IDR ${booking.remaining_balance.toLocaleString(
-              "id-ID"
+              "id-ID",
             )} remaining balance. Session cancelled automatically.`,
             read: false,
           });
 
           expiredCount++;
           console.log(
-            `⏰ Expired venue payment & cancelled session: ${booking.booking_ref}`
+            `⏰ Expired venue payment & cancelled session: ${booking.booking_ref}`,
           );
         }
       }
@@ -88,7 +91,7 @@ export async function POST(_request: NextRequest) {
     const { data: bookingsToStart, error: startFetchError } = await supabase
       .from("bookings")
       .select(
-        "id, booking_ref, customer_name, date, time, require_deposit, venue_payment_received"
+        "id, booking_ref, customer_name, date, time, require_deposit, venue_payment_received",
       )
       .eq("status", "PAID")
       .eq("session_status", "UPCOMING");
@@ -101,10 +104,12 @@ export async function POST(_request: NextRequest) {
     let autoCompletedFromUpcoming = 0;
 
     console.log(
-      `📋 Found ${bookingsToStart?.length || 0} UPCOMING bookings to check`
+      `📋 Found ${bookingsToStart?.length || 0} UPCOMING bookings to check`,
     );
 
+    // Check each booking to see if it should be started
     if (bookingsToStart) {
+      // Iterate through bookings
       for (const booking of bookingsToStart) {
         const bookingDate = new Date(booking.date);
         const [timeStart, timeEnd] = booking.time.split(" - ");
@@ -120,18 +125,18 @@ export async function POST(_request: NextRequest) {
 
         console.log(`🔍 Checking ${booking.booking_ref}:`);
         console.log(`   Date: ${booking.date}, Time: ${booking.time}`);
-        console.log(`   Start: ${startTime.toLocaleString("id-ID")}`);
-        console.log(`   End: ${endTime.toLocaleString("id-ID")}`);
-        console.log(`   Now: ${now.toLocaleString("id-ID")}`);
+        console.log(`   Start: ${startTime.toLocaleString("en-ID")}`);
+        console.log(`   End: ${endTime.toLocaleString("en-ID")}`);
+        console.log(`   Now: ${now.toLocaleString("en-ID")}`);
         console.log(
-          `   Is active? ${nowDate >= startTime && nowDate <= endTime}`
+          `   Is active? ${nowDate >= startTime && nowDate <= endTime}`,
         );
         console.log(`   Has passed? ${nowDate > endTime}`);
 
         // If booking time has completely passed, auto-complete it
         if (nowDate > endTime) {
           console.log(
-            `⏩ Booking time passed, auto-completing: ${booking.booking_ref}`
+            `⏩ Booking time passed, auto-completing: ${booking.booking_ref}`,
           );
 
           await supabase
@@ -147,13 +152,13 @@ export async function POST(_request: NextRequest) {
             booking_id: booking.id,
             type: "SESSION_COMPLETED",
             title: "🏁 Session Auto-Completed",
-            message: `Booking ${booking.booking_ref} - ${booking.customer_name}'s session at ${booking.time} was automatically completed (customer never checked in).`,
+            message: `Booking ${booking.booking_ref} - ${booking.customer_name}'s session at ${booking.time} was automatically completed.`,
             read: false,
           });
 
           autoCompletedFromUpcoming++;
           console.log(
-            `🏁 Auto-completed (from UPCOMING): ${booking.booking_ref}`
+            `🏁 Auto-completed (from UPCOMING): ${booking.booking_ref}`,
           );
           continue;
         }
@@ -163,7 +168,7 @@ export async function POST(_request: NextRequest) {
           // Skip if deposit booking without venue payment
           if (booking.require_deposit && !booking.venue_payment_received) {
             console.log(
-              `⏭️ Skipping auto-start for ${booking.booking_ref}: venue payment not received`
+              `⏭️ Skipping auto-start for ${booking.booking_ref}: venue payment not received`,
             );
             continue;
           }
@@ -232,7 +237,7 @@ export async function POST(_request: NextRequest) {
 
           completedCount++;
           console.log(
-            `🏁 Auto-completed (from IN_PROGRESS): ${booking.booking_ref}`
+            `🏁 Auto-completed (from IN_PROGRESS): ${booking.booking_ref}`,
           );
         }
       }
@@ -261,7 +266,7 @@ export async function POST(_request: NextRequest) {
     console.error("💥 Error updating statuses:", error);
     return NextResponse.json(
       { error: "Failed to update statuses" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

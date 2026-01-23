@@ -20,15 +20,11 @@ import {
   PlayCircle,
   StopCircle,
   Trophy,
-  LucideIcon,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
@@ -37,6 +33,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
@@ -47,7 +47,13 @@ import {
 
 import { Booking } from "@/types/booking";
 import { supabase } from "@/lib/supabase/client";
-import { getDisplayStatus, getDisplayStatusStyle } from "@/lib/booking";
+import {
+  getSessionStatusColor,
+  getSessionStatusIcon,
+  getDisplayStatus,
+  getDisplayStatusStyle,
+  getDisplayStatusIcon,
+} from "@/lib/booking";
 
 const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
   const router = useRouter();
@@ -60,16 +66,18 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
   const [paymentMethod, setPaymentMethod] = useState<string>("CASH");
   const [notes, setNotes] = useState("");
 
-  // Check-in/out dialogs
+  // Start for Check-in/out dialog
   const [checkInDialogOpen, setCheckInDialogOpen] = useState(false);
   const [checkOutDialogOpen, setCheckOutDialogOpen] = useState(false);
   const [sessionNotes, setSessionNotes] = useState("");
   const [processing, setProcessing] = useState(false);
 
+  // State for cancel dialog
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [cancelling, setCancelling] = useState(false);
 
+  // State for refund dialog
   const [refundDialogOpen, setRefundDialogOpen] = useState(false);
   const [refundAmount, setRefundAmount] = useState("");
   const [refundMethod, setRefundMethod] = useState("MIDTRANS");
@@ -77,10 +85,12 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
   const [refundNotes, setRefundNotes] = useState("");
   const [refunding, setRefunding] = useState(false);
 
+  // Get bookings on initial and on set bookingId
   useEffect(() => {
     fetchBooking();
   }, [bookingId]);
 
+  // Function to fetch bookings
   const fetchBooking = async () => {
     try {
       const { data, error } = await supabase
@@ -96,17 +106,23 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
         .single();
 
       if (error) {
-        console.error("Error fetching booking:", error);
-        return;
+        throw new Error(error.message || "Failed to fetch bookings");
       }
+
       setBooking(data);
-    } catch (error) {
-      console.error("Unexpected error:", error);
+    } catch (error: unknown) {
+      const err = error as Error;
+      console.error("Error fetching bookings:", err);
+      toast.error("Failed to fetch bookings", {
+        description: err.message,
+        duration: 5000,
+      });
     } finally {
       setLoading(false);
     }
   };
 
+  // Function to record venue payment
   const handleRecordPayment = async () => {
     if (!booking) return;
     setRecording(true);
@@ -126,7 +142,10 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
 
         // Handle expired booking
         if (response.status === 410) {
-          alert("⏰ Booking time has passed. Venue payment window expired.");
+          toast.error(
+            "Booking time has passed. Venue payment window expired.",
+            { duration: 5000 },
+          );
           await fetchBooking(); // Refresh to show updated state
           setPaymentDialogOpen(false);
           return;
@@ -140,24 +159,27 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
       setNotes("");
       setPaymentMethod("CASH");
 
-      alert(
-        `💵 Payment recorded successfully!\n\nIDR ${booking.remaining_balance.toLocaleString(
-          "id-ID",
-        )} received via ${paymentMethod}`,
-      );
+      toast.success("Payment recorded successfully!", {
+        description: `IDR ${booking.remaining_balance.toLocaleString("id-ID")} received via ${paymentMethod}`,
+        duration: Infinity,
+      });
     } catch (error: unknown) {
       const err = error as Error;
       console.error("Error recording payment:", err);
-      alert(`❌ Error: ${err.message}`);
+      toast.error("Failed to record customer payment", {
+        description: err.message,
+        duration: 5000,
+      });
     } finally {
       setRecording(false);
     }
   };
 
-  // Handle check-in
+  // Function to handle check-in
   const handleCheckIn = async () => {
     if (!booking) return;
     setProcessing(true);
+
     try {
       const response = await fetch(`/api/bookings/${bookingId}/check-in`, {
         method: "POST",
@@ -170,9 +192,11 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
 
         // Handle specific error codes
         if (errorData.code === "VENUE_PAYMENT_REQUIRED") {
-          alert(
-            `❌ ${errorData.error}\n\nPlease record the venue payment first before checking in the customer.`,
-          );
+          toast.error(`⏰ ${errorData.error}`, {
+            description:
+              "Please record the venue payment first before checking in the customer.",
+            duration: 5000,
+          });
           setCheckInDialogOpen(false);
           // Optionally open payment dialog
           setPaymentDialogOpen(true);
@@ -180,9 +204,11 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
         }
 
         if (errorData.code === "VENUE_PAYMENT_EXPIRED") {
-          alert(
-            `⏰ ${errorData.error}\n\nThe booking time has passed and venue payment was not collected.`,
-          );
+          toast.error(`⏰ ${errorData.error}`, {
+            description:
+              "The booking time has passed and venue payment was not collected.",
+            duration: 5000,
+          });
           setCheckInDialogOpen(false);
           return;
         }
@@ -193,20 +219,24 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
       await fetchBooking();
       setCheckInDialogOpen(false);
       setSessionNotes("");
-      alert("🎾 Customer checked in successfully!");
+      toast.success("Customer checked in successfully!");
     } catch (error: unknown) {
       const err = error as Error;
       console.error("Error checking in:", err);
-      alert(`❌ Error: ${err.message}`);
+      toast.error("Failed to check in", {
+        description: err.message,
+        duration: 5000,
+      });
     } finally {
       setProcessing(false);
     }
   };
 
-  // Handle check-out
+  // Function to handle check-out
   const handleCheckOut = async () => {
     if (!booking) return;
     setProcessing(true);
+
     try {
       const response = await fetch(`/api/bookings/${bookingId}/check-out`, {
         method: "POST",
@@ -222,20 +252,24 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
       await fetchBooking();
       setCheckOutDialogOpen(false);
       setSessionNotes("");
-      alert("🏁 Customer checked out successfully!");
+      toast.success("Customer checked out successfully!");
     } catch (error: unknown) {
       const err = error as Error;
       console.error("Error checking out:", err);
-      alert(`❌ Error: ${err.message}`);
+      toast.error("Failed to check out", {
+        description: err.message,
+        duration: 5000,
+      });
     } finally {
       setProcessing(false);
     }
   };
 
-  // Handle cancel booking
+  // Function to handle cancel booking
   const handleCancelBooking = async () => {
     if (!booking) return;
     setCancelling(true);
+
     try {
       const response = await fetch(`/api/bookings/${bookingId}/cancel`, {
         method: "POST",
@@ -251,37 +285,39 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
       await fetchBooking();
       setCancelDialogOpen(false);
       setCancelReason("");
-      alert("❌ Booking cancelled successfully!");
+      toast.success("Booking cancelled successfully!");
     } catch (error: unknown) {
       const err = error as Error;
       console.error("Error cancelling booking:", err);
-      alert(`❌ Error: ${err.message}`);
+      toast.error("Failed to cancel booking", {
+        description: err.message,
+        duration: 5000,
+      });
     } finally {
       setCancelling(false);
     }
   };
 
-  // Handle refund processing
+  // Function to handle refund processing
   const handleProcessRefund = async () => {
     if (!booking) return;
 
     const amount = parseFloat(refundAmount);
     if (isNaN(amount) || amount <= 0) {
-      alert("Please enter a valid refund amount");
+      toast.error("Please enter a valid refund amount", { duration: 5000 });
       return;
     }
 
     if (amount > booking.total_amount) {
-      alert(
-        `Refund amount cannot exceed IDR ${booking.total_amount.toLocaleString(
-          "id-ID",
-        )}`,
+      toast.error(
+        `Refund amount cannot exceed IDR ${booking.total_amount.toLocaleString("id-ID")}`,
+        { duration: 5000 },
       );
       return;
     }
 
     if (!refundReason.trim()) {
-      alert("Please provide a refund reason");
+      toast.error("Please provide a refund reason", { duration: 5000 });
       return;
     }
 
@@ -309,42 +345,46 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
       setRefundMethod("MIDTRANS");
       setRefundReason("");
       setRefundNotes("");
-      alert(
-        `✅ Refund processed successfully!\n\nAmount: IDR ${amount.toLocaleString(
-          "id-ID",
-        )}\nMethod: ${refundMethod}`,
-      );
+
+      toast.success("Refund processed successfully!", {
+        description: `Amount: IDR ${amount.toLocaleString("id-ID")} via ${refundMethod}`,
+        duration: Infinity,
+      });
     } catch (error: unknown) {
       const err = error as Error;
       console.error("Error processing refund:", err);
-      alert(`❌ Error: ${err.message}`);
+      toast.error("Failed to process refund", {
+        description: err.message,
+        duration: 5000,
+      });
     } finally {
       setRefunding(false);
     }
   };
 
-  // Session status badge
+  // Badge for booking status
+  const getStatusBadge = (booking: Booking) => {
+    const displayStatus = getDisplayStatus(booking);
+    const style = getDisplayStatusStyle(displayStatus);
+    const Icon = getDisplayStatusIcon(displayStatus);
+
+    return (
+      <Badge className={style}>
+        <Icon className="w-3 h-3 mr-1" />
+        {displayStatus}
+      </Badge>
+    );
+  };
+
+  // Badge for session status
   const getSessionBadge = (sessionStatus: string) => {
-    const styles = {
-      UPCOMING: "bg-blue-100 text-blue-800",
-      IN_PROGRESS: "bg-green-100 text-green-800",
-      COMPLETED: "bg-gray-100 text-gray-800",
-      CANCELLED: "bg-red-100 text-red-800",
-    };
-    const icons = {
-      UPCOMING: Clock,
-      IN_PROGRESS: PlayCircle,
-      COMPLETED: Trophy,
-      CANCELLED: XCircle,
-    };
-    const Icon = icons[sessionStatus as keyof typeof icons] || Clock;
+    const styles = getSessionStatusColor(sessionStatus);
+    const Icon = getSessionStatusIcon(sessionStatus);
     const label = sessionStatus.replace("_", " ");
 
     return (
-      <Badge
-        className={`${styles[sessionStatus as keyof typeof styles]} text-sm`}
-      >
-        <Icon className="w-4 h-4 mr-1" />
+      <Badge className={`${styles} text-xs`}>
+        <Icon className="w-3 h-3 mr-1" />
         {label}
       </Badge>
     );
@@ -379,6 +419,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
 
   const needsVenuePayment =
     booking.status === "PAID" &&
+    booking.session_status !== "CANCELLED" &&
     booking.require_deposit &&
     !booking.venue_payment_received &&
     !booking.venue_payment_expired &&
@@ -422,26 +463,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
           </div>
         </div>
         <div className="flex gap-2">
-          {(() => {
-            const displayStatus = getDisplayStatus(booking);
-            const style = getDisplayStatusStyle(displayStatus);
-            const icons: Record<string, LucideIcon> = {
-              PAID: CheckCircle,
-              "DEPOSIT PAID": Clock,
-              "PAYMENT EXPIRED": AlertCircle,
-              PENDING: Clock,
-              CANCELLED: XCircle,
-              EXPIRED: XCircle,
-            };
-            const Icon = icons[displayStatus] || Clock;
-
-            return (
-              <Badge className={`${style} text-sm`}>
-                <Icon className="w-4 h-4 mr-1" />
-                {displayStatus}
-              </Badge>
-            );
-          })()}
+          {getStatusBadge(booking)}
           {getSessionBadge(booking.session_status)}
         </div>
       </div>
@@ -473,8 +495,8 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                     </p>
                     {needsVenuePaymentForCheckIn && (
                       <p className="text-sm text-orange-600 mt-2 font-semibold">
-                        ⚠️ Warning: Customer must pay IDR{" "}
-                        {booking.remaining_balance.toLocaleString("id-ID")} at
+                        ⚠️ Customer must pay IDR{" "}
+                        {booking.remaining_balance.toLocaleString("en-ID")} at
                         venue first
                       </p>
                     )}
@@ -530,7 +552,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                 <strong>Awaiting Venue Payment</strong>
                 <p className="text-sm mt-1">
                   Customer needs to pay IDR{" "}
-                  {booking.remaining_balance.toLocaleString("id-ID")} at venue
+                  {booking.remaining_balance.toLocaleString("en-ID")} at venue
                 </p>
               </div>
               <Button onClick={() => setPaymentDialogOpen(true)}>
@@ -550,7 +572,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
             <strong>⏰ Venue Payment Expired</strong>
             <p className="text-sm mt-1">
               Booking time has passed. Venue payment of IDR{" "}
-              {booking.remaining_balance.toLocaleString("id-ID")} was not
+              {booking.remaining_balance.toLocaleString("en-ID")} was not
               collected.
             </p>
           </AlertDescription>
@@ -565,10 +587,10 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
             <strong>✅ Venue Payment Completed</strong>
             <p className="text-sm mt-1">
               Received IDR{" "}
-              {booking.venue_payment_amount.toLocaleString("id-ID")} via{" "}
+              {booking.venue_payment_amount.toLocaleString("en-ID")} via{" "}
               {booking.venue_payment_method} on{" "}
               {booking.venue_payment_date
-                ? new Date(booking.venue_payment_date).toLocaleString("id-ID")
+                ? new Date(booking.venue_payment_date).toLocaleString("en-ID")
                 : "-"}
             </p>
           </AlertDescription>
@@ -585,14 +607,14 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
             <div className="flex justify-between">
               <span className="text-muted-foreground">Checked In:</span>
               <span className="font-medium">
-                {new Date(booking.checked_in_at).toLocaleString("id-ID")}
+                {new Date(booking.checked_in_at).toLocaleString("en-ID")}
               </span>
             </div>
             {booking.checked_out_at && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Checked Out:</span>
                 <span className="font-medium">
-                  {new Date(booking.checked_out_at).toLocaleString("id-ID")}
+                  {new Date(booking.checked_out_at).toLocaleString("en-ID")}
                 </span>
               </div>
             )}
@@ -676,7 +698,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                   <div>
                     <p className="text-sm text-muted-foreground">Date</p>
                     <p className="font-medium">
-                      {new Date(booking.date).toLocaleDateString("id-ID", {
+                      {new Date(booking.date).toLocaleDateString("en-ID", {
                         weekday: "long",
                         year: "numeric",
                         month: "long",
@@ -713,34 +735,36 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
           </Card>
 
           {/* Refund Section */}
-          {booking.status === "PAID" && booking.session_status === "UPCOMING" && !booking.refund_status && (
-            <Card className="border-purple-200 bg-purple-50">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="font-semibold text-purple-900 text-sm">
+          {booking.status === "PAID" &&
+            booking.session_status === "UPCOMING" &&
+            !booking.refund_status && (
+              <Card className="border-purple-200 bg-purple-50">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="font-semibold text-purple-900 text-sm">
+                        Process Refund
+                      </p>
+                      <p className="text-xs text-purple-700 mt-1">
+                        Refund payment to customer
+                      </p>
+                    </div>
+                    <Button
+                      onClick={() => {
+                        setRefundDialogOpen(true);
+                        setRefundAmount(booking.total_amount.toString());
+                      }}
+                      variant="outline"
+                      size="sm"
+                      className="border-purple-300 text-purple-700 hover:bg-purple-700 hover:text-white"
+                    >
+                      <DollarSign className="w-4 h-4 mr-2" />
                       Process Refund
-                    </p>
-                    <p className="text-xs text-purple-700 mt-1">
-                      Refund payment to customer
-                    </p>
+                    </Button>
                   </div>
-                  <Button
-                    onClick={() => {
-                      setRefundDialogOpen(true);
-                      setRefundAmount(booking.total_amount.toString());
-                    }}
-                    variant="outline"
-                    size="sm"
-                    className="border-purple-300 text-purple-700 hover:bg-purple-700 hover:text-white"
-                  >
-                    <DollarSign className="w-4 h-4 mr-2" />
-                    Process Refund
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                </CardContent>
+              </Card>
+            )}
 
           {/* Refund Completed Badge */}
           {booking.refund_status === "COMPLETED" && (
@@ -756,7 +780,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                   <div className="text-xs text-green-800 space-y-1">
                     <p>
                       <strong>Amount:</strong> IDR{" "}
-                      {booking.refund_amount?.toLocaleString("id-ID")}
+                      {booking.refund_amount?.toLocaleString("en-ID")}
                     </p>
                     <p>
                       <strong>Method:</strong> {booking.refund_method}
@@ -764,7 +788,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                     <p>
                       <strong>Date:</strong>{" "}
                       {booking.refund_date
-                        ? new Date(booking.refund_date).toLocaleString("id-ID")
+                        ? new Date(booking.refund_date).toLocaleString("en-ID")
                         : "-"}
                     </p>
                     {booking.refund_reason && (
@@ -831,14 +855,14 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                     <div className="flex items-center gap-2 mb-3">
                       <DollarSign className="w-5 h-5 text-purple-600" />
                       <h4 className="font-semibold text-purple-900">
-                        💰 REFUNDED
+                        💲 REFUNDED
                       </h4>
                     </div>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-purple-800">Refund Amount:</span>
                         <span className="font-bold text-purple-900">
-                          IDR {booking.refund_amount?.toLocaleString("id-ID")}
+                          IDR {booking.refund_amount?.toLocaleString("en-ID")}
                         </span>
                       </div>
                       <div className="flex justify-between">
@@ -852,7 +876,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                         <span className="font-medium">
                           {booking.refund_date
                             ? new Date(booking.refund_date).toLocaleString(
-                                "id-ID",
+                                "en-ID",
                               )
                             : "-"}
                         </span>
@@ -885,7 +909,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                   <span
                     className={`font-medium ${booking.refund_status === "COMPLETED" ? "line-through text-gray-400" : ""}`}
                   >
-                    IDR {booking.subtotal.toLocaleString("id-ID")}
+                    IDR {booking.subtotal.toLocaleString("en-ID")}
                   </span>
                 </div>
               </div>
@@ -908,7 +932,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                       <span
                         className={`font-medium ${booking.refund_status === "COMPLETED" ? "line-through" : ""}`}
                       >
-                        IDR {booking.deposit_amount.toLocaleString("id-ID")}
+                        IDR {booking.deposit_amount.toLocaleString("en-ID")}
                       </span>
                     </div>
                   </div>
@@ -928,7 +952,20 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                           className={`text-green-700 ${booking.refund_status === "COMPLETED" ? "line-through" : ""}`}
                         >
                           IDR{" "}
-                          {booking.venue_payment_amount.toLocaleString("id-ID")}
+                          {booking.venue_payment_amount.toLocaleString("en-ID")}
+                        </span>
+                      </div>
+                    </div>
+                  ) : booking.session_status === "CANCELLED" ? (
+                    <div className="bg-red-50 border border-red-200 p-3 rounded-lg">
+                      <h4 className="font-semibold text-red-900 text-sm mb-2">
+                        Venue Payment (Cancelled)
+                      </h4>
+                      <div className="flex justify-between text-sm font-semibold">
+                        <span className="text-red-800">Not Collected</span>
+                        <span className="text-red-700 line-through">
+                          IDR{" "}
+                          {booking.remaining_balance.toLocaleString("en-ID")}
                         </span>
                       </div>
                     </div>
@@ -941,7 +978,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                         <span className="text-gray-800">Not Collected</span>
                         <span className="text-gray-700 line-through">
                           IDR{" "}
-                          {booking.remaining_balance.toLocaleString("id-ID")}
+                          {booking.remaining_balance.toLocaleString("en-ID")}
                         </span>
                       </div>
                     </div>
@@ -954,7 +991,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                         <span className="text-orange-800">To Collect</span>
                         <span className="text-orange-700">
                           IDR{" "}
-                          {booking.remaining_balance.toLocaleString("id-ID")}
+                          {booking.remaining_balance.toLocaleString("en-ID")}
                         </span>
                       </div>
                     </div>
@@ -985,7 +1022,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                             : "text-green-700"
                         }`}
                       >
-                        IDR {booking.subtotal.toLocaleString("id-ID")}
+                        IDR {booking.subtotal.toLocaleString("en-ID")}
                       </span>
                     </div>
                   </div>
@@ -1005,7 +1042,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                       <span
                         className={`font-medium ${booking.refund_status === "COMPLETED" ? "line-through" : ""}`}
                       >
-                        IDR {booking.total_amount.toLocaleString("id-ID")}
+                        IDR {booking.total_amount.toLocaleString("en-ID")}
                       </span>
                     </div>
                   </div>
@@ -1032,7 +1069,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                             : "text-green-700"
                         }`}
                       >
-                        IDR {booking.subtotal.toLocaleString("id-ID")}
+                        IDR {booking.subtotal.toLocaleString("en-ID")}
                       </span>
                     </div>
                   </div>
@@ -1047,7 +1084,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                       Net Revenue Impact
                     </p>
                     <span className="text-2xl font-bold text-red-700">
-                      - IDR {booking.refund_amount?.toLocaleString("id-ID")}
+                      - IDR {booking.refund_amount?.toLocaleString("en-ID")}
                     </span>
                   </div>
                   <p className="text-xs text-red-600 mt-1">
@@ -1068,7 +1105,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                   <div className="flex justify-between">
                     <span>Paid At:</span>
                     <span className="font-medium">
-                      {new Date(booking.paid_at).toLocaleString("id-ID")}
+                      {new Date(booking.paid_at).toLocaleString("en-ID")}
                     </span>
                   </div>
                 )}
@@ -1085,13 +1122,13 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Created:</span>
                 <span className="font-medium">
-                  {new Date(booking.created_at).toLocaleString("id-ID")}
+                  {new Date(booking.created_at).toLocaleString("en-ID")}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Updated:</span>
                 <span className="font-medium">
-                  {new Date(booking.updated_at).toLocaleString("id-ID")}
+                  {new Date(booking.updated_at).toLocaleString("en-ID")}
                 </span>
               </div>
               <div className="flex justify-between">
@@ -1124,7 +1161,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
             <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
               <p className="text-sm text-green-800 mb-1">Amount to Receive</p>
               <p className="text-3xl font-bold text-green-700">
-                IDR {booking.remaining_balance.toLocaleString("id-ID")}
+                IDR {booking.remaining_balance.toLocaleString("en-ID")}
               </p>
             </div>
 
@@ -1430,7 +1467,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                 />
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Maximum: IDR {booking.total_amount.toLocaleString("id-ID")}
+                Maximum: IDR {booking.total_amount.toLocaleString("en-ID")}
               </p>
             </div>
 

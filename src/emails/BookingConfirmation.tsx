@@ -45,7 +45,7 @@ export default function BookingConfirmationEmail({
                   style={{ margin: "0 auto 16px" }}
                 />
                 <Heading style={h1}>Booking Confirmed!</Heading>
-                <Text style={headerText}>YOU’RE BOOKED! GET READY FOR AN AMAZING PADEL SESSION!</Text>
+                <Text style={headerText}>GET READY FOR AN AMAZING PADEL SESSION!</Text>
               </td>
             </tr>
           </table>

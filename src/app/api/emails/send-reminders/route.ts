@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { sendBookingReminder } from "@/lib/email";
 
+// API route to send reminder emails for upcoming bookings
+// Scheduled to run every hour via cron job
 export async function GET(request: NextRequest) {
   try {
     // Verify cron secret
@@ -12,6 +14,7 @@ export async function GET(request: NextRequest) {
 
     console.log("🔔 Starting reminder email cron job...");
 
+    // Initialize Supabase client
     const supabase = createServerClient();
     const now = new Date();
 
@@ -68,7 +71,7 @@ export async function GET(request: NextRequest) {
               customerEmail: booking.customer_email,
               bookingRef: booking.booking_ref,
               courtName: booking.courts.name,
-              date: new Date(booking.date).toLocaleDateString("id-ID", {
+              date: new Date(booking.date).toLocaleDateString("en-ID", {
                 weekday: "long",
                 year: "numeric",
                 month: "long",

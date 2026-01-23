@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { differenceInHours, addDays } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Calendar,
   Users,
@@ -13,6 +12,10 @@ import {
   ArrowLeft,
   Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -20,14 +23,13 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
@@ -35,18 +37,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
 
 import { useSettings } from "@/hooks/useSettings";
+import { Court } from "@/types";
 import { BookingFormData } from "@/types/booking";
 import { supabase } from "@/lib/supabase/client";
-import { Court } from "@/types";
 
 interface BookingDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
+// Steps of form that will be filled by customer
 const steps = [
   { id: 1, name: "Court & Time", icon: Calendar },
   { id: 2, name: "Your Info", icon: Users },
@@ -54,8 +56,11 @@ const steps = [
 ];
 
 const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
+  // Set current form step to 1
   const [currentStep, setCurrentStep] = useState(1);
+  // Process loading
   const [isProcessing, setIsProcessing] = useState(false);
+  // Form data states that will set all BookingFormData whenever customer filled by going to next step
   const [formData, setFormData] = useState<Partial<BookingFormData>>({
     date: new Date(),
     numberOfPlayers: 4,
@@ -89,6 +94,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
     }
   }, [formData.courtId, formData.date]);
 
+  // A function to get courts from db
   const fetchCourts = async () => {
     const { data, error } = await supabase
       .from("courts")
@@ -101,12 +107,16 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
     }
   };
 
+  // A function to get time slots from db
   const fetchTimeSlots = async () => {
+    // First, check if customer has choose court and date
     if (!formData.courtId || !formData.date) return;
 
+    // Loading to get time slots
     setLoadingSlots(true);
     const dateStr = formData.date.toLocaleDateString("en-CA");
 
+    // Get ONLY the available time slots
     const { data, error } = await supabase
       .from("time_slots")
       .select("*")
@@ -115,8 +125,10 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
       .eq("available", true)
       .order("time_start");
 
+    // If success, format it first
     if (!error && data) {
-      // Format time slots to match your existing format
+      // Format time slots to match the existing format
+      // 15.00 - 16.00
       const formatted = data.map((slot) => ({
         id: slot.id,
         time: `${slot.time_start.substring(0, 5)} - ${slot.time_end.substring(
@@ -132,9 +144,13 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
     setLoadingSlots(false);
   };
 
+  // Find customer selected court on Form data, for easy display use on form
   const selectedCourt = courts.find((c) => c.id === formData.courtId);
+
+  // Find customer selected time slots on Form data, for easy display use on form and calculation
   const selectedSlot = timeSlots.find((s) => s.id === formData.slotId);
 
+  // Calculate price of full payment by time slots price (peak or off-peak) times by number of players
   const calculateTotal = () => {
     if (!selectedSlot || !formData.numberOfPlayers) return 0;
     const subtotal = selectedSlot.pricePerPerson * formData.numberOfPlayers;
@@ -142,109 +158,14 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
     return subtotal;
   };
 
-  const handleSubmit = async () => {
-    setIsProcessing(true);
+  // Calculate price for deposit payment
+  const calculateDeposit = (): number => {
+    if (!settings || !selectedSlot || !formData.numberOfPlayers) return 0;
 
-    try {
-      const deposit = calculateDeposit();
-      const total = calculateTotal();
+    if (!settings.require_deposit) return 0;
 
-      // Determine payment choice
-      const paymentChoice =
-        formData.paymentChoice ||
-        (settings?.require_deposit ? "DEPOSIT" : "FULL");
-
-      // Calculate amount to pay based on choice
-      let amountToPay: number;
-      let requireDeposit: boolean;
-      let depositAmount: number;
-
-      if (paymentChoice === "FULL") {
-        // Customer chose full payment
-        amountToPay = total;
-        requireDeposit = false;
-        depositAmount = 0;
-      } else {
-        // Customer chose deposit payment
-        amountToPay = deposit;
-        requireDeposit = true;
-        depositAmount = deposit;
-      }
-
-      // Create booking in database
-      const bookingResponse = await fetch("/api/bookings/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          courtId: formData.courtId,
-          timeSlotId: formData.slotId,
-          date: formData.date?.toLocaleDateString("en-CA"),
-          time: selectedSlot!.time,
-          customerName: formData.name,
-          customerEmail: formData.email,
-          customerPhone: formData.phone,
-          customerWhatsapp: formData.whatsapp,
-          numberOfPlayers: formData.numberOfPlayers,
-          subtotal: selectedSlot!.pricePerPerson * formData.numberOfPlayers!,
-          paymentFee: 0,
-          totalAmount: amountToPay,
-          paymentMethod: null,
-          notes: formData.notes,
-          requireDeposit: requireDeposit,
-          depositAmount: depositAmount,
-          fullAmount: total,
-          paymentChoice: paymentChoice,
-        }),
-      });
-
-      if (!bookingResponse.ok) {
-        throw new Error("Failed to create booking");
-      }
-
-      const { booking } = await bookingResponse.json();
-
-      // Create payment with Midtrans
-      const paymentResponse = await fetch("/api/payments/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          bookingId: booking.id,
-        }),
-      });
-
-      if (!paymentResponse.ok) {
-        throw new Error("Failed to create payment");
-      }
-
-      const { paymentUrl } = await paymentResponse.json();
-
-      // Redirect to Midtrans payment page
-      window.location.href = paymentUrl;
-    } catch (error: unknown) {
-      console.error("Booking error:", error);
-
-      // IMPROVED ERROR HANDLING
-      const err = error as {
-        message?: string;
-        code?: string;
-        retryAfter?: number;
-      };
-
-      if (
-        err.code === "RATE_LIMIT_EXCEEDED" ||
-        err.code === "EMAIL_RATE_LIMIT_EXCEEDED"
-      ) {
-        alert(
-          `⏱️ Rate Limit Exceeded\n\n${
-            err.message || "Too many attempts. Please try again later."
-          }\n\nThis is a security measure to prevent spam.`,
-        );
-      } else {
-        alert("An error occurred during booking. Please try again.");
-      }
-
-      setIsProcessing(false);
-    }
+    const subtotal = selectedSlot.pricePerPerson * formData.numberOfPlayers;
+    return Math.round(subtotal * (settings.deposit_percentage / 100));
   };
 
   // Helper to check if time slot has already passed
@@ -297,14 +218,120 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
   //   );
   // };
 
-  // Calculate deposit if required
-  const calculateDeposit = (): number => {
-    if (!settings || !selectedSlot || !formData.numberOfPlayers) return 0;
+  // Submit form
+  const handleSubmit = async () => {
+    // Process start, all button will be disabled
+    setIsProcessing(true);
 
-    if (!settings.require_deposit) return 0;
+    try {
+      // Get deposit price
+      const deposit = calculateDeposit();
+      // Get full payment price
+      const total = calculateTotal();
 
-    const subtotal = selectedSlot.pricePerPerson * formData.numberOfPlayers;
-    return Math.round(subtotal * (settings.deposit_percentage / 100));
+      // Determine payment choice
+      const paymentChoice =
+        formData.paymentChoice ||
+        (settings?.require_deposit ? "DEPOSIT" : "FULL");
+
+      // Calculate amount to pay based on choice
+      let amountToPay: number;
+      let requireDeposit: boolean;
+      let depositAmount: number;
+
+      if (paymentChoice === "FULL") {
+        // Customer chose full payment
+        amountToPay = total;
+        requireDeposit = false;
+        depositAmount = 0;
+      } else {
+        // Customer chose deposit payment
+        amountToPay = deposit;
+        requireDeposit = true;
+        depositAmount = deposit;
+      }
+
+      // Create booking in database
+      const bookingResponse = await fetch("/api/bookings/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          courtId: formData.courtId,
+          timeSlotId: formData.slotId,
+          date: formData.date?.toLocaleDateString("en-CA"),
+          time: selectedSlot!.time,
+          customerName: formData.name,
+          customerEmail: formData.email,
+          customerPhone: formData.phone,
+          customerWhatsapp: formData.whatsapp,
+          numberOfPlayers: formData.numberOfPlayers,
+          subtotal: selectedSlot!.pricePerPerson * formData.numberOfPlayers!,
+          paymentFee: 0,
+          totalAmount: amountToPay,
+          paymentMethod: null,
+          notes: formData.notes,
+          requireDeposit: requireDeposit,
+          depositAmount: depositAmount,
+          fullAmount: total,
+          paymentChoice: paymentChoice,
+        }),
+      });
+
+      // Throw error if create failed
+      if (!bookingResponse.ok) {
+        throw new Error("Failed to create booking");
+      }
+
+      // Get booking that have been created in db
+      const { booking } = await bookingResponse.json();
+
+      // Create payment with Midtrans
+      const paymentResponse = await fetch("/api/payments/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bookingId: booking.id,
+        }),
+      });
+
+      // Throw error if payment failed
+      if (!paymentResponse.ok) {
+        throw new Error("Failed to create payment");
+      }
+
+      // Get payment url fromm db, which is Midtrans payment page
+      const { paymentUrl } = await paymentResponse.json();
+
+      // Then, redirect customer to Midtrans payment page
+      window.location.href = paymentUrl;
+    } catch (error: unknown) {
+      console.error("Booking error:", error);
+
+      // IMPROVED ERROR HANDLING
+      const err = error as {
+        message?: string;
+        code?: string;
+        retryAfter?: number;
+      };
+
+      // Check rate rimit of customer attempts
+      if (
+        err.code === "RATE_LIMIT_EXCEEDED" ||
+        err.code === "EMAIL_RATE_LIMIT_EXCEEDED"
+      ) {
+        toast.error("Rate Limit Exceeded", {
+          description: `${err.message} || "Too many attempts. Please try again later."\n\nThis is a security measure to prevent spam.`,
+          duration: 7000,
+        });
+      } else {
+        toast.error("An error occurred during booking", {
+          description: err.message || "Please try again later.",
+          duration: 7000,
+        });
+      }
+
+      setIsProcessing(false);
+    }
   };
 
   const resetAndClose = () => {
@@ -322,13 +349,12 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
         className="max-w-4xl h-[100dvh] sm:h-[90dvh] overflow-hidden p-0"
       >
         <div
-          className="h-full overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent 
-              [&::-webkit-scrollbar-thumb]:bg-primary [&::-webkit-scrollbar-thumb]:rounded-full 
-              [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-transparent"
+          className="custom-scrollbar"
           tabIndex={-1}
           style={{ outline: "none" }}
         >
           <div className="p-6">
+            {/* Booking Dialog Header */}
             <DialogHeader className="mb-6">
               <DialogTitle className="text-2xl font-display">
                 Book Your Court
@@ -357,6 +383,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                       {step.name}
                     </span>
                   </div>
+                  {/* Change the steps background from one step to other after customer filled, came from state's currentStep */}
                   {index < steps.length - 1 && (
                     <div
                       className={`h-0.5 w-6 sm:w-12 mx-3 transition-all ${
@@ -381,6 +408,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                   {/* Date Selection */}
                   <div>
                     <Label>Select Date</Label>
+                    {/* Came from settings dashboard for allowing customer book up to what days */}
                     {settings && (
                       <p className="text-xs text-muted-foreground mt-1 mb-2">
                         You can book up to {settings.max_advance_booking} days
@@ -469,7 +497,8 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                   {/* Time Slot Selection */}
                   <div>
                     <Label>Select Time Slot</Label>
-                    {(settings && settings.min_advance_booking > 0) && (
+                    {/* Came from settings dashboard for notified customer minimum hours to booked in advance */}
+                    {settings && settings.min_advance_booking > 0 && (
                       <p className="text-xs text-muted-foreground mt-1 mb-2">
                         Slots must be booked at least{" "}
                         {settings.min_advance_booking} hours in advance
@@ -497,6 +526,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                         }
                         className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2"
                       >
+                        {/* Get information about passed and too soon time slots for styling */}
                         {timeSlots.map((slot) => {
                           const hasPassed = formData.date
                             ? isTimeSlotPassed(slot, formData.date)
@@ -608,7 +638,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                   </div>
                 </motion.div>
               )}
-              
+
               {/* Step 2: Personal Information */}
               {currentStep === 2 && (
                 <motion.div
@@ -735,7 +765,12 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Date:</span>
                         <span className="font-medium">
-                          {formData.date?.toLocaleDateString("en-CA")}
+                          {formData.date?.toLocaleDateString("en-ID", {
+                            weekday: "long",
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })}
                         </span>
                       </div>
                       <div className="flex justify-between text-sm">

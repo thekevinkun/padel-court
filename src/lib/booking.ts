@@ -1,3 +1,13 @@
+import {
+  CheckCircle,
+  Clock,
+  XCircle,
+  AlertCircle,
+  DollarSign,
+  LucideIcon,
+  PlayCircle,
+  Trophy,
+} from "lucide-react";
 import { Booking, VenuePaymentStatus, SessionStatus } from "@/types/booking";
 
 // Helper function to determine venue payment status
@@ -75,8 +85,8 @@ export const formatRelativeDate = (dateStr: string): string => {
   }
 };
 
-// Helper to get session status badge color
-export function getSessionStatusColor(status: SessionStatus): string {
+// Get session status badge color
+export function getSessionStatusColor(status: string): string {
   switch (status) {
     case "UPCOMING":
       return "bg-blue-100 text-blue-800";
@@ -89,6 +99,20 @@ export function getSessionStatusColor(status: SessionStatus): string {
     default:
       return "bg-gray-100 text-gray-800";
   }
+}
+
+/**
+ * Get icon component name for display status
+ */
+export function getSessionStatusIcon(status: string): LucideIcon {
+  const icons: Record<string, LucideIcon> = {
+    UPCOMING: Clock,
+    IN_PROGRESS: PlayCircle,
+    COMPLETED: Trophy,
+    CANCELLED: XCircle,
+  };
+
+  return icons[status] || Clock;
 }
 
 /**
@@ -155,16 +179,16 @@ export function getDisplayStatusStyle(displayStatus: string): string {
 /**
  * Get icon component name for display status
  */
-export function getDisplayStatusIcon(displayStatus: string): string {
-  const icons: Record<string, string> = {
-    PAID: "CheckCircle",
-    "DEPOSIT PAID": "Clock",
-    "PAYMENT EXPIRED": "AlertCircle",
-    PENDING: "Clock",
-    CANCELLED: "XCircle",
-    EXPIRED: "XCircle",
-    REFUNDED: "DollarSign",
+export function getDisplayStatusIcon(displayStatus: string): LucideIcon {
+  const icons: Record<string, LucideIcon> = {
+    PAID: CheckCircle,
+    "DEPOSIT PAID": Clock,
+    "PAYMENT EXPIRED": AlertCircle,
+    PENDING: Clock,
+    CANCELLED: XCircle,
+    EXPIRED: XCircle,
+    REFUNDED: DollarSign,
   };
 
-  return icons[displayStatus] || "Clock";
+  return icons[displayStatus] || Clock;
 }

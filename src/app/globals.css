@@ -269,6 +269,46 @@
   }
 
   /* === UTILITY HELPERS === */
+  .custom-scrollbar {
+    /* Layout from h-full overflow-y-auto */
+    height: 100%;
+    overflow-y: auto;
+
+    /* Firefox Support */
+    scrollbar-width: thin; /* Makes scrollbar thinner */
+
+    /* Syntax: <thumb-color> <track-color> */
+    /* Replace var(--primary) with your specific color code if needed */
+    scrollbar-color: var(--color-primary) transparent;
+  }
+
+  /* Chrome, Edge, Safari Support   */
+  /* Width of the scrollbar (w-2 = 0.5rem = 8px) */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  /* Track background (bg-transparent) */
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: black;
+  }
+
+  /* Handle/Thumb styling */
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    /* bg-primary */
+    background-color: var(--color-primary);
+
+    /* rounded-full */
+    border-radius: 9999px;
+
+    /* border-2 border-transparent */
+    border: 2px solid transparent;
+
+    /* This makes the transparent border actually show as "spacing" */
+    /* without this, the background color fills the border area */
+    background-clip: content-box;
+  }
+
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;

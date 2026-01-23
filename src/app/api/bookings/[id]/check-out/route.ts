@@ -2,18 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { createAuthClient } from "@/lib/supabase/auth-server";
 
+// Endpoint to handle admin-initiated booking check-outs
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Extract booking ID and optional notes from admin
     const { id: bookingId } = await params;
     const body = await request.json();
-    const { notes } = body; // Optional notes from admin
+    const { notes } = body;
 
     console.log("Checking out booking:", bookingId);
 
-    // 1Authenticate admin
+    // Initialize Supabase only for Authenticate admin
     const authSupabase = await createAuthClient();
     const {
       data: { user },
@@ -24,6 +26,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Initialize Supabase client
     const supabase = createServerClient();
 
     // Verify admin role
@@ -48,7 +51,7 @@ export async function POST(
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
     }
 
-    // Validate booking can be checked out
+    // If session is completed, already checked out
     if (booking.session_status === "COMPLETED") {
       return NextResponse.json(
         { error: "Booking already checked out" },
@@ -56,6 +59,7 @@ export async function POST(
       );
     }
 
+    // If session is already checked in, can't be checked out
     if (booking.session_status === "UPCOMING") {
       return NextResponse.json(
         { error: "Cannot check out a booking that hasn't been checked in" },

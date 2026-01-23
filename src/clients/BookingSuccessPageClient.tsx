@@ -115,7 +115,8 @@ const BookingSuccessPageClient = () => {
         email: data.customer_email,
         phone: data.customer_phone,
         courtName: data.courts.name,
-        date: new Date(data.date).toLocaleDateString("id-ID", {
+        date: new Date(data.date).toLocaleDateString("en-ID", {
+          timeZone: "Asia/Makassar",
           weekday: "long",
           year: "numeric",
           month: "long",
@@ -129,7 +130,7 @@ const BookingSuccessPageClient = () => {
         paymentFee: data.payment_fee,
         total: data.total_amount,
         notes: data.notes || "-",
-        timestamp: new Date(data.created_at).toLocaleString("id-ID"),
+        timestamp: new Date(data.created_at).toLocaleString("en-ID"),
       };
 
       const blob = await generateBookingReceipt(receiptData);
@@ -163,7 +164,7 @@ const BookingSuccessPageClient = () => {
       email: booking.customer_email,
       phone: booking.customer_phone,
       courtName: booking.courts ? booking.courts.name : "Padel Court",
-      date: new Date(booking.date).toLocaleDateString("id-ID", {
+      date: new Date(booking.date).toLocaleDateString("en-ID", {
         weekday: "long",
         year: "numeric",
         month: "long",
@@ -177,7 +178,7 @@ const BookingSuccessPageClient = () => {
       paymentFee: booking.payment_fee,
       total: booking.total_amount,
       notes: booking.notes || "-",
-      timestamp: new Date(booking.created_at).toLocaleString("id-ID"),
+      timestamp: new Date(booking.created_at).toLocaleString("en-ID"),
     };
 
     const whatsappNumber =
@@ -290,7 +291,12 @@ const BookingSuccessPageClient = () => {
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Date:</span>
                   <span className="font-medium">
-                    {new Date(booking.date).toLocaleDateString("id-ID")}
+                    {new Date(booking.date).toLocaleDateString("en-ID", {
+                      weekday: "long",
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
                   </span>
                 </div>
 

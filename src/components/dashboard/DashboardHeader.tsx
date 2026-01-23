@@ -30,8 +30,7 @@ const DashboardHeader = () => {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [soundOpen, setSoundOpen] = useState(false);
 
-  const today = new Date().toLocaleDateString("en-CA", {
-    timeZone: "Asia/Makassar",
+  const today = new Date().toLocaleDateString("en-ID", {
     weekday: "long",
     year: "numeric",
     month: "long",

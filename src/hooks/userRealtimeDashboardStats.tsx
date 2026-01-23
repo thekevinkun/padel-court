@@ -137,23 +137,25 @@ export function useRealtimeDashboardStats(
         const { data: todayData } = await supabase
           .from("bookings")
           .select(
-            "total_amount, status, require_deposit, deposit_amount, subtotal, payment_fee, session_status"
+            "total_amount, status, require_deposit, deposit_amount, subtotal, payment_fee, session_status, refund_amount",
           )
           .eq("date", today)
-          .neq("status", "CANCELLED");
+          .neq("status", "CANCELLED"); // Exclude cancelled bookings
 
-        const todayBookings = todayData?.length || 0;
-
-        // Calculate revenue (only PAID bookings)
+        // Revenue = actual booking revenue (excluding refunded)
         const todayRevenue =
           todayData
-            ?.filter((b) => b.status === "PAID")
+            ?.filter((b) => b.status === "PAID") // Only PAID, not REFUNDED
             .reduce((sum, b) => {
               const bookingRevenue = b.require_deposit
                 ? b.deposit_amount
                 : b.subtotal;
               return sum + bookingRevenue;
             }, 0) || 0;
+          
+        // Count only non-refunded bookings
+        const todayBookings =
+          todayData?.filter((b) => b.status !== "REFUNDED").length || 0;
 
         // Fetch total bookings (EXCLUDE CANCELLED)
         const { count: totalBookings } = await supabase
@@ -173,6 +175,7 @@ export function useRealtimeDashboardStats(
           .from("bookings")
           .select("remaining_balance")
           .eq("status", "PAID")
+          .eq("session_status", "UPCOMING")
           .eq("require_deposit", true)
           .eq("venue_payment_received", false)
           .eq("venue_payment_expired", false)
@@ -211,6 +214,14 @@ export function useRealtimeDashboardStats(
           .order("created_at", { ascending: false })
           .limit(5);
 
+        // Track refunds separately
+        const todayRefundedBookings =
+          todayData?.filter((b) => b.status === "REFUNDED").length || 0;
+        const todayRefundAmount =
+          todayData
+            ?.filter((b) => b.status === "REFUNDED")
+            .reduce((sum, b) => sum + (b.refund_amount || 0), 0) || 0;
+
         // Update stats
         const newStats: DashboardStats = {
           todayBookings,
@@ -222,6 +233,8 @@ export function useRealtimeDashboardStats(
           inProgressSessions: inProgressSessions || 0,
           upcomingSessions: upcomingSessions || 0,
           completedToday: completedToday || 0,
+          todayRefunds: todayRefundedBookings,
+          todayRefundAmount,
         };
 
         onStatsUpdate(newStats);
