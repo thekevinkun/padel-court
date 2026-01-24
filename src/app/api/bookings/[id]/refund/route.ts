@@ -56,6 +56,48 @@ export async function POST(
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
     }
 
+    // Fetch refund policy from settings
+    const { data: settingsData } = await supabase
+      .from("site_settings")
+      .select(
+        "refund_full_hours, refund_partial_hours, refund_partial_percentage",
+      )
+      .single();
+
+    const REFUND_FULL_HOURS = settingsData?.refund_full_hours ?? 24;
+    const REFUND_PARTIAL_HOURS = settingsData?.refund_partial_hours ?? 12;
+    const REFUND_PARTIAL_PERCENTAGE =
+      settingsData?.refund_partial_percentage ?? 50;
+
+    // Calculate hours until session
+    const bookingDateTime = new Date(booking.date);
+    const [hours, minutes] = booking.time
+      .split(" - ")[0]
+      .split(":")
+      .map(Number);
+    bookingDateTime.setHours(hours, minutes, 0, 0);
+    const hoursUntilSession =
+      Math.round((bookingDateTime.getTime() - new Date().getTime()) / (1000 * 60 * 60));
+
+    // Determine policy-based refund type
+    let policyRefundType = "NONE";
+    if (hoursUntilSession >= REFUND_FULL_HOURS) {
+      policyRefundType = "FULL";
+    } else if (hoursUntilSession >= REFUND_PARTIAL_HOURS) {
+      policyRefundType = "PARTIAL";
+    }
+
+    const policyRefundAmount =
+      policyRefundType === "FULL"
+        ? booking.total_amount
+        : policyRefundType === "PARTIAL"
+          ? Math.round(booking.total_amount * (REFUND_PARTIAL_PERCENTAGE / 100))
+          : 0;
+
+    console.log(
+      `📋 Policy: ${policyRefundType} refund (${Math.round(hoursUntilSession)}hrs before session, recommended: IDR ${policyRefundAmount.toLocaleString("id-ID")})`,
+    );
+
     // Validation checks
     // If it's not paid yet, nothing to refund
     if (booking.status !== "PAID") {
@@ -106,7 +148,9 @@ export async function POST(
         refund_reason: reason || "Cancellation",
         refund_method: refundMethod,
         refunded_by: user.id,
-        refund_notes: notes,
+        refund_notes: notes
+          ? `${notes} | Policy: ${policyRefundType} (${Math.round(hoursUntilSession)}hrs before, recommended IDR ${policyRefundAmount.toLocaleString("id-ID")})`
+          : `Policy: ${policyRefundType} (${Math.round(hoursUntilSession)}hrs before, recommended IDR ${policyRefundAmount.toLocaleString("id-ID")})`,
         session_status: "CANCELLED", // Mark session as cancelled
         updated_at: new Date().toISOString(),
       })

@@ -36,6 +36,9 @@ export interface SiteSettings {
   cancellation_window: number;
   require_deposit: boolean;
   deposit_percentage: number;
+  refund_full_hours: number;
+  refund_partial_hours: number;
+  refund_partial_percentage: number;
   
   // Payment Settings
   payment_settings: {

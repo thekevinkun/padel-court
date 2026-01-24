@@ -16,14 +16,14 @@ export async function GET(_request: NextRequest) {
       console.error("Error fetching settings:", error);
       return NextResponse.json(
         { error: "Failed to fetch settings" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
     if (!settings) {
       return NextResponse.json(
         { error: "Settings not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -37,7 +37,7 @@ export async function GET(_request: NextRequest) {
           "Cache-Control": "public, s-maxage=300, stale-while-revalidate=60",
           "X-Fetched-At": new Date().toISOString(),
         },
-      }
+      },
     );
   } catch (error) {
     console.error("Unexpected error in GET /api/settings:", error);
@@ -46,7 +46,7 @@ export async function GET(_request: NextRequest) {
         error: "Internal server error",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -73,7 +73,7 @@ export async function PUT(request: NextRequest) {
       console.error("❌ Auth failed:", authError);
       return NextResponse.json(
         { error: "Unauthorized. Please log in." },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -95,7 +95,7 @@ export async function PUT(request: NextRequest) {
     if (roleError || !adminRole) {
       return NextResponse.json(
         { error: "Forbidden. Admin privileges required." },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -109,7 +109,7 @@ export async function PUT(request: NextRequest) {
           error:
             "Missing required fields: business_name, email, phone, whatsapp",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -132,6 +132,9 @@ export async function PUT(request: NextRequest) {
       cancellation_window,
       require_deposit,
       deposit_percentage,
+      refund_full_hours,
+      refund_partial_hours,
+      refund_partial_percentage,
       payment_settings,
       notification_settings,
       meta_title,
@@ -161,6 +164,9 @@ export async function PUT(request: NextRequest) {
         cancellation_window,
         require_deposit,
         deposit_percentage,
+        refund_full_hours,
+        refund_partial_hours,
+        refund_partial_percentage,
         payment_settings,
         notification_settings,
         meta_title,
@@ -179,7 +185,7 @@ export async function PUT(request: NextRequest) {
           error: "Failed to update settings",
           details: updateError.message,
         },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -195,7 +201,7 @@ export async function PUT(request: NextRequest) {
     console.log(
       `✅ Settings updated by user: ${
         user.email
-      } at ${new Date().toISOString()}`
+      } at ${new Date().toISOString()}`,
     );
 
     return NextResponse.json(
@@ -208,7 +214,7 @@ export async function PUT(request: NextRequest) {
         headers: {
           "Cache-Control": "no-store, must-revalidate",
         },
-      }
+      },
     );
   } catch (error) {
     console.error("Unexpected error in PUT /api/settings:", error);
@@ -217,7 +223,7 @@ export async function PUT(request: NextRequest) {
         error: "Internal server error",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -22,6 +22,7 @@ import {
   Info,
   CheckCircle2,
   AlertCircle,
+  DollarSign,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,7 +47,7 @@ const SettingsPageClient = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">(
-    "idle"
+    "idle",
   );
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -88,7 +89,7 @@ const SettingsPageClient = () => {
       if (settings?.logo_url) {
         const oldFilePath = extractFilePathFromUrl(
           settings.logo_url,
-          "settings"
+          "settings",
         );
         if (oldFilePath) {
           await deleteImage("settings", oldFilePath);
@@ -174,7 +175,7 @@ const SettingsPageClient = () => {
       const err = error as Error;
       console.error("Error saving settings:", err);
       setErrorMessage(
-        err.message || "Failed to save settings. Please try again."
+        err.message || "Failed to save settings. Please try again.",
       );
       setSaveStatus("error");
     } finally {
@@ -352,7 +353,8 @@ const SettingsPageClient = () => {
                 <div className="mt-2">
                   {logoPreview ? (
                     <div className="relative inline-block">
-                      <div className="relative w-34 h-32 rounded-lg p-2 border
+                      <div
+                        className="relative w-34 h-32 rounded-lg p-2 border
                         bg-gradient-to-br from-white/55 via-gray-200 to-white"
                       >
                         <Image
@@ -662,7 +664,7 @@ const SettingsPageClient = () => {
                     onChange={(e) =>
                       updateField(
                         "min_advance_booking",
-                        parseInt(e.target.value) || 0
+                        parseInt(e.target.value) || 0,
                       )
                     }
                     className="mt-1"
@@ -684,7 +686,7 @@ const SettingsPageClient = () => {
                     onChange={(e) =>
                       updateField(
                         "max_advance_booking",
-                        parseInt(e.target.value) || 1
+                        parseInt(e.target.value) || 1,
                       )
                     }
                     className="mt-1"
@@ -695,27 +697,168 @@ const SettingsPageClient = () => {
                 </div>
               </div>
 
+              <Separator />
+
               <div>
-                <Label htmlFor="cancellation">
-                  Cancellation Window (hours)
-                </Label>
-                <Input
-                  id="cancellation"
-                  type="number"
-                  min="0"
-                  value={settings.cancellation_window}
-                  onChange={(e) =>
-                    updateField(
-                      "cancellation_window",
-                      parseInt(e.target.value) || 0
-                    )
-                  }
-                  className="mt-1"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Customer can cancel free of charge up to this many hours
-                  before booking
-                </p>
+                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                  <DollarSign className="w-5 h-5 text-forest" />
+                  Refund Policy Settings
+                </h3>
+                <Alert className="mb-4">
+                  <Info className="h-4 w-4" />
+                  <AlertDescription className="text-sm">
+                    Configure your automatic refund policy based on how far in
+                    advance customers cancel. This applies to both customer
+                    self-service cancellations and admin refunds.
+                  </AlertDescription>
+                </Alert>
+
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label
+                        htmlFor="refundFullHours"
+                        className="text-sm font-semibold text-green-700"
+                      >
+                        ✅ Full Refund (100%)
+                      </Label>
+                      <div className="flex gap-2 items-center mt-1">
+                        <Input
+                          id="refundFullHours"
+                          type="number"
+                          min="0"
+                          value={settings.refund_full_hours}
+                          onChange={(e) =>
+                            updateField(
+                              "refund_full_hours",
+                              parseInt(e.target.value) || 24,
+                            )
+                          }
+                          className="w-20"
+                        />
+                        <span className="text-sm text-muted-foreground">
+                          hours before
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Cancelled ≥{settings.refund_full_hours}hrs before
+                        session
+                      </p>
+                    </div>
+
+                    <div>
+                      <Label
+                        htmlFor="refundPartialHours"
+                        className="text-sm font-semibold text-blue-700"
+                      >
+                        ⚖️ Partial Refund
+                      </Label>
+                      <div className="flex gap-2 items-center mt-1">
+                        <Input
+                          id="refundPartialHours"
+                          type="number"
+                          min="0"
+                          value={settings.refund_partial_hours}
+                          onChange={(e) =>
+                            updateField(
+                              "refund_partial_hours",
+                              parseInt(e.target.value) || 12,
+                            )
+                          }
+                          className="w-20"
+                        />
+                        <span className="text-sm text-muted-foreground">
+                          hours before
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Cancelled {settings.refund_partial_hours}-
+                        {settings.refund_full_hours}hrs before
+                      </p>
+                    </div>
+
+                    <div>
+                      <Label
+                        htmlFor="refundPartialPercentage"
+                        className="text-sm font-semibold text-blue-700"
+                      >
+                        💰 Partial Refund %
+                      </Label>
+                      <div className="flex gap-2 items-center mt-1">
+                        <Input
+                          id="refundPartialPercentage"
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={settings.refund_partial_percentage}
+                          onChange={(e) =>
+                            updateField(
+                              "refund_partial_percentage",
+                              parseInt(e.target.value) || 50,
+                            )
+                          }
+                          className="w-20"
+                        />
+                        <span className="text-sm text-muted-foreground">%</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {settings.refund_partial_percentage}% of booking amount
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Policy Preview */}
+                  <div className="border rounded-lg p-4 bg-muted/30">
+                    <h4 className="font-semibold mb-2 text-sm">
+                      Refund Policy Preview
+                    </h4>
+                    <ul className="space-y-2 text-sm">
+                      <li className="flex items-start gap-2">
+                        <span className="text-green-600">✅</span>
+                        <span>
+                          <strong>
+                            ≥{settings.refund_full_hours} hours before session:
+                          </strong>{" "}
+                          Full refund (100%)
+                        </span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-blue-600">⚖️</span>
+                        <span>
+                          <strong>
+                            {settings.refund_partial_hours}-
+                            {settings.refund_full_hours} hours before session:
+                          </strong>{" "}
+                          Partial refund ({settings.refund_partial_percentage}%)
+                        </span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-gray-600">⚠️</span>
+                        <span>
+                          <strong>
+                            &lt;{settings.refund_partial_hours} hours before
+                            session:
+                          </strong>{" "}
+                          No refund (0%)
+                        </span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  {/* Warning */}
+                  {settings.refund_full_hours <
+                    settings.refund_partial_hours && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription className="text-sm">
+                        <strong>Invalid Configuration:</strong> Full refund
+                        hours ({settings.refund_full_hours}) must be greater
+                        than partial refund hours (
+                        {settings.refund_partial_hours}).
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </div>
               </div>
 
               <Separator />
@@ -749,7 +892,7 @@ const SettingsPageClient = () => {
                         onChange={(e) =>
                           updateField(
                             "deposit_percentage",
-                            parseInt(e.target.value) || 0
+                            parseInt(e.target.value) || 0,
                           )
                         }
                         className="w-24"
