@@ -225,7 +225,7 @@ const FeaturesGridSection = ({
 
       <Dialog open={featuresDialogOpen} onOpenChange={setFeaturesDialogOpen}>
         <DialogContent className="max-w-2xl h-[100dvh] sm:h-[90dvh] overflow-hidden p-0">
-          <div className="h-full overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-primary [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-transparent">
+          <div className="custom-scrollbar">
             <div className="p-6">
               <DialogHeader>
                 <DialogTitle>

@@ -19,27 +19,31 @@ const Pricing = ({ content }: { content: PricingContent }) => {
     <section id="pricing" className="section-py bg-background">
       <div className="container-custom">
         {/* Section Header */}
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.3 }}
-          variants={staggerContainer}
-          className="text-center mb-12 md:mb-16"
-        >
-          {!hideBadge && (
+        {!hideBadge && (
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.3 }}
+            variants={staggerContainer}
+            className="text-center mb-12 md:mb-16"
+          >
             <motion.div variants={fadeInUp} className="mb-4">
               <Badge className="bg-forest/10 text-forest border-forest/20 lg:text-base font-medium px-4 py-2">
                 {content.badge}
               </Badge>
             </motion.div>
-          )}
-          <motion.h2 variants={fadeInUp} className="heading-2 mb-4">
-            {content.heading}
-          </motion.h2>
-          <motion.p variants={fadeInUp} className="text-body max-w-2xl mx-auto">
-            {content.description}
-          </motion.p>
-        </motion.div>
+
+            <motion.h2 variants={fadeInUp} className="heading-2 mb-4">
+              {content.heading}
+            </motion.h2>
+            <motion.p
+              variants={fadeInUp}
+              className="text-body max-w-2xl mx-auto"
+            >
+              {content.description}
+            </motion.p>
+          </motion.div>
+        )}
 
         {/* Important Notes */}
         <motion.div
@@ -53,7 +57,10 @@ const Pricing = ({ content }: { content: PricingContent }) => {
             <Info className="h-4 w-4 text-primary" />
             <AlertDescription className="text-sm space-y-1">
               {content.notes.map((note, index) => (
-                <div key={index} className="flex items-baseline gap-2">
+                <div
+                  key={index}
+                  className="md:max-w-4xl flex items-baseline gap-2"
+                >
                   <span className="text-forest-dark mt-1">•</span>
                   <span>{note}</span>
                 </div>

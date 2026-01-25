@@ -57,10 +57,12 @@ export interface HeroContent {
 
 export interface HeroSectionCMS {
   hero: HeroContent;
-  setHero: React.Dispatch<React.SetStateAction<HeroContent>>;
-
+  setHero?: (hero: HeroContent) => void;
+  tempHero: HeroContent;
+  setTempHero: (hero: HeroContent) => void;
   heroDialogOpen: boolean;
-  setHeroDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  openHeroDialog: () => void;
+  setHeroDialogOpen: (open: boolean) => void;
 
   heroPreview: string | null;
   setHeroPreview: React.Dispatch<React.SetStateAction<string | null>>;
@@ -91,16 +93,16 @@ export interface WelcomeContent {
 
 export interface WelcomeSectionCMS {
   welcome: WelcomeContent;
-  setWelcome: React.Dispatch<React.SetStateAction<WelcomeContent>>;
+  setWelcome: (welcome: WelcomeContent) => void;
 
   welcomeDialogOpen: boolean;
-  setWelcomeDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  setWelcomeDialogOpen: (open: boolean) => void;
 
   welcomePreviews: string[];
-  setWelcomePreviews?: React.Dispatch<React.SetStateAction<string[]>>;
+  setWelcomePreviews?: (previews: string[]) => void;
 
   tempWelcomePreviews: string[];
-  setTempWelcomePreviews: React.Dispatch<React.SetStateAction<string[]>>;
+  setTempWelcomePreviews: (previews: string[]) => void;
 
   welcomeFiles: (File | null)[];
   setWelcomeFiles: React.Dispatch<React.SetStateAction<(File | null)[]>>;
@@ -189,7 +191,10 @@ export interface TestimonialsContent {
 
 export interface TestimonialsSectionCMS {
   testimonials: TestimonialsContent;
-  setTestimonials: React.Dispatch<React.SetStateAction<TestimonialsContent>>;
+  setTestimonials: (testimonials: TestimonialsContent) => void;
+  tempTestimonials: TestimonialsContent;
+  setTempTestimonials: (testimonials: TestimonialsContent) => void;
+  openTestimonialsDialog: () => void;
   testimonialsDialogOpen: boolean;
   setTestimonialsDialogOpen: (open: boolean) => void;
   videoPreview: string | null;
@@ -243,11 +248,12 @@ export interface PricingContent {
 
 export interface PricingSectionCMS {
   pricing: PricingContent;
-  setPricing: React.Dispatch<React.SetStateAction<PricingContent>>;
-
+  setPricing?: (pricing: PricingContent) => void;
+  tempPricing: PricingContent;
+  setTempPricing: (pricing: PricingContent) => void;
   pricingDialogOpen: boolean;
-  setPricingDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
-
+  setPricingDialogOpen: (open: boolean) => void;
+  openPricingDialog: () => void;
   updatePricingItem: (
     section: string,
     index: number,
@@ -257,6 +263,10 @@ export interface PricingSectionCMS {
 
   addPricingItem: (section: string) => void;
   removePricingItem: (section: string, index: number) => void;
+
+  updatePricingNote: (index: number, value: string) => void;
+  addPricingNote: () => void;
+  removePricingNote: (index: number) => void;
 
   savingPricing: boolean;
   savePricing: () => Promise<void>;
@@ -286,6 +296,9 @@ export interface GalleryContent {
 export interface GallerySectionCMS {
   gallery: GalleryContent;
   setGallery: (gallery: GalleryContent) => void;
+  tempGallery: GalleryContent;
+  setTempGallery: (gallery: GalleryContent) => void;
+  openGalleryDialog: () => void;
   galleryDialogOpen: boolean;
   setGalleryDialogOpen: (open: boolean) => void;
   imageDialogOpen: boolean;
@@ -319,6 +332,9 @@ export interface CTAContent {
 export interface CTASectionCMS {
   cta: CTAContent;
   setCta: (cta: CTAContent) => void;
+  tempCta: CTAContent;
+  setTempCta: (cta: CTAContent) => void;
+  openCtaDialog: () => void;
   ctaDialogOpen: boolean;
   setCtaDialogOpen: (open: boolean) => void;
   backgroundPreview: string | null;
@@ -440,7 +456,9 @@ export interface ShopWelcomeContent {
 export interface ShopSectionCMS {
   shop: Shop | null;
   setShop: (shop: Shop) => void;
-
+  tempShop: Shop | null;
+  setTempShop: (shop: Shop | null) => void;
+  
   // Welcome dialog
   shopWelcomeDialogOpen: boolean;
   setShopWelcomeDialogOpen: (open: boolean) => void;

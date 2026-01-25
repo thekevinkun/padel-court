@@ -29,11 +29,17 @@ import { PricingSectionCMS, PricingSubSection } from "@/types";
 const PricingSection = ({
   pricing,
   setPricing,
+  tempPricing,
+  setTempPricing,
   pricingDialogOpen,
   setPricingDialogOpen,
+  openPricingDialog,
   updatePricingItem,
   addPricingItem,
   removePricingItem,
+  updatePricingNote,
+  addPricingNote,
+  removePricingNote,
   savingPricing,
   savePricing,
 }: PricingSectionCMS) => {
@@ -54,10 +60,7 @@ const PricingSection = ({
                 sectionType="pricing"
                 currentVersion={pricing.version || 1}
               />
-              <Button
-                onClick={() => setPricingDialogOpen(true)}
-                className="gap-2"
-              >
+              <Button onClick={openPricingDialog} className="gap-2">
                 <Edit className="w-4 h-4" /> Edit All Pricing
               </Button>
             </div>
@@ -73,6 +76,16 @@ const PricingSection = ({
               <p className="text-sm text-muted-foreground">
                 {pricing.description}
               </p>
+            </div>
+
+            <div>
+              <h3 className="font-semibold text-lg">Notes</h3>
+              {pricing.notes.map((note, index) => (
+                <div key={index} className="flex items-baseline gap-2">
+                  <span className="text-forest-dark mt-1">•</span>
+                  <span className="text-gray-500 text-sm">{note}</span>
+                </div>
+              ))}
             </div>
 
             <Accordion type="single" collapsible className="w-full">
@@ -103,7 +116,7 @@ const PricingSection = ({
                               IDR {item.price}
                             </span>
                           </div>
-                        )
+                        ),
                       )}
                     </div>
                     <Separator />
@@ -125,7 +138,7 @@ const PricingSection = ({
                               IDR {item.price}
                             </span>
                           </div>
-                        )
+                        ),
                       )}
                     </div>
                   </div>
@@ -200,7 +213,7 @@ const PricingSection = ({
 
       <Dialog open={pricingDialogOpen} onOpenChange={setPricingDialogOpen}>
         <DialogContent className="max-w-4xl h-[100dvh] sm:h-[90dvh] overflow-hidden p-0">
-          <div className="h-full overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-primary [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-transparent">
+          <div className="custom-scrollbar">
             <div className="p-6">
               <DialogHeader>
                 <DialogTitle>Edit Pricing Section</DialogTitle>
@@ -213,34 +226,82 @@ const PricingSection = ({
                   <div className="mt-4">
                     <Label>Badge</Label>
                     <Input
-                      value={pricing.badge}
+                      value={tempPricing.badge}
                       onChange={(e) =>
-                        setPricing({ ...pricing, badge: e.target.value })
+                        setTempPricing({
+                          ...tempPricing,
+                          badge: e.target.value,
+                        })
                       }
-                      className="mt-1"
+                      className="mt-2"
                     />
                   </div>
                   <div className="mt-4">
                     <Label>Heading</Label>
                     <Input
-                      value={pricing.heading}
+                      value={tempPricing.heading}
                       onChange={(e) =>
-                        setPricing({ ...pricing, heading: e.target.value })
+                        setTempPricing({
+                          ...tempPricing,
+                          heading: e.target.value,
+                        })
                       }
-                      className="mt-1"
+                      className="mt-2"
                     />
                   </div>
                 </div>
                 <div>
                   <Label>Description</Label>
                   <Textarea
-                    value={pricing.description}
+                    value={tempPricing.description}
                     onChange={(e) =>
-                      setPricing({ ...pricing, description: e.target.value })
+                      setTempPricing({
+                        ...tempPricing,
+                        description: e.target.value,
+                      })
                     }
-                    className="mt-1"
+                    className="mt-2"
                     rows={2}
                   />
+                </div>
+
+                <Separator />
+
+                {/* Pricing Notes */}
+                <div>
+                  <h3 className="font-semibold mb-3">Pricing Notes</h3>
+
+                  <div className="space-y-3">
+                    {tempPricing.notes.map((note, index) => (
+                      <div key={index} className="flex gap-2 items-start">
+                        <Textarea
+                          value={note}
+                          rows={2}
+                          onChange={(e) =>
+                            updatePricingNote(index, e.target.value)
+                          }
+                          placeholder="Enter pricing note"
+                        />
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => removePricingNote(index)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={addPricingNote}
+                      className="w-fit"
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      Add Note
+                    </Button>
+                  </div>
                 </div>
 
                 <Separator />
@@ -252,7 +313,7 @@ const PricingSection = ({
                     Peak Hours Court Rental
                   </h3>
                   <div className="space-y-3 pl-6">
-                    {pricing.courtRental.peakHours.items.map(
+                    {tempPricing.courtRental.peakHours.items.map(
                       (item, i: number) => (
                         <div
                           key={i}
@@ -267,7 +328,7 @@ const PricingSection = ({
                                   "courtRental.peakHours",
                                   i,
                                   "name",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                               className="mt-1"
@@ -282,7 +343,7 @@ const PricingSection = ({
                                   "courtRental.peakHours",
                                   i,
                                   "price",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                               className="mt-1"
@@ -298,7 +359,7 @@ const PricingSection = ({
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
-                      )
+                      ),
                     )}
                     <Button
                       variant="outline"
@@ -319,7 +380,7 @@ const PricingSection = ({
                     Off-Peak Hours Court Rental
                   </h3>
                   <div className="space-y-3 pl-6">
-                    {pricing.courtRental.offPeakHours.items.map(
+                    {tempPricing.courtRental.offPeakHours.items.map(
                       (item, i: number) => (
                         <div
                           key={i}
@@ -334,7 +395,7 @@ const PricingSection = ({
                                   "courtRental.offPeakHours",
                                   i,
                                   "name",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                               className="mt-1"
@@ -349,7 +410,7 @@ const PricingSection = ({
                                   "courtRental.offPeakHours",
                                   i,
                                   "price",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                               className="mt-1"
@@ -365,7 +426,7 @@ const PricingSection = ({
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
-                      )
+                      ),
                     )}
                     <Button
                       variant="outline"
@@ -406,7 +467,7 @@ const PricingSection = ({
                                       coachType,
                                       i,
                                       "name",
-                                      e.target.value
+                                      e.target.value,
                                     )
                                   }
                                   className="mt-1"
@@ -421,7 +482,7 @@ const PricingSection = ({
                                       coachType,
                                       i,
                                       "price",
-                                      e.target.value
+                                      e.target.value,
                                     )
                                   }
                                   className="mt-1"
@@ -447,7 +508,7 @@ const PricingSection = ({
                         <Separator className="my-4" />
                       </div>
                     );
-                  }
+                  },
                 )}
 
                 {/* Racket Rental */}
@@ -468,7 +529,7 @@ const PricingSection = ({
                                 "racketRental",
                                 i,
                                 "name",
-                                e.target.value
+                                e.target.value,
                               )
                             }
                             className="mt-1"
@@ -483,7 +544,7 @@ const PricingSection = ({
                                 "racketRental",
                                 i,
                                 "price",
-                                e.target.value
+                                e.target.value,
                               )
                             }
                             className="mt-1"

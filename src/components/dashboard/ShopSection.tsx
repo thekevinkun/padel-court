@@ -31,6 +31,8 @@ import { ShopSectionCMS } from "@/types";
 const ShopSection = ({
   shop,
   setShop,
+  tempShop,
+  setTempShop,
   shopWelcomeDialogOpen,
   setShopWelcomeDialogOpen,
   shopWelcomeFiles,
@@ -57,7 +59,7 @@ const ShopSection = ({
   saveShopProduct,
   savingShopProduct,
 }: ShopSectionCMS) => {
-  if (!shop) {
+  if (!tempShop || !shop) {
     return (
       <Card>
         <CardContent className="p-12 text-center">
@@ -283,7 +285,7 @@ const ShopSection = ({
         onOpenChange={setShopWelcomeDialogOpen}
       >
         <DialogContent className="max-w-4xl h-[100dvh] sm:h-[90dvh] overflow-hidden p-0">
-          <div className="h-full overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-primary [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-transparent">
+          <div className="custom-scrollbar">
             <div className="p-6">
               <DialogHeader>
                 <DialogTitle>Edit Shop Welcome Section</DialogTitle>
@@ -359,9 +361,12 @@ const ShopSection = ({
                   <div>
                     <Label>Badge</Label>
                     <Input
-                      value={shop.welcome_badge}
+                      value={tempShop.welcome_badge}
                       onChange={(e) =>
-                        setShop({ ...shop, welcome_badge: e.target.value })
+                        setTempShop({
+                          ...tempShop,
+                          welcome_badge: e.target.value,
+                        })
                       }
                       className="mt-1"
                     />
@@ -369,9 +374,12 @@ const ShopSection = ({
                   <div>
                     <Label>Heading *</Label>
                     <Input
-                      value={shop.welcome_heading}
+                      value={tempShop.welcome_heading}
                       onChange={(e) =>
-                        setShop({ ...shop, welcome_heading: e.target.value })
+                        setTempShop({
+                          ...tempShop,
+                          welcome_heading: e.target.value,
+                        })
                       }
                       className="mt-1"
                     />
@@ -381,9 +389,12 @@ const ShopSection = ({
                 <div>
                   <Label>Description *</Label>
                   <Textarea
-                    value={shop.welcome_description}
+                    value={tempShop.welcome_description}
                     onChange={(e) =>
-                      setShop({ ...shop, welcome_description: e.target.value })
+                      setTempShop({
+                        ...tempShop,
+                        welcome_description: e.target.value,
+                      })
                     }
                     className="mt-1"
                     rows={3}
@@ -393,9 +404,12 @@ const ShopSection = ({
                 <div>
                   <Label>Subheading *</Label>
                   <Input
-                    value={shop.welcome_subheading}
+                    value={tempShop.welcome_subheading}
                     onChange={(e) =>
-                      setShop({ ...shop, welcome_subheading: e.target.value })
+                      setTempShop({
+                        ...tempShop,
+                        welcome_subheading: e.target.value,
+                      })
                     }
                     placeholder="e.g., Discover Your Perfect Padel Racket"
                     className="mt-1"
@@ -405,10 +419,10 @@ const ShopSection = ({
                 <div>
                   <Label>Subdescription *</Label>
                   <Textarea
-                    value={shop.welcome_subdescription}
+                    value={tempShop.welcome_subdescription}
                     onChange={(e) =>
-                      setShop({
-                        ...shop,
+                      setTempShop({
+                        ...tempShop,
                         welcome_subdescription: e.target.value,
                       })
                     }
@@ -428,16 +442,22 @@ const ShopSection = ({
                         Primary Button
                       </Label>
                       <Input
-                        value={shop.cta_primary_text}
+                        value={tempShop.cta_primary_text}
                         onChange={(e) =>
-                          setShop({ ...shop, cta_primary_text: e.target.value })
+                          setTempShop({
+                            ...tempShop,
+                            cta_primary_text: e.target.value,
+                          })
                         }
                         placeholder="Button text"
                       />
                       <Input
-                        value={shop.cta_primary_href}
+                        value={tempShop.cta_primary_href}
                         onChange={(e) =>
-                          setShop({ ...shop, cta_primary_href: e.target.value })
+                          setTempShop({
+                            ...tempShop,
+                            cta_primary_href: e.target.value,
+                          })
                         }
                         placeholder="Button link"
                       />
@@ -447,20 +467,31 @@ const ShopSection = ({
                         Secondary Button
                       </Label>
                       <Input
-                        value={shop.cta_secondary_text}
+                        value={tempShop.cta_secondary_text}
                         onChange={(e) =>
-                          setShop({
-                            ...shop,
+                          setTempShop({
+                            ...tempShop,
                             cta_secondary_text: e.target.value,
                           })
                         }
                         placeholder="Button text"
                       />
                       <Input
-                        value={shop.cta_secondary_href}
+                        value={tempShop.cta_secondary_href}
                         onChange={(e) =>
-                          setShop({
-                            ...shop,
+                          setTempShop({
+                            ...tempShop,
+                            cta_secondary_href: e.target.value,
+                          })
+                        }
+                        placeholder="Button link"
+                      />
+
+                      <Input
+                        value={tempShop.cta_secondary_href}
+                        onChange={(e) =>
+                          setTempShop({
+                            ...tempShop,
                             cta_secondary_href: e.target.value,
                           })
                         }
@@ -505,7 +536,7 @@ const ShopSection = ({
         onOpenChange={setShopProductDialogOpen}
       >
         <DialogContent className="max-w-2xl h-[100dvh] sm:h-[90dvh] overflow-hidden p-0">
-          <div className="h-full overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-primary [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-transparent">
+          <div className="custom-scrollbar">
             <div className="p-6">
               <DialogHeader>
                 <DialogTitle>

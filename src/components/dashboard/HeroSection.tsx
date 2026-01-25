@@ -21,8 +21,10 @@ import { HeroSectionCMS } from "@/types";
 
 const HeroSection = ({
   hero,
-  setHero,
+  tempHero,
+  setTempHero,
   heroDialogOpen,
+  openHeroDialog,
   setHeroDialogOpen,
   heroPreview,
   setHeroPreview,
@@ -48,7 +50,7 @@ const HeroSection = ({
                 sectionType="hero"
                 currentVersion={hero.version || 1}
               />
-              <Button onClick={() => setHeroDialogOpen(true)} className="gap-2">
+              <Button onClick={openHeroDialog} className="gap-2">
                 <Edit className="w-4 h-4" /> Edit
               </Button>
             </div>
@@ -102,10 +104,7 @@ const HeroSection = ({
       {/* Hero Dialog */}
       <Dialog open={heroDialogOpen} onOpenChange={setHeroDialogOpen}>
         <DialogContent className="max-w-2xl h-[100dvh] sm:h-[90dvh] overflow-hidden p-0">
-          <div className="h-full overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent 
-            [&::-webkit-scrollbar-thumb]:bg-primary [&::-webkit-scrollbar-thumb]:rounded-full 
-            [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-transparent"
-          >
+          <div className="custom-scrollbar">
             <div className="p-6">
               <DialogHeader>
                 <DialogTitle>Edit Hero Section</DialogTitle>
@@ -117,9 +116,9 @@ const HeroSection = ({
                 <div className="mt-4 mb-10">
                   <Label>Badge</Label>
                   <Input
-                    value={hero.badge}
+                    value={tempHero.badge}
                     onChange={(e) =>
-                      setHero({ ...hero, badge: e.target.value })
+                      setTempHero({ ...tempHero, badge: e.target.value })
                     }
                     className="mt-1"
                   />
@@ -127,9 +126,9 @@ const HeroSection = ({
                 <div>
                   <Label>Title</Label>
                   <Input
-                    value={hero.title}
+                    value={tempHero.title}
                     onChange={(e) =>
-                      setHero({ ...hero, title: e.target.value })
+                      setTempHero({ ...tempHero, title: e.target.value })
                     }
                     className="mt-1"
                   />
@@ -137,9 +136,9 @@ const HeroSection = ({
                 <div>
                   <Label>Subtitle</Label>
                   <Textarea
-                    value={hero.subtitle}
+                    value={tempHero.subtitle}
                     onChange={(e) =>
-                      setHero({ ...hero, subtitle: e.target.value })
+                      setTempHero({ ...tempHero, subtitle: e.target.value })
                     }
                     className="mt-1"
                     rows={3}

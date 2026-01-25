@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+
 import Navbar from "@/components/layout/Navbar";
 import PageHero from "@/components/pages/PageHero";
 import Contact from "@/components/pages/Contact";
@@ -5,6 +7,11 @@ import Footer from "@/components/layout/Footer";
 import BookingDialogWrapper from "@/components/booking/BookingDialogWrapper";
 
 import { getPageHero } from "@/lib/content";
+
+export const metadata: Metadata = {
+  title: "Contact Us",
+  description: "We're here to help you get started with padel.",
+};
 
 export default async function ContactPage() {
   // Fetch page hero

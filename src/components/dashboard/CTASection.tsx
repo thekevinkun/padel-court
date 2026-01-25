@@ -21,6 +21,9 @@ import { CTASectionCMS } from "@/types";
 const CTASection = ({
   cta,
   setCta,
+  tempCta,
+  setTempCta,
+  openCtaDialog,
   ctaDialogOpen,
   setCtaDialogOpen,
   backgroundPreview,
@@ -46,7 +49,7 @@ const CTASection = ({
                 sectionType="cta"
                 currentVersion={cta.version || 1}
               />
-              <Button onClick={() => setCtaDialogOpen(true)} className="gap-2">
+              <Button onClick={openCtaDialog} className="gap-2">
                 <Edit className="w-4 h-4" /> Edit
               </Button>
             </div>
@@ -132,7 +135,7 @@ const CTASection = ({
       {/* Edit Dialog */}
       <Dialog open={ctaDialogOpen} onOpenChange={setCtaDialogOpen}>
         <DialogContent className="max-w-2xl h-[100dvh] sm:h-[90dvh] overflow-hidden p-0">
-          <div className="h-full overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-primary [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-transparent">
+          <div className="custom-scrollbar">
             <div className="p-6">
               <DialogHeader>
                 <DialogTitle>Edit CTA Section</DialogTitle>
@@ -200,8 +203,10 @@ const CTASection = ({
                   <Label htmlFor="title">Title *</Label>
                   <Input
                     id="title"
-                    value={cta.title}
-                    onChange={(e) => setCta({ ...cta, title: e.target.value })}
+                    value={tempCta.title}
+                    onChange={(e) =>
+                      setTempCta({ ...tempCta, title: e.target.value })
+                    }
                     placeholder="e.g., Ready to Experience Premium Padel?"
                     className="mt-1"
                   />
@@ -212,9 +217,9 @@ const CTASection = ({
                   <Label htmlFor="subtitle">Subtitle *</Label>
                   <Textarea
                     id="subtitle"
-                    value={cta.subtitle}
+                    value={tempCta.subtitle}
                     onChange={(e) =>
-                      setCta({ ...cta, subtitle: e.target.value })
+                      setTempCta({ ...tempCta, subtitle: e.target.value })
                     }
                     placeholder="Compelling description to encourage action..."
                     className="mt-1"
@@ -227,9 +232,9 @@ const CTASection = ({
                   <Label htmlFor="buttonText">Button Text *</Label>
                   <Input
                     id="buttonText"
-                    value={cta.buttonText}
+                    value={tempCta.buttonText}
                     onChange={(e) =>
-                      setCta({ ...cta, buttonText: e.target.value })
+                      setTempCta({ ...tempCta, buttonText: e.target.value })
                     }
                     placeholder="e.g., Book Your Court Now"
                     className="mt-1"
@@ -241,9 +246,9 @@ const CTASection = ({
                   <Label htmlFor="buttonLink">Button Link *</Label>
                   <Input
                     id="buttonLink"
-                    value={cta.buttonLink}
+                    value={tempCta.buttonLink}
                     onChange={(e) =>
-                      setCta({ ...cta, buttonLink: e.target.value })
+                      setTempCta({ ...tempCta, buttonLink: e.target.value })
                     }
                     placeholder="e.g., #booking or /pricing"
                     className="mt-1"

@@ -32,6 +32,9 @@ import { TestimonialsSectionCMS } from "@/types";
 const TestimonialsSection = ({
   testimonials,
   setTestimonials,
+  tempTestimonials,
+  setTempTestimonials,
+  openTestimonialsDialog,
   testimonialsDialogOpen,
   setTestimonialsDialogOpen,
   videoPreview,
@@ -70,10 +73,7 @@ const TestimonialsSection = ({
                 sectionType="testimonials"
                 currentVersion={testimonials.version || 1}
               />
-              <Button
-                onClick={() => setTestimonialsDialogOpen(true)}
-                className="gap-2"
-              >
+              <Button onClick={openTestimonialsDialog} className="gap-2">
                 <Edit className="w-4 h-4" /> Edit
               </Button>
             </div>
@@ -266,7 +266,7 @@ const TestimonialsSection = ({
         onOpenChange={setTestimonialsDialogOpen}
       >
         <DialogContent className="max-w-2xl h-[100dvh] sm:h-[90dvh] overflow-hidden p-0">
-          <div className="h-full overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-primary [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-transparent">
+          <div className="custom-scrollbar">
             <div className="p-6">
               <DialogHeader>
                 <DialogTitle>Edit Testimonials Section</DialogTitle>
@@ -278,10 +278,10 @@ const TestimonialsSection = ({
                 <div className="mt-4 mb-10">
                   <Label>Badge</Label>
                   <Input
-                    value={testimonials.badge}
+                    value={tempTestimonials.badge}
                     onChange={(e) =>
-                      setTestimonials({
-                        ...testimonials,
+                      setTempTestimonials({
+                        ...tempTestimonials,
                         badge: e.target.value,
                       })
                     }
@@ -291,10 +291,10 @@ const TestimonialsSection = ({
                 <div>
                   <Label>Heading</Label>
                   <Input
-                    value={testimonials.heading}
+                    value={tempTestimonials.heading}
                     onChange={(e) =>
-                      setTestimonials({
-                        ...testimonials,
+                      setTempTestimonials({
+                        ...tempTestimonials,
                         heading: e.target.value,
                       })
                     }
@@ -304,10 +304,10 @@ const TestimonialsSection = ({
                 <div>
                   <Label>Description</Label>
                   <Textarea
-                    value={testimonials.description}
+                    value={tempTestimonials.description}
                     onChange={(e) =>
-                      setTestimonials({
-                        ...testimonials,
+                      setTempTestimonials({
+                        ...tempTestimonials,
                         description: e.target.value,
                       })
                     }

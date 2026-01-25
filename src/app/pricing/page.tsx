@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+
 import Navbar from "@/components/layout/Navbar";
 import PageHero from "@/components/pages/PageHero";
 import Pricing from "@/components/home/Pricing";
@@ -6,6 +8,11 @@ import BookingDialogWrapper from "@/components/booking/BookingDialogWrapper";
 
 import { pricingInitial } from "@/lib/constants";
 import { getContentSections, getPageHero } from "@/lib/content";
+
+export const metadata: Metadata = {
+  title: "Our Pricing List",
+  description: "Transparent pricing for courts, coaching, and equipment.",
+};
 
 export default async function PricingPage() {
   const sections = await getContentSections();

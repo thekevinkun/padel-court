@@ -1160,35 +1160,14 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                   <Separator />
 
                   {/* Total Booking Value */}
-                  <div
-                    className={`bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border-2 ${
-                      booking.refund_status === "COMPLETED"
-                        ? "text-purple-800 border-purple-300"
-                        : booking.status === "CANCELLED" ||
-                            booking.session_status === "CANCELLED"
-                          ? "text-red-800 border-red-300"
-                          : "text-green-800 border-green-300"
-                    }`}
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg 
+                    border-2 text-green-800 border-green-300"
                   >
                     <div className="flex justify-between items-center">
                       <p className="text-sm font-medium">
-                        {booking.refund_status === "COMPLETED"
-                          ? "Original Booking (Before Refunded)"
-                          : booking.status === "CANCELLED" ||
-                              booking.session_status === "CANCELLED"
-                            ? "Original Booking (Before Cancelled)"
-                            : "Total Booking Value"}
+                        Total Booking Value
                       </p>  
-                      <span
-                        className={`text-2xl font-bold ${
-                          booking.refund_status === "COMPLETED"
-                            ? "text-purple-700 line-through"
-                            : booking.status === "CANCELLED" ||
-                                booking.session_status === "CANCELLED"
-                              ? "text-red-700 line-through"
-                              : "text-green-700"
-                        }`}
-                      >
+                      <span className="text-2xl font-bold text-green-700">
                         IDR {booking.subtotal.toLocaleString("id-ID")}
                       </span>
                     </div>
@@ -1197,24 +1176,14 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
               ) : (
                 <>
                   {/* Full Payment */}
-                  <div
-                    className={`bg-blue-50 border border-blue-200 p-3 rounded-lg space-y-2 ${
-                      booking.refund_status === "COMPLETED" ? "opacity-60" : ""
-                    }`}
-                  >
+                  <div className="bg-blue-50 border border-blue-200 p-3 rounded-lg space-y-2">
                     <h4 className="font-semibold text-blue-900 text-sm">
                       Full Payment Online
                       {booking.refund_status === "COMPLETED" && " (Refunded)"}
                     </h4>
                     <div className="flex justify-between text-sm">
                       <span className="text-blue-800">Paid Online</span>
-                      <span
-                        className={`font-medium ${
-                          booking.refund_status === "COMPLETED"
-                            ? "line-through"
-                            : ""
-                        }`}
-                      >
+                      <span className="font-medium">
                         IDR {booking.total_amount.toLocaleString("id-ID")}
                       </span>
                     </div>

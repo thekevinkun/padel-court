@@ -18,13 +18,13 @@ const CourtLightbox = dynamic(
   () => import("@/components/lightbox/CourtLightbox"),
   {
     ssr: false,
-  }
+  },
 );
 
 const Courts = ({ courts }: { courts: Court[] }) => {
   const pathname = usePathname();
   const hideBadge = pathname === "/courts";
-  
+
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [selectedCourt, setSelectedCourt] = useState<Court | null>(null);
 
@@ -52,31 +52,32 @@ const Courts = ({ courts }: { courts: Court[] }) => {
 
         <div className="container-custom">
           {/* Section Header */}
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.3 }}
-            variants={staggerContainer}
-            className="text-center mb-12 md:mb-16"
-          >
-            {!hideBadge && (
+          {!hideBadge && (
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.3 }}
+              variants={staggerContainer}
+              className="text-center mb-12 md:mb-16"
+            >
               <motion.div variants={fadeInUp} className="mb-4">
                 <Badge className="bg-forest/10 text-forest border-forest/20 lg:text-base font-medium px-4 py-2">
                   Our Courts
                 </Badge>
               </motion.div>
-            )}
-            <motion.h2 variants={fadeInUp} className="heading-2 mb-4">
-              World-Class Facilities
-            </motion.h2>
-            <motion.p
-              variants={fadeInUp}
-              className="text-body max-w-3xl mx-auto"
-            >
-              Experience padel at its finest on our premium courts, designed for
-              players of all levels
-            </motion.p>
-          </motion.div>
+
+              <motion.h2 variants={fadeInUp} className="heading-2 mb-4">
+                World-Class Facilities
+              </motion.h2>
+              <motion.p
+                variants={fadeInUp}
+                className="text-body max-w-3xl mx-auto"
+              >
+                Experience padel at its finest on our premium courts, designed
+                for players of all levels
+              </motion.p>
+            </motion.div>
+          )}
 
           {/* Bento Grid */}
           <motion.div
@@ -149,8 +150,8 @@ const Courts = ({ courts }: { courts: Court[] }) => {
                   index === 1
                     ? "lg:col-span-1"
                     : index === 2
-                    ? "lg:col-span-2"
-                    : ""
+                      ? "lg:col-span-2"
+                      : ""
                 }`}
               >
                 <Card

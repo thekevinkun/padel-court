@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+
 import Navbar from "@/components/layout/Navbar";
 import PageHero from "@/components/pages/PageHero";
 import Activities from "@/components/pages/Activities";
@@ -8,6 +10,11 @@ import BookingDialogWrapper from "@/components/booking/BookingDialogWrapper";
 
 import { galleryInitial, ctaInitial } from "@/lib/constants";
 import { getContentSections, getPageHero, getActivities } from "@/lib/content";
+
+export const metadata: Metadata = {
+  title: "Our Great Activities",
+  description: "Experience the vibrant padel community and exciting events.",
+};
 
 export default async function ActivitiesPage() {
   // Fetch content server-side

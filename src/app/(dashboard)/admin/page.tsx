@@ -428,7 +428,7 @@ export default function DashboardPage() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className={`font-medium ${booking.status === "REFUNDED" ? "line-through" : ""}`}>
+                      <p className="font-medium">
                         IDR{" "}
                         {(booking.require_deposit
                           ? booking.deposit_amount

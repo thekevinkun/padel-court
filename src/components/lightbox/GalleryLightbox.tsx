@@ -192,10 +192,7 @@ const GalleryLightbox = ({
               <div className="max-w-4xl mx-auto">
                 <div 
                   ref={thumbnailContainerRef}
-                  className="flex gap-2 py-2 overflow-x-auto [&::-webkit-scrollbar]:h-2 
-                    [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-primary 
-                    [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 
-                    [&::-webkit-scrollbar-thumb]:border-transparent"
+                  className="flex gap-2 py-2 custom-scrollbar !overflow-x-auto !overflow-y-hidden"
                 >
                   {images.map((image, index) => (
                     <button

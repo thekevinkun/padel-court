@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+
 import Navbar from "@/components/layout/Navbar";
 import PageHero from "@/components/pages/PageHero";
 import ShopWelcome from "@/components/pages/ShopWelcome";
@@ -7,6 +9,11 @@ import BookingDialogWrapper from "@/components/booking/BookingDialogWrapper";
 import { getPageHero, getShopWelcome, getShopProducts } from "@/lib/content";
 
 import { shopWelcomeInitial } from "@/lib/constants";
+
+export const metadata: Metadata = {
+  title: "Shop",
+  description: "Premium equipment and gear for your game",
+};
 
 export default async function ShopPage() {
   // Fetch content server-side

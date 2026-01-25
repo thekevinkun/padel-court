@@ -42,7 +42,7 @@ const Activities = ({ activities }: ActivitiesProps) => {
           <motion.h2 variants={fadeInUp} className="heading-2 mb-4">
             Activities & Programs
           </motion.h2>
-          <motion.p variants={fadeInUp} className="text-body max-w-2xl mx-auto">
+          <motion.p variants={fadeInUp} className="text-body mx-auto">
             From casual play to competitive tournaments, discover all the ways
             to enjoy padel at our facility
           </motion.p>

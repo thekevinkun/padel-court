@@ -70,6 +70,10 @@ const ContentPageClient = () => {
   /* HERO HANDLERS */
   // Hero state
   const [hero, setHero] = useState<HeroContent>({ ...heroInitial, version: 1 });
+  const [tempHero, setTempHero] = useState<HeroContent>({
+    ...heroInitial,
+    version: 1,
+  });
   const [heroDialogOpen, setHeroDialogOpen] = useState(false);
   const [heroImageFile, setHeroImageFile] = useState<File | null>(null);
   const [heroPreview, setHeroPreview] = useState<string | null>(hero.image_url);
@@ -89,6 +93,11 @@ const ContentPageClient = () => {
 
     setHeroImageFile(f);
     readPreview(f, setHeroPreview);
+  };
+
+  const openHeroDialog = () => {
+    setTempHero({ ...hero });
+    setHeroDialogOpen(true);
   };
 
   const saveHero = async () => {
@@ -114,7 +123,7 @@ const ContentPageClient = () => {
         imageUrl = uploaded;
       }
 
-      const updatedHero = { ...hero, image_url: imageUrl };
+      const updatedHero = { ...tempHero, image_url: imageUrl };
 
       await saveSectionWithVersion("hero", updatedHero, "Updated hero section");
       setHero({ ...updatedHero, version: hero.version });
@@ -371,8 +380,18 @@ const ContentPageClient = () => {
     ...testimonialsInitial,
     version: 1,
   });
+  const [tempTestimonials, setTempTestimonials] = useState<TestimonialsContent>(
+    {
+      ...testimonialsInitial,
+      version: 1,
+    },
+  );
   const [testimonialsDialogOpen, setTestimonialsDialogOpen] = useState(false);
+
+  // Individual testimonial dialog state
   const [testimonialDialogOpen, setTestimonialDialogOpen] = useState(false);
+
+  // Testimonials media state
   const [testimonialsVideoFile, setTestimonialsVideoFile] =
     useState<File | null>(null);
   const [testimonialsVideoPreview, setTestimonialsVideoPreview] = useState<
@@ -387,6 +406,11 @@ const ContentPageClient = () => {
     useState<Testimonial | null>(null);
 
   // Testimonials functions
+  const openTestimonialsDialog = () => {
+    setTempTestimonials({ ...testimonials });
+    setTestimonialsDialogOpen(true);
+  };
+
   const onTestimonialsVideoSelect = (
     e: React.ChangeEvent<HTMLInputElement>,
   ) => {
@@ -477,7 +501,7 @@ const ContentPageClient = () => {
       }
 
       const updatedTestimonials = {
-        ...testimonials,
+        ...tempTestimonials,
         videoUrl,
         backgroundImage,
       };
@@ -509,6 +533,7 @@ const ContentPageClient = () => {
     }
   };
 
+  // Function for individual testimonial dialogs
   const openAddTestimonial = () => {
     setEditingTestimonial({
       id: `new-${Date.now()}`,
@@ -592,29 +617,16 @@ const ContentPageClient = () => {
   const [pricingDialogOpen, setPricingDialogOpen] = useState(false);
   const [savingPricing, setSavingPricing] = useState(false);
 
+  // Add temporary pricing state
+  const [tempPricing, setTempPricing] = useState<PricingContent>({
+    ...pricingInitial,
+    version: 1,
+  });
+
   // Pricing functions
-  const savePricing = async () => {
-    setSavingPricing(true);
-    try {
-      // Save to database
-      await saveSectionWithVersion(
-        "pricing",
-        pricing,
-        "Updated pricing section",
-      );
-
-      setPricingDialogOpen(false);
-
-      // Trigger revalidation
-      await triggerRevalidation();
-
-      console.log("✅ Pricing section saved");
-    } catch (err) {
-      console.error("Save pricing error:", err);
-      alert("Failed to save pricing");
-    } finally {
-      setSavingPricing(false);
-    }
+  const openPricingDialog = () => {
+    setTempPricing({ ...pricing }); // Create a copy of current pricing
+    setPricingDialogOpen(true);
   };
 
   const updatePricingItem = (
@@ -623,7 +635,7 @@ const ContentPageClient = () => {
     field: keyof PricingItem,
     value: string,
   ) => {
-    setPricing((prev) => {
+    setTempPricing((prev) => {
       const newPricing = { ...prev };
       const pricingSection = newPricing[
         section as keyof typeof newPricing
@@ -634,7 +646,7 @@ const ContentPageClient = () => {
   };
 
   const addPricingItem = (section: string) => {
-    setPricing((prev) => {
+    setTempPricing((prev) => {
       const newPricing = { ...prev };
       const pricingSection = newPricing[
         section as keyof typeof newPricing
@@ -649,7 +661,7 @@ const ContentPageClient = () => {
   };
 
   const removePricingItem = (section: string, index: number) => {
-    setPricing((prev) => {
+    setTempPricing((prev) => {
       const newPricing = { ...prev };
       const pricingSection = newPricing[
         section as keyof typeof newPricing
@@ -659,9 +671,61 @@ const ContentPageClient = () => {
     });
   };
 
+  const updatePricingNote = (index: number, value: string) => {
+    setTempPricing((prev) => {
+      const newNotes = [...prev.notes];
+      newNotes[index] = value;
+      return { ...prev, notes: newNotes };
+    });
+  };
+
+  const addPricingNote = () => {
+    setTempPricing((prev) => ({
+      ...prev,
+      notes: [...prev.notes, ""],
+    }));
+  };
+
+  const removePricingNote = (index: number) => {
+    setTempPricing((prev) => ({
+      ...prev,
+      notes: prev.notes.filter((_, i) => i !== index),
+    }));
+  };
+
+  const savePricing = async () => {
+    setSavingPricing(true);
+    try {
+      // Save tempPricing to database instead of pricing
+      await saveSectionWithVersion(
+        "pricing",
+        tempPricing,
+        "Updated pricing section",
+      );
+
+      // Update main pricing state only after successful save
+      setPricing({ ...tempPricing });
+      setPricingDialogOpen(false);
+
+      // Trigger revalidation
+      await triggerRevalidation();
+
+      console.log("✅ Pricing section saved");
+    } catch (err) {
+      console.error("Save pricing error:", err);
+      alert("Failed to save pricing");
+    } finally {
+      setSavingPricing(false);
+    }
+  };
+
   /* GALLERY HANDLERS */
   // Gallery state
   const [gallery, setGallery] = useState<GalleryContent>({
+    ...galleryInitial,
+    version: 1,
+  });
+  const [tempGallery, setTempGallery] = useState<GalleryContent>({
     ...galleryInitial,
     version: 1,
   });
@@ -675,6 +739,11 @@ const ContentPageClient = () => {
     null,
   );
   const [savingGallery, setSavingGallery] = useState(false);
+
+  const openGalleryDialog = () => {
+    setTempGallery({ ...gallery });
+    setGalleryDialogOpen(true);
+  };
 
   // Gallery functions
   const onGalleryImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -808,10 +877,11 @@ const ContentPageClient = () => {
       // Save to database
       await saveSectionWithVersion(
         "gallery",
-        gallery,
+        tempGallery,
         "Updated gallery section",
       );
 
+      setGallery({ ...tempGallery, version: gallery.version });
       setGalleryNoteDialogOpen(false);
       setGalleryDialogOpen(false);
 
@@ -832,6 +902,10 @@ const ContentPageClient = () => {
     ...ctaInitial,
     version: 1,
   });
+  const [tempCta, setTempCta] = useState<CTAContent>({
+    ...ctaInitial,
+    version: 1,
+  });
   const [ctaDialogOpen, setCtaDialogOpen] = useState(false);
   const [ctaBackgroundFile, setCtaBackgroundFile] = useState<File | null>(null);
   const [ctaBackgroundPreview, setCtaBackgroundPreview] = useState<
@@ -840,6 +914,11 @@ const ContentPageClient = () => {
   const [savingCta, setSavingCta] = useState(false);
 
   // CTA functions
+  const openCtaDialog = () => {
+    setTempCta({ ...cta });
+    setCtaDialogOpen(true);
+  };
+
   const onCtaBackgroundSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
@@ -888,7 +967,7 @@ const ContentPageClient = () => {
       }
 
       const updatedCta = {
-        ...cta,
+        ...tempCta,
         backgroundImage,
       };
 
@@ -1199,6 +1278,7 @@ const ContentPageClient = () => {
 
   /* SHOP HANDLERS */
   const [shop, setShop] = useState<Shop | null>(null);
+  const [tempShop, setTempShop] = useState<Shop | null>(null);
 
   // Welcome dialog
   const [shopWelcomeDialogOpen, setShopWelcomeDialogOpen] = useState(false);
@@ -1228,6 +1308,7 @@ const ContentPageClient = () => {
   // Shop functions
   const openShopWelcomeDialog = () => {
     if (!shop) return;
+    setTempShop({ ...shop });
     setTempShopWelcomePreviews([shop.welcome_image_1, shop.welcome_image_2]);
     setShopWelcomePreviews([shop.welcome_image_1, shop.welcome_image_2]);
     setShopWelcomeDialogOpen(true);
@@ -1258,7 +1339,7 @@ const ContentPageClient = () => {
   };
 
   const saveShopWelcome = async () => {
-    if (!shop) return;
+    if (!tempShop) return;
 
     setSavingShopWelcome(true);
     try {
@@ -1270,7 +1351,7 @@ const ContentPageClient = () => {
         if (f) {
           // Delete old image
           const oldImageUrl =
-            i === 0 ? shop.welcome_image_1 : shop.welcome_image_2;
+            i === 0 ? tempShop.welcome_image_1 : tempShop.welcome_image_2;
           if (oldImageUrl) {
             const oldFilePath = extractFilePathFromUrl(oldImageUrl, "content");
             if (oldFilePath) {
@@ -1292,26 +1373,26 @@ const ContentPageClient = () => {
       const { error } = await supabase
         .from("shop")
         .update({
-          welcome_badge: shop.welcome_badge,
-          welcome_heading: shop.welcome_heading,
-          welcome_description: shop.welcome_description,
+          welcome_badge: tempShop.welcome_badge,
+          welcome_heading: tempShop.welcome_heading,
+          welcome_description: tempShop.welcome_description,
           welcome_image_1: images[0],
           welcome_image_2: images[1],
-          welcome_subheading: shop.welcome_subheading,
-          welcome_subdescription: shop.welcome_subdescription,
-          cta_primary_text: shop.cta_primary_text,
-          cta_primary_href: shop.cta_primary_href,
-          cta_secondary_text: shop.cta_secondary_text,
-          cta_secondary_href: shop.cta_secondary_href,
+          welcome_subheading: tempShop.welcome_subheading,
+          welcome_subdescription: tempShop.welcome_subdescription,
+          cta_primary_text: tempShop.cta_primary_text,
+          cta_primary_href: tempShop.cta_primary_href,
+          cta_secondary_text: tempShop.cta_secondary_text,
+          cta_secondary_href: tempShop.cta_secondary_href,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", shop.id);
+        .eq("id", tempShop.id);
 
       if (error) throw error;
 
       // Update local state
       setShop({
-        ...shop,
+        ...tempShop,
         welcome_image_1: images[0],
         welcome_image_2: images[1],
       });
@@ -1702,8 +1783,10 @@ const ContentPageClient = () => {
           <SectionOrderManager />
           <HeroSection
             hero={hero}
-            setHero={setHero}
+            tempHero={tempHero}
+            setTempHero={setTempHero}
             heroDialogOpen={heroDialogOpen}
+            openHeroDialog={openHeroDialog}
             setHeroDialogOpen={setHeroDialogOpen}
             heroPreview={heroPreview}
             setHeroPreview={setHeroPreview}
@@ -1746,6 +1829,9 @@ const ContentPageClient = () => {
           <TestimonialsSection
             testimonials={testimonials}
             setTestimonials={setTestimonials}
+            tempTestimonials={tempTestimonials}
+            setTempTestimonials={setTempTestimonials}
+            openTestimonialsDialog={openTestimonialsDialog}
             testimonialsDialogOpen={testimonialsDialogOpen}
             setTestimonialsDialogOpen={setTestimonialsDialogOpen}
             videoPreview={testimonialsVideoPreview}
@@ -1771,17 +1857,26 @@ const ContentPageClient = () => {
           <PricingSection
             pricing={pricing}
             setPricing={setPricing}
+            tempPricing={tempPricing}
+            setTempPricing={setTempPricing}
             pricingDialogOpen={pricingDialogOpen}
             setPricingDialogOpen={setPricingDialogOpen}
+            openPricingDialog={openPricingDialog}
             updatePricingItem={updatePricingItem}
             addPricingItem={addPricingItem}
             removePricingItem={removePricingItem}
+            updatePricingNote={updatePricingNote}
+            addPricingNote={addPricingNote}
+            removePricingNote={removePricingNote}
             savingPricing={savingPricing}
             savePricing={savePricing}
           />
           <GallerySection
             gallery={gallery}
             setGallery={setGallery}
+            tempGallery={tempGallery}
+            setTempGallery={setTempGallery}
+            openGalleryDialog={openGalleryDialog}
             galleryDialogOpen={galleryDialogOpen}
             setGalleryDialogOpen={setGalleryDialogOpen}
             imageDialogOpen={galleryImageDialogOpen}
@@ -1805,6 +1900,9 @@ const ContentPageClient = () => {
           <CTASection
             cta={cta}
             setCta={setCta}
+            tempCta={tempCta}
+            setTempCta={setTempCta}
+            openCtaDialog={openCtaDialog}
             ctaDialogOpen={ctaDialogOpen}
             setCtaDialogOpen={setCtaDialogOpen}
             backgroundPreview={ctaBackgroundPreview}
@@ -1853,6 +1951,8 @@ const ContentPageClient = () => {
           <ShopSection
             shop={shop}
             setShop={setShop}
+            tempShop={tempShop}
+            setTempShop={setTempShop}
             shopWelcomeDialogOpen={shopWelcomeDialogOpen}
             setShopWelcomeDialogOpen={setShopWelcomeDialogOpen}
             shopWelcomeFiles={shopWelcomeFiles}
