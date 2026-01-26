@@ -51,11 +51,34 @@ export interface AnalyticsData {
   startDate: string;
   endDate: string;
   summary: FinancialSummary;
+  comparison?: {
+    // ADD THIS
+    totalRevenue: number;
+    netRevenueAfterRefunds: number;
+    totalBookings: number;
+    totalRefunds: number;
+  };
   revenueTimeline: RevenueData[];
   paymentMethods: PaymentMethodBreakdown[];
   topCourts: CourtData[];
+  bestCourt?: CourtData | null;
+  worstCourt?: CourtData | null;
   peakHours: Array<{
     hour: string;
     bookings: number;
   }>;
+  peakVsOffPeak?: {
+    peak: {
+      revenue: number;
+      bookings: number;
+      percentage: number;
+      hours: string;
+    };
+    offPeak: {
+      revenue: number;
+      bookings: number;
+      percentage: number;
+      hours: string;
+    };
+  };
 }

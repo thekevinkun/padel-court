@@ -1,5 +1,6 @@
 "use client";
 
+import { Info } from "lucide-react";
 import {
   PieChart,
   Pie,
@@ -11,17 +12,39 @@ import {
 import { PaymentMethodBreakdown } from "@/types/reports";
 
 const PaymentMethodChart = ({ data }: { data: PaymentMethodBreakdown[] }) => {
-  // Color palette - professional and distinct
-  const COLORS = [
-    "#10b981", // Green
-    "#3b82f6", // Blue
-    "#8b5cf6", // Purple
-    "#f59e0b", // Amber
-    "#ef4444", // Red
-    "#06b6d4", // Cyan
-    "#ec4899", // Pink
-    "#84cc16", // Lime
-  ];
+  // Color mapping: Online methods = Blue shades, Venue methods = Amber shades
+  const getColorForMethod = (method: string) => {
+    if (method.startsWith("VENUE_")) {
+      // Venue payments - Amber shades
+      const venueColors = ["#f59e0b", "#fb923c", "#fdba74", "#fcd34d"];
+      const venueIndex = [
+        "VENUE_CASH",
+        "VENUE_DEBIT_CARD",
+        "VENUE_BANK_TRANSFER",
+        "VENUE_QRIS",
+      ].indexOf(method);
+      return venueColors[venueIndex] || "#f59e0b";
+    } else {
+      // Online payments - Blue/Green shades
+      const onlineColors = [
+        "#3b82f6",
+        "#10b981",
+        "#8b5cf6",
+        "#06b6d4",
+        "#ec4899",
+      ];
+      const onlineIndex = [
+        "CREDIT_CARD",
+        "BANK_TRANSFER",
+        "GOPAY",
+        "SHOPEEPAY",
+        "DANA",
+        "QRIS",
+        "OTHER_QRIS",
+      ].indexOf(method);
+      return onlineColors[onlineIndex] || "#3b82f6";
+    }
+  };
 
   // Format payment method names for better display
   const formatMethodName = (method: string) => {
@@ -135,7 +158,7 @@ const PaymentMethodChart = ({ data }: { data: PaymentMethodBreakdown[] }) => {
 
   return (
     <div className="w-full">
-      <div className="h-[500px] w-full flex items-center justify-center">
+      <div className="h-[640px] w-full flex items-center justify-center">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
@@ -150,10 +173,10 @@ const PaymentMethodChart = ({ data }: { data: PaymentMethodBreakdown[] }) => {
               dataKey="value"
               paddingAngle={2}
             >
-              {chartData.map((entry, index) => (
+              {data.map((entry, index) => (
                 <Cell
                   key={`cell-${index}`}
-                  fill={COLORS[index % COLORS.length]}
+                  fill={getColorForMethod(entry.method)}
                   stroke="#fff"
                   strokeWidth={2}
                 />
@@ -189,6 +212,36 @@ const PaymentMethodChart = ({ data }: { data: PaymentMethodBreakdown[] }) => {
         <div className="text-center">
           <p className="text-2xl font-bold text-blue-600">{data.length}</p>
           <p className="text-xs text-gray-600 mt-1">Payment Methods</p>
+        </div>
+      </div>
+
+      {/* Explanation Section */}
+      <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <div className="flex items-start gap-3">
+          <div className="p-2 bg-blue-500 rounded-lg">
+            <Info className="w-4 h-4 text-white" />
+          </div>
+          <div className="flex-1">
+            <h4 className="font-semibold text-gray-900 text-sm mb-2">
+              Understanding Payment Distribution
+            </h4>
+            <div className="space-y-2 text-xs text-gray-700">
+              <div className="flex items-start gap-2">
+                <div className="w-3 h-3 rounded-full bg-blue-500 mt-0.5 flex-shrink-0"></div>
+                <p>
+                  <strong>Online Payments (Blue):</strong> Money collected
+                  during booking via Midtrans (deposits or full payments)
+                </p>
+              </div>
+              <div className="flex items-start gap-2">
+                <div className="w-3 h-3 rounded-full bg-amber-500 mt-0.5 flex-shrink-0"></div>
+                <p>
+                  <strong>Venue Payments (Amber):</strong> Remaining balance
+                  collected in cash at the venue (for deposit bookings only)
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

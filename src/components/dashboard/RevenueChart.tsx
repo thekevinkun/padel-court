@@ -22,8 +22,8 @@ const RevenueChart = ({ data }: { data: RevenueData[] }) => {
     }),
     "Online Revenue": item.onlineRevenue,
     "Venue Revenue": item.venueRevenue,
-    "Total Revenue": item.totalRevenue,
-    "Net Revenue": item.netRevenue,
+    "Gross Revenue": item.totalRevenue,
+    "Actual Earnings": item.netRevenue,
   }));
 
   // Custom tooltip
@@ -102,10 +102,10 @@ const RevenueChart = ({ data }: { data: RevenueData[] }) => {
             verticalAlign="bottom"
           /> */}
 
-          {/* Total Revenue - Green */}
+          {/* Gross Revenue - Green */}
           <Area
             type="monotone"
-            dataKey="Total Revenue"
+            dataKey="Gross Revenue"
             stroke="#10b981"
             strokeWidth={2}
             fillOpacity={1}
@@ -132,14 +132,14 @@ const RevenueChart = ({ data }: { data: RevenueData[] }) => {
             fill="url(#colorVenue)"
           />
 
-          {/* Net Revenue - Slate (dotted) */}
+          {/* Actual Earnings - Emerald (dotted) */}
           <Line
             type="monotone"
-            dataKey="Net Revenue"
-            stroke="#64748b"
+            dataKey="Actual Earnings"
+            stroke="#059669"
             strokeWidth={2}
             strokeDasharray="5 5"
-            dot={{ fill: "#64748b", r: 4 }}
+            dot={{ fill: "#059669", r: 4 }}
           />
         </AreaChart>
       </ResponsiveContainer>
@@ -149,10 +149,11 @@ const RevenueChart = ({ data }: { data: RevenueData[] }) => {
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-green-500"></div>
           <div>
-            <p className="text-gray-600">Total Revenue</p>
-            <p className="text-xs text-gray-500">Booking value</p>
+            <p className="text-gray-600">Gross Revenue</p>
+            <p className="text-xs text-gray-500">What customers paid</p>
           </div>
         </div>
+
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-blue-500"></div>
           <div>
@@ -168,10 +169,10 @@ const RevenueChart = ({ data }: { data: RevenueData[] }) => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-slate-500"></div>
+          <div className="w-3 h-3 rounded-full bg-emerald-600"></div>
           <div>
-            <p className="text-gray-600">Net Revenue</p>
-            <p className="text-xs text-gray-500">After fees</p>
+            <p className="text-gray-600">Actual Earnings</p>
+            <p className="text-xs text-gray-500">After fees & refunds</p>
           </div>
         </div>
       </div>

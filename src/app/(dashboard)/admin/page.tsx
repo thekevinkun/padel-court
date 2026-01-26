@@ -8,7 +8,7 @@ import {
   DollarSign,
   Clock,
   CheckCircle,
-  RefreshCw,
+  BarChart3,
   XCircle,
   PlayCircle,
   Trophy,
@@ -142,8 +142,10 @@ export default function DashboardPage() {
       const { data: recent } = await supabase
         .from("bookings")
         .select(`*, courts (name)`)
-        .order("created_at", { ascending: false })
-        .limit(5);
+        .eq("date", today) // Only today's bookings
+        .in("session_status", ["UPCOMING", "IN_PROGRESS"]) // Only active sessions
+        .order("time", { ascending: true }) // Order by time
+        .limit(10); // Get up to 10, we'll show 5 in UI
 
       // Track refunds separately
       const todayRefundedBookings =
@@ -186,55 +188,37 @@ export default function DashboardPage() {
       console.error("Status update failed:", error);
     }
   };
-  
+
   const statCards = [
+    // Card 1: Right Now - What's Active
     {
-      title: "Today's Bookings",
-      value: stats.todayBookings,
-      icon: Calendar,
-      color: "text-blue-600",
-      bgColor: "bg-blue-100",
-      subtitle: "Total confirmed bookings",
-    },
-    {
-      title: "Today's Revenue",
-      value: `IDR ${stats.todayRevenue.toLocaleString("id-ID")}`,
-      icon: DollarSign,
-      color: "text-green-600",
-      bgColor: "bg-green-100",
-      subtitle: "Total booking value (excl. fees)",
-    },
-    {
-      title: "In Progress",
+      title: "Active Right Now",
       value: stats.inProgressSessions,
       icon: PlayCircle,
       color: "text-emerald-600",
       bgColor: "bg-emerald-100",
-      subtitle: "Currently playing",
+      subtitle: `${stats.upcomingSessions} upcoming today`,
+      description: "Currently playing sessions",
     },
+    // Card 2: Today's Performance
     {
-      title: "Upcoming Today",
-      value: stats.upcomingSessions,
+      title: "Today's Performance",
+      value: `IDR ${stats.todayRevenue.toLocaleString("id-ID")}`,
+      icon: DollarSign,
+      color: "text-green-600",
+      bgColor: "bg-green-100",
+      subtitle: `${stats.todayBookings} bookings`,
+      description: "Revenue from confirmed bookings",
+    },
+    // Card 3: Alerts & Actions Needed
+    {
+      title: "Needs Attention",
+      value: stats.pendingVenuePayments,
       icon: Clock,
       color: "text-orange-600",
       bgColor: "bg-orange-100",
-      subtitle: "Waiting to check-in",
-    },
-    {
-      title: "Completed Today",
-      value: stats.completedToday,
-      icon: Trophy,
-      color: "text-purple-600",
-      bgColor: "bg-purple-100",
-      subtitle: "Sessions finished",
-    },
-    {
-      title: "Available Slots",
-      value: stats.availableSlots,
-      icon: Calendar,
-      color: "text-gray-600",
-      bgColor: "bg-gray-100",
-      subtitle: "Remaining today",
+      subtitle: `IDR ${stats.pendingVenueAmount.toLocaleString("id-ID")} to collect`,
+      description: "Bookings awaiting venue payment",
     },
   ];
 
@@ -249,6 +233,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Welcome Message with Real-time Indicator */}
+      {/* Welcome Message with Real-time Indicator */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -256,24 +241,38 @@ export default function DashboardPage() {
       >
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold mb-2">Welcome back!</h2>
+            <h2 className="heading-3 font-bold mb-2">Welcome back!</h2>
             <p className="text-white/80">
-              Here's what's happening with your padel courts today.
+              Real-time overview of what's happening at your courts right now
             </p>
-            <div className="flex items-center gap-2 mt-3">
-              {isSubscribed ? (
-                <>
-                  <Wifi className="w-4 h-4 text-green-300" />
-                  <span className="text-xs text-green-300">
-                    Live updates active
-                  </span>
-                </>
-              ) : (
-                <>
-                  <WifiOff className="w-4 h-4 text-yellow-300" />
-                  <span className="text-xs text-yellow-300">Connecting...</span>
-                </>
-              )}
+            <div className="flex items-center gap-4 mt-3">
+              <div className="flex items-center gap-2">
+                {isSubscribed ? (
+                  <>
+                    <Wifi className="w-4 h-4 text-green-300" />
+                    <span className="text-xs text-green-300">
+                      Live updates active
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <WifiOff className="w-4 h-4 text-yellow-300" />
+                    <span className="text-xs text-yellow-300">
+                      Connecting...
+                    </span>
+                  </>
+                )}
+              </div>
+              <div className="h-4 w-px bg-white/30"></div>
+              <Link href="/admin/reports">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-white hover:bg-white/20"
+                >
+                  📊 View Reports
+                </Button>
+              </Link>
             </div>
           </div>
           <Button
@@ -283,56 +282,53 @@ export default function DashboardPage() {
               await fetchDashboardData();
             }}
             variant="outline"
-            className="hover:bg-gray-300"
+            className="text-accent-foreground hover:bg-gray-300"
             disabled={loadingRefresh}
           >
-            <RefreshCw
-              className={`text-accent-foreground !w-4.5 !h-4.5 ${
-                loadingRefresh ? "animate-spin" : ""
-              }`}
-            />
+            <BarChart3 className="w-4 h-4 mr-1" />
+            Refresh
           </Button>
+        </div>
+
+        {/* Quick Actions Section*/}
+        <div className="mt-12">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Link href="/admin/bookings?filter=upcoming">
+              <Button
+                className="w-full text-accent-foreground hover:bg-transparent hover:text-accent"
+                variant="outline"
+                size="lg"
+              >
+                <CheckCircle className="w-4 h-4 mr-2" />
+                Check In Customers
+              </Button>
+            </Link>
+            <Link href="/admin/bookings?filter=venue_pending">
+              <Button
+                className="w-full text-accent-foreground hover:bg-transparent hover:text-accent"
+                variant="outline"
+                size="lg"
+              >
+                <DollarSign className="w-4 h-4 mr-2" />
+                Process Venue Payments
+              </Button>
+            </Link>
+            <Link href="/admin/time-slots">
+              <Button
+                className="w-full text-accent-foreground hover:bg-transparent hover:text-accent"
+                variant="outline"
+                size="lg"
+              >
+                <Calendar className="w-4 h-4 mr-2" />
+                View Today's Schedule
+              </Button>
+            </Link>
+          </div>
         </div>
       </motion.div>
 
-      {/* Pending Venue Payments Alert */}
-      {stats.pendingVenuePayments > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <Alert className="bg-orange-50 border-orange-200">
-            <AlertDescription>
-              <div className="flex items-center justify-between gap-5">
-                <div>
-                  <strong className="text-orange-900">
-                    {stats.pendingVenuePayments} Booking
-                    {stats.pendingVenuePayments > 1 ? "s" : ""} Awaiting Venue
-                    Payment
-                  </strong>
-                  <p className="text-sm text-orange-700 mt-1">
-                    Total to collect: IDR{" "}
-                    {stats.pendingVenueAmount.toLocaleString("id-ID")}
-                  </p>
-                </div>
-                <Link href="/admin/bookings?filter=venue_pending">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="border-orange-300 hover:bg-orange-100"
-                  >
-                    View All
-                  </Button>
-                </Link>
-              </div>
-            </AlertDescription>
-          </Alert>
-        </motion.div>
-      )}
-
-      {/* Stats Cards - Now with real-time updates! */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {statCards.map((stat, index) => {
           const Icon = stat.icon;
           return (
@@ -348,11 +344,9 @@ export default function DashboardPage() {
                     <CardTitle className="text-sm font-medium text-muted-foreground">
                       {stat.title}
                     </CardTitle>
-                    {stat.subtitle && (
-                      <p className="text-xs text-muted-foreground/70 mt-0.5">
-                        {stat.subtitle}
-                      </p>
-                    )}
+                    <p className="text-xs text-muted-foreground/70 mt-0.5">
+                      {stat.description}
+                    </p>
                   </div>
                   <div className={`p-2 rounded-lg ${stat.bgColor}`}>
                     <Icon className={`h-4 w-4 ${stat.color}`} />
@@ -360,6 +354,11 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{stat.value}</div>
+                  {stat.subtitle && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {stat.subtitle}
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>
@@ -367,10 +366,59 @@ export default function DashboardPage() {
         })}
       </div>
 
+      {/* Session Overview*/}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+      >
+        <Card className="bg-gradient-to-br from-gray-50 to-gray-100">
+          <CardContent className="p-6">
+            <h3 className="font-semibold text-gray-900 mb-4">
+              Today's Session Status
+            </h3>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-center p-4 bg-white rounded-lg border border-gray-200">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <PlayCircle className="w-5 h-5 text-green-600" />
+                  <span className="text-2xl font-bold text-green-600">
+                    {stats.inProgressSessions}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-600">In Progress</p>
+              </div>
+              <div className="text-center p-4 bg-white rounded-lg border border-gray-200">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Clock className="w-5 h-5 text-orange-600" />
+                  <span className="text-2xl font-bold text-orange-600">
+                    {stats.upcomingSessions}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-600">Upcoming</p>
+              </div>
+              <div className="text-center p-4 bg-white rounded-lg border border-gray-200">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Trophy className="w-5 h-5 text-purple-600" />
+                  <span className="text-2xl font-bold text-purple-600">
+                    {stats.completedToday}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-600">Completed</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
       {/* Recent Bookings - Now updates in real-time! */}
       <Card>
-        <CardHeader>
-          <CardTitle>Recent Bookings</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between pb-3">
+          <CardTitle>Today's Sessions</CardTitle>
+          <Link href="/admin/bookings">
+            <Button variant="ghost" size="sm">
+              View All →
+            </Button>
+          </Link>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -379,81 +427,101 @@ export default function DashboardPage() {
                 No bookings yet
               </p>
             ) : (
-              recentBookings.map((booking) => (
-                <Link
-                  key={booking.id}
-                  href={`/admin/bookings/${booking.id}`}
-                  className="block"
-                >
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <div
-                        className={`p-2 rounded-full ${
-                          getDisplayStatus(booking) === "REFUNDED" 
-                            ? "bg-purple-100"
-                          : booking.session_status === "IN_PROGRESS"
-                              ? "bg-green-100"
-                            : booking.session_status === "COMPLETED"
-                                ? "bg-gray-100"
-                              : booking.session_status === "CANCELLED"
-                                  ? "bg-red-100"
-                                : getDisplayStatus(booking) === "PAID"
-                                    ? "bg-blue-100"
-                                  : getDisplayStatus(booking) === "DEPOSIT PAID"
-                                      ? "bg-orange-100"
-                                      : "bg-yellow-100"
-                        }`}
-                      >
-                        {getDisplayStatus(booking) === "REFUNDED" ? (
-                          <DollarSign className="h-5 w-5 text-purple-600" />
-                        ) : booking.session_status === "IN_PROGRESS" ? (
-                          <PlayCircle className="h-5 w-5 text-green-600" />
-                        ) : booking.session_status === "COMPLETED" ? (
-                          <CheckCircle className="h-5 w-5 text-gray-600" />
-                        ) : booking.session_status === "CANCELLED" ? (
-                          <XCircle className="h-5 w-5 text-red-600" />
-                        ) : getDisplayStatus(booking) === "PAID" ? (
-                          <CheckCircle className="h-5 w-5 text-blue-600" />
-                        ) : getDisplayStatus(booking) === "DEPOSIT PAID" ? (
-                          <Clock className="h-5 w-5 text-orange-600" />
-                        ) : (
-                          <Clock className="h-5 w-5 text-yellow-600" />
-                        )}
+              recentBookings
+                .filter((booking) => {
+                  // Only show today's bookings that are upcoming or in progress
+                  const today = new Date().toLocaleDateString("en-CA", {
+                    timeZone: "Asia/Makassar",
+                  });
+                  return (booking.date === today);
+                })
+                .slice(0, 5) // Limit to 5 sessions
+                .map((booking) => (
+                  <Link
+                    key={booking.id}
+                    href={`/admin/bookings/${booking.id}`}
+                    className="block"
+                  >
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                      <div className="flex items-center gap-4">
+                        <div
+                          className={`p-2 rounded-full ${
+                            getDisplayStatus(booking) === "REFUNDED"
+                              ? "bg-purple-100"
+                              : booking.session_status === "IN_PROGRESS"
+                                ? "bg-green-100"
+                                : booking.session_status === "COMPLETED"
+                                  ? "bg-gray-100"
+                                  : booking.session_status === "CANCELLED"
+                                    ? "bg-red-100"
+                                    : getDisplayStatus(booking) === "PAID"
+                                      ? "bg-blue-100"
+                                      : getDisplayStatus(booking) ===
+                                          "DEPOSIT PAID"
+                                        ? "bg-orange-100"
+                                        : "bg-yellow-100"
+                          }`}
+                        >
+                          {getDisplayStatus(booking) === "REFUNDED" ? (
+                            <DollarSign className="h-5 w-5 text-purple-600" />
+                          ) : booking.session_status === "IN_PROGRESS" ? (
+                            <PlayCircle className="h-5 w-5 text-green-600" />
+                          ) : booking.session_status === "COMPLETED" ? (
+                            <CheckCircle className="h-5 w-5 text-gray-600" />
+                          ) : booking.session_status === "CANCELLED" ? (
+                            <XCircle className="h-5 w-5 text-red-600" />
+                          ) : getDisplayStatus(booking) === "PAID" ? (
+                            <CheckCircle className="h-5 w-5 text-blue-600" />
+                          ) : getDisplayStatus(booking) === "DEPOSIT PAID" ? (
+                            <Clock className="h-5 w-5 text-orange-600" />
+                          ) : (
+                            <Clock className="h-5 w-5 text-yellow-600" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium">{booking.customer_name}</p>
+                          <p className="text-sm text-muted-foreground capitalize">
+                            {booking.courts?.name} •{" "}
+                            {formatRelativeDate(booking.date)} • {booking.time}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium">{booking.customer_name}</p>
-                        <p className="text-sm text-muted-foreground capitalize">
-                          {booking.courts?.name} • {formatRelativeDate(booking.date)} • {booking.time}
+                      <div className="text-right">
+                        <p className="font-medium">
+                          IDR{" "}
+                          {(booking.require_deposit
+                            ? booking.deposit_amount
+                            : booking.subtotal
+                          ).toLocaleString("id-ID")}
                         </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-medium">
-                        IDR{" "}
-                        {(booking.require_deposit
-                          ? booking.deposit_amount
-                          : booking.subtotal
-                        ).toLocaleString("id-ID")}
-                      </p>
 
-                      {(booking.require_deposit || getDisplayStatus(booking) === "DEPOSIT PAID") && (
-                        <p className="text-xs text-orange-600">
-                          <span 
-                            className={`${booking.venue_payment_expired || booking.session_status === "CANCELLED" ? "line-through" : ""}`}
-                          >
-                            +{booking.remaining_balance.toLocaleString("id-ID")} at venue
-                          </span>
-                          {" "}{booking.venue_payment_expired ? "(Expired)" : booking.session_status === "CANCELLED" ? "(Not collected)" : ""}
+                        {(booking.require_deposit ||
+                          getDisplayStatus(booking) === "DEPOSIT PAID") && (
+                          <p className="text-xs text-orange-600">
+                            <span
+                              className={`${booking.venue_payment_expired || booking.session_status === "CANCELLED" ? "line-through" : ""}`}
+                            >
+                              +
+                              {booking.remaining_balance.toLocaleString(
+                                "id-ID",
+                              )}{" "}
+                              at venue
+                            </span>{" "}
+                            {booking.venue_payment_expired
+                              ? "(Expired)"
+                              : booking.session_status === "CANCELLED"
+                                ? "(Not collected)"
+                                : ""}
+                          </p>
+                        )}
+                        <p className="text-sm text-muted-foreground">
+                          {getDisplayStatus(booking)} •{" "}
+                          {booking.session_status.replace("_", " ")}
                         </p>
-                      )}
-                      <p className="text-sm text-muted-foreground">
-                        {getDisplayStatus(booking)} •{" "}
-                        {booking.session_status.replace("_", " ")}
-                      </p>
+                      </div>
                     </div>
-                  </div>
-                </Link>
-              ))
+                  </Link>
+                ))
             )}
           </div>
         </CardContent>

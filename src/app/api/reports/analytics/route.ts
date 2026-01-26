@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { redis } from "@/lib/redis";
 import { createServerClient } from "@/lib/supabase/server";
 import { createAuthClient } from "@/lib/supabase/auth-server";
 import { RevenueData } from "@/types/reports";
+
+// Cache TTL: 5 minutes for reports
+const CACHE_TTL = 900; // seconds
 
 export async function GET(request: NextRequest) {
   try {
@@ -31,13 +35,50 @@ export async function GET(request: NextRequest) {
 
     // Get date range from query params
     const { searchParams } = new URL(request.url);
+
     const startDate =
       searchParams.get("startDate") || new Date().toISOString().split("T")[0];
     const endDate =
       searchParams.get("endDate") || new Date().toISOString().split("T")[0];
     const period = searchParams.get("period") || "day";
 
-    console.log("📊 Analytics request:", { startDate, endDate, period });
+    // CREATE CACHE KEY
+    const cacheKey = `padelbap:reports:analytics:${startDate}:${endDate}:${period}`;
+
+    // TRY TO GET FROM CACHE FIRST
+    try {
+      const cachedData = await redis.get(cacheKey);
+      if (cachedData) {
+        console.log("📊 Cache HIT - Returning cached analytics:", cacheKey);
+        return NextResponse.json(cachedData);
+      }
+      console.log("📊 Cache MISS - Fetching fresh data:", cacheKey);
+    } catch (cacheError) {
+      console.error("📊 Cache read error:", cacheError);
+      // Continue to fetch fresh data if cache fails
+    }
+
+    // Calculate previous period for comparison
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const daysDiff = Math.ceil(
+      (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
+    );
+    const prevStart = new Date(start);
+    prevStart.setDate(prevStart.getDate() - daysDiff);
+    const previousStartDate = prevStart.toISOString().split("T")[0];
+    const previousEndDate = new Date(start.setDate(start.getDate() - 1))
+      .toISOString()
+      .split("T")[0];
+
+    console.log("📊 Analytics request:", {
+      startDate,
+      endDate,
+      period,
+      previousStartDate,
+      previousEndDate,
+      daysDiff,
+    });
 
     // Fetch PAID and REFUNDED separately
     const { data: bookings, error: bookingsError } = await supabase
@@ -61,7 +102,26 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log("📊 Found bookings:", bookings.length);
+    console.log("📊 Found current bookings:", bookings.length);
+
+    // Fetch previous period bookings for comparison
+    const { data: previousBookings, error: previousBookingsError } =
+      await supabase
+        .from("bookings")
+        .select("*")
+        .gte("date", previousStartDate)
+        .lte("date", previousEndDate)
+        .in("status", ["PAID", "REFUNDED"]);
+
+    if (previousBookingsError) {
+      console.error("Error fetching previous bookings:", previousBookingsError);
+      return NextResponse.json(
+        { error: "Failed to fetch previous bookings" },
+        { status: 500 },
+      );
+    }
+
+    console.log("📊 Found previous bookings:", previousBookings?.length || 0);
 
     // Calculate Summary Statistics (excluding refunded)
     const paidBookings = bookings.filter((b) => b.status === "PAID");
@@ -132,6 +192,53 @@ export async function GET(request: NextRequest) {
 
     console.log("📊 Summary calculated:", summary);
 
+    // Calculate previous period summary for comparison
+    const prevPaidBookings =
+      previousBookings?.filter((b) => b.status === "PAID") || [];
+    const prevRefundedBookings =
+      previousBookings?.filter((b) => b.status === "REFUNDED") || [];
+
+    const prevTotalBookings = prevPaidBookings.length;
+    const prevTotalRevenue = prevPaidBookings.reduce(
+      (sum, b) => sum + b.subtotal,
+      0,
+    );
+    const prevOnlineRevenue = prevPaidBookings.reduce((sum, b) => {
+      return sum + (b.require_deposit ? b.deposit_amount : b.subtotal);
+    }, 0);
+    const prevVenueRevenue = prevPaidBookings.reduce((sum, b) => {
+      return sum + (b.venue_payment_amount || 0);
+    }, 0);
+    const prevNetRevenue = prevPaidBookings.reduce((sum, b) => {
+      const onlineNet = b.total_amount - b.payment_fee;
+      const venueNet = b.venue_payment_amount || 0;
+      return sum + onlineNet + venueNet;
+    }, 0);
+    const prevTotalRefunds = prevRefundedBookings.length;
+    const prevTotalRefundAmount = prevRefundedBookings.reduce(
+      (sum, b) => sum + (b.refund_amount || 0),
+      0,
+    );
+    const prevNetRevenueAfterRefunds = prevNetRevenue - prevTotalRefundAmount;
+
+    // Calculate percentage changes
+    const calculateChange = (current: number, previous: number) => {
+      if (previous === 0) return current > 0 ? 100 : 0;
+      return ((current - previous) / previous) * 100;
+    };
+
+    const comparison = {
+      totalRevenue: calculateChange(totalRevenue, prevTotalRevenue),
+      netRevenueAfterRefunds: calculateChange(
+        netRevenueAfterRefunds,
+        prevNetRevenueAfterRefunds,
+      ),
+      totalBookings: calculateChange(totalBookings, prevTotalBookings),
+      totalRefunds: calculateChange(totalRefunds || 0, prevTotalRefunds),
+    };
+
+    console.log("📊 Comparison vs previous period:", comparison);
+
     // Revenue Timeline (group by date) - ONLY PAID BOOKINGS
     const revenueByDate = paidBookings.reduce(
       (acc: Record<string, RevenueData>, b) => {
@@ -146,7 +253,6 @@ export async function GET(request: NextRequest) {
             feesAbsorbed: 0,
           };
         }
-
         const online = b.require_deposit ? b.deposit_amount : b.subtotal;
         const venue = b.venue_payment_amount || 0;
         const onlineNet = b.total_amount - b.payment_fee;
@@ -161,6 +267,25 @@ export async function GET(request: NextRequest) {
       },
       {},
     );
+
+    // Subtract refunds from the same dates
+    refundedBookings.forEach((b) => {
+      const date = b.date;
+      if (revenueByDate[date]) {
+        // Subtract refund amount from net revenue to get actual earnings
+        revenueByDate[date].netRevenue -= b.refund_amount || 0;
+      } else {
+        // If refund happened on a date with no other bookings, create entry with negative
+        revenueByDate[date] = {
+          date,
+          onlineRevenue: 0,
+          venueRevenue: 0,
+          totalRevenue: 0,
+          netRevenue: -(b.refund_amount || 0),
+          feesAbsorbed: 0,
+        };
+      }
+    });
 
     const revenueTimeline = Object.values(revenueByDate).sort((a, b) =>
       a.date.localeCompare(b.date),
@@ -229,6 +354,7 @@ export async function GET(request: NextRequest) {
       {},
     );
 
+    // Get top 5 courts by revenue
     const topCourts = Object.entries(courtStats)
       .map(([courtName, stats]) => ({
         courtName,
@@ -237,6 +363,11 @@ export async function GET(request: NextRequest) {
       }))
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 5);
+
+    // Best and Worst Performers
+    const bestCourt = topCourts.length > 0 ? topCourts[0] : null;
+    const worstCourt =
+      topCourts.length > 0 ? topCourts[topCourts.length - 1] : null;
 
     // Peak Hours Analysis - ONLY PAID
     const hourStats = paidBookings.reduce((acc: Record<string, number>, b) => {
@@ -249,22 +380,96 @@ export async function GET(request: NextRequest) {
       return acc;
     }, {});
 
+    // Sorting peak hours by bookings
     const peakHours = Object.entries(hourStats)
       .map(([hour, bookings]) => ({ hour, bookings: bookings as number }))
       .sort((a, b) => b.bookings - a.bookings);
 
-    // Return analytics data
-    return NextResponse.json({
+    // Peak vs Off-Peak Analysis
+    // Peak hours: Morning (6am-9am) + Evening (3pm-9pm)
+    // Off-peak: Midday (10am-2pm)
+    const peakHoursList = [
+      "06:00",
+      "07:00",
+      "08:00",
+      "09:00", // Morning peak
+      "15:00",
+      "16:00",
+      "17:00",
+      "18:00",
+      "19:00",
+      "20:00",
+      "21:00", // Evening peak
+    ];
+    const offPeakHoursList = ["10:00", "11:00", "12:00", "13:00", "14:00"];
+
+    let peakRevenue = 0;
+    let peakBookings = 0;
+    let offPeakRevenue = 0;
+    let offPeakBookings = 0;
+
+    // Calculate revenues and bookings for peak and off-peak
+    paidBookings.forEach((b) => {
+      // Extract start hour like "14:00"
+      const hour = b.time.split(" - ")[0];
+
+      // Use the actual revenue (deposit or subtotal) NOT total_amount
+      if (peakHoursList.includes(hour)) {
+        peakRevenue += b.subtotal;
+        peakBookings += 1;
+      } else if (offPeakHoursList.includes(hour)) {
+        offPeakRevenue += b.subtotal;
+        offPeakBookings += 1;
+      }
+    });
+
+    // Construct peak vs off-peak object
+    const peakVsOffPeak = {
+      peak: {
+        revenue: peakRevenue,
+        bookings: peakBookings,
+        percentage: totalRevenue > 0 ? (peakRevenue / totalRevenue) * 100 : 0,
+        hours: "6am-9am & 3pm-9pm", // Updated label
+      },
+      offPeak: {
+        revenue: offPeakRevenue,
+        bookings: offPeakBookings,
+        percentage:
+          totalRevenue > 0 ? (offPeakRevenue / totalRevenue) * 100 : 0,
+        hours: "10am-2pm", // Updated label
+      },
+    };
+
+    console.log("📊 Peak vs Off-Peak:", peakVsOffPeak);
+
+    // Prepare response data
+    const responseData = {
       success: true,
       period,
       startDate,
       endDate,
       summary,
+      comparison,
       revenueTimeline,
       paymentMethods,
       topCourts,
+      bestCourt,
+      worstCourt,
       peakHours,
-    });
+      peakVsOffPeak,
+    };
+
+    // CACHE THE RESPONSE
+    try {
+      await redis.set(cacheKey, responseData, { ex: CACHE_TTL });
+      console.log("📊 Cached analytics data for 5 minutes:", cacheKey);
+    } catch (cacheError) {
+      console.error("📊 Cache write error:", cacheError);
+      // Don't fail the request if caching fails
+    }
+
+    // Return analytics data after caching
+    return NextResponse.json(responseData);
   } catch (error) {
     console.error("❌ Analytics API error:", error);
     return NextResponse.json(

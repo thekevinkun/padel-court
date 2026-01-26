@@ -119,7 +119,7 @@ export async function sendBookingReminder(data: ReminderEmailData) {
     const { data: result, error } = await resend.emails.send({
       from: "Padel Batu Alam Permai <onboarding@resend.dev>",
       to: [recipientEmail],
-      subject: `Reminder: Your session is tomorrow!`,
+      subject: `Reminder: Your session is coming up soon!`,
       html: emailHtml,
     });
 
