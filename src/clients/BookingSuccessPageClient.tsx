@@ -13,6 +13,7 @@ import {
   Mail,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -94,7 +95,11 @@ const BookingSuccessPageClient = () => {
         .select(
           `
           *,
-          courts (name, description)
+          courts (name, description),
+          booking_time_slots (
+            id,
+            time_slots (time_start, time_end, period, price_per_person)
+          )
         `,
         )
         .eq("booking_ref", bookingRef)
@@ -302,7 +307,15 @@ const BookingSuccessPageClient = () => {
 
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Time:</span>
-                  <span className="font-medium">{booking.time}</span>
+                  <span className="font-medium">
+                    {booking.time}
+                    {booking.duration_hours > 1 && (
+                      <Badge variant="outline" className="ml-2 text-xs">
+                        {booking.duration_hours} hour
+                        {booking.duration_hours > 1 ? "s" : ""}
+                      </Badge>
+                    )}
+                  </span>
                 </div>
 
                 <div className="flex justify-between">
@@ -436,7 +449,7 @@ const BookingSuccessPageClient = () => {
               <Download className="mr-2 h-5 w-5" />
               Download PDF Receipt
             </Button>
-            
+
             {/* Share booking details to whatsapp */}
             <Button
               onClick={handleShareWhatsApp}

@@ -37,7 +37,16 @@ export function useRealtimeBookings(initialBookings: Booking[] = []) {
           // Fetch complete booking data with relations
           const { data: completeBooking } = await supabase
             .from("bookings")
-            .select("*, courts(id, name, description, available)")
+            .select(
+              `
+              *, 
+              courts(id, name, description, available),
+              booking_time_slots(
+                id,
+                time_slots(time_start, time_end)
+              )
+            `,
+            )
             .eq("id", newBooking.id)
             .single();
 
@@ -61,7 +70,7 @@ export function useRealtimeBookings(initialBookings: Booking[] = []) {
               },
             });
           }
-        }
+        },
       )
       .on(
         "postgres_changes",
@@ -107,7 +116,16 @@ export function useRealtimeBookings(initialBookings: Booking[] = []) {
           // Fetch complete booking data with relations
           const { data: completeBooking } = await supabase
             .from("bookings")
-            .select("*, courts(id, name, description, available)")
+            .select(
+              `
+              *, 
+              courts(id, name, description, available),
+              booking_time_slots(
+                id,
+                time_slots(time_start, time_end)
+              )
+            `,
+            )
             .eq("id", updatedBooking.id)
             .single();
 
@@ -160,7 +178,7 @@ export function useRealtimeBookings(initialBookings: Booking[] = []) {
               description: `${
                 completeBooking.customer_name
               } paid IDR ${completeBooking.venue_payment_amount.toLocaleString(
-                "id-ID"
+                "id-ID",
               )} remaining balance`,
               duration: Infinity,
             });
@@ -169,10 +187,10 @@ export function useRealtimeBookings(initialBookings: Booking[] = []) {
           // Update in list (no toasts inside setState!)
           setBookings((currentBookings) =>
             currentBookings.map((booking) =>
-              booking.id === completeBooking.id ? completeBooking : booking
-            )
+              booking.id === completeBooking.id ? completeBooking : booking,
+            ),
           );
-        }
+        },
       )
       .on(
         "postgres_changes",
@@ -188,14 +206,14 @@ export function useRealtimeBookings(initialBookings: Booking[] = []) {
 
           // Remove from list
           setBookings((prev) =>
-            prev.filter((booking) => booking.id !== deletedId)
+            prev.filter((booking) => booking.id !== deletedId),
           );
 
           toast.info("Booking Deleted", {
             description: "A booking was removed from the system",
             duration: Infinity,
           });
-        }
+        },
       )
       .subscribe((status) => {
         if (status === "SUBSCRIBED") {

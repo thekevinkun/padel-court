@@ -27,14 +27,15 @@ export async function POST(_request: NextRequest) {
     const nowDate = new Date();
     const options = { timeZone: "Asia/Makassar" };
     const today = nowDate.toLocaleDateString("en-CA", options);
-
     console.log("🕐 Current time (WITA):", nowDate.toLocaleString("en-CA"));
     console.log("📅 Today date:", today);
 
     // EXPIRE VENUE PAYMENTS
     const { data: bookingsToExpire, error: fetchError } = await supabase
       .from("bookings")
-      .select("id, booking_ref, customer_name, date, time, remaining_balance")
+      .select(
+        "id, booking_ref, customer_name, date, time_end, remaining_balance",
+      )
       .eq("status", "PAID")
       .eq("session_status", "UPCOMING")
       .eq("require_deposit", true)
@@ -49,12 +50,12 @@ export async function POST(_request: NextRequest) {
     // Expire venue payments for bookings where booking time has passed
     let expiredCount = 0;
     if (bookingsToExpire) {
-      // Check each booking's date and time
       for (const booking of bookingsToExpire) {
         const bookingDate = new Date(booking.date);
-        const timeEnd = booking.time.split(" - ")[1];
-        const [hours, minutes] = timeEnd.split(":").map(Number);
-        bookingDate.setHours(hours, minutes, 0, 0);
+        const [hours, minutes, seconds] = booking.time_end
+          .split(":")
+          .map(Number);
+        bookingDate.setHours(hours, minutes, seconds || 0, 0);
 
         // If booking time has passed, expire venue payment and cancel session
         if (nowDate > bookingDate) {
@@ -91,7 +92,7 @@ export async function POST(_request: NextRequest) {
     const { data: bookingsToStart, error: startFetchError } = await supabase
       .from("bookings")
       .select(
-        "id, booking_ref, customer_name, date, time, require_deposit, venue_payment_received",
+        "id, booking_ref, customer_name, date, time, time_start, time_end, require_deposit, venue_payment_received",
       )
       .eq("status", "PAID")
       .eq("session_status", "UPCOMING");
@@ -102,43 +103,42 @@ export async function POST(_request: NextRequest) {
 
     let startedCount = 0;
     let autoCompletedFromUpcoming = 0;
-
     console.log(
       `📋 Found ${bookingsToStart?.length || 0} UPCOMING bookings to check`,
     );
 
     // Check each booking to see if it should be started
     if (bookingsToStart) {
-      // Iterate through bookings
       for (const booking of bookingsToStart) {
         const bookingDate = new Date(booking.date);
-        const [timeStart, timeEnd] = booking.time.split(" - ");
-
-        const [startHours, startMinutes] = timeStart.split(":").map(Number);
-        const [endHours, endMinutes] = timeEnd.split(":").map(Number);
+        const [startHours, startMinutes, startSeconds] = booking.time_start
+          .split(":")
+          .map(Number);
+        const [endHours, endMinutes, endSeconds] = booking.time_end
+          .split(":")
+          .map(Number);
 
         const startTime = new Date(bookingDate);
-        startTime.setHours(startHours, startMinutes, 0, 0);
+        startTime.setHours(startHours, startMinutes, startSeconds || 0, 0);
 
         const endTime = new Date(bookingDate);
-        endTime.setHours(endHours, endMinutes, 0, 0);
+        endTime.setHours(endHours, endMinutes, endSeconds || 0, 0);
 
         console.log(`🔍 Checking ${booking.booking_ref}:`);
-        console.log(`   Date: ${booking.date}, Time: ${booking.time}`);
-        console.log(`   Start: ${startTime.toLocaleString("en-ID")}`);
-        console.log(`   End: ${endTime.toLocaleString("en-ID")}`);
-        console.log(`   Now: ${now.toLocaleString("en-ID")}`);
+        console.log(` Date: ${booking.date}, Time: ${booking.time}`);
+        console.log(` Start: ${startTime.toLocaleString("en-ID")}`);
+        console.log(` End: ${endTime.toLocaleString("en-ID")}`);
+        console.log(` Now: ${nowDate.toLocaleString("en-ID")}`);
         console.log(
-          `   Is active? ${nowDate >= startTime && nowDate <= endTime}`,
+          ` Is active? ${nowDate >= startTime && nowDate <= endTime}`,
         );
-        console.log(`   Has passed? ${nowDate > endTime}`);
+        console.log(` Has passed? ${nowDate > endTime}`);
 
         // If booking time has completely passed, auto-complete it
         if (nowDate > endTime) {
           console.log(
             `⏩ Booking time passed, auto-completing: ${booking.booking_ref}`,
           );
-
           await supabase
             .from("bookings")
             .update({
@@ -200,7 +200,7 @@ export async function POST(_request: NextRequest) {
     const { data: bookingsToComplete, error: completeFetchError } =
       await supabase
         .from("bookings")
-        .select("id, booking_ref, customer_name, date, time")
+        .select("id, booking_ref, customer_name, date, time, time_end")
         .eq("session_status", "IN_PROGRESS");
 
     if (completeFetchError) {
@@ -211,11 +211,11 @@ export async function POST(_request: NextRequest) {
     if (bookingsToComplete) {
       for (const booking of bookingsToComplete) {
         const bookingDate = new Date(booking.date);
-        const timeEnd = booking.time.split(" - ")[1];
-        const [hours, minutes] = timeEnd.split(":").map(Number);
-
+        const [hours, minutes, seconds] = booking.time_end
+          .split(":")
+          .map(Number);
         const endTime = new Date(bookingDate);
-        endTime.setHours(hours, minutes, 0, 0);
+        endTime.setHours(hours, minutes, seconds || 0, 0);
 
         if (nowDate > endTime) {
           await supabase

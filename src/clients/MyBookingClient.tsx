@@ -44,6 +44,8 @@ import {
   getDisplayStatus,
   getDisplayStatusStyle,
   getDisplayStatusIcon,
+  getHoursUntilBooking,
+  isBookingExpired,
 } from "@/lib/booking";
 
 const MyBookingClient = () => {
@@ -253,19 +255,6 @@ const MyBookingClient = () => {
   const REFUND_PARTIAL_PERCENTAGE = settings?.refund_partial_percentage ?? 50;
 
   // Calculate hours until booking
-  const getHoursUntilBooking = (booking: Booking): number => {
-    const bookingDateTime = new Date(booking.date);
-    const [hours, minutes] = booking.time
-      .split(" - ")[0]
-      .split(":")
-      .map(Number);
-    bookingDateTime.setHours(hours, minutes, 0, 0);
-
-    const diffInHours =
-      (bookingDateTime.getTime() - new Date().getTime()) / (1000 * 60 * 60);
-
-    return Math.round(diffInHours);
-  };
 
   // Get refund type based on hours until session
   const getRefundType = (booking: Booking): "FULL" | "PARTIAL" | "NONE" => {
@@ -286,22 +275,6 @@ const MyBookingClient = () => {
         booking.total_amount * (REFUND_PARTIAL_PERCENTAGE / 100),
       );
     return 0;
-  };
-
-  // Check if any refund available
-  const isRefundEligible = (booking: Booking): boolean => {
-    return getRefundType(booking) !== "NONE";
-  };
-
-  // Check if booking has expired (date passed)
-  const isBookingExpired = (booking: Booking) => {
-    const bookingDate = new Date(booking.date);
-
-    const timeEnd = booking.time.split(" - ")[1]; // "09:00 - 10:00" -> "10:00"
-    const [hours, minutes] = timeEnd.split(":").map(Number);
-    bookingDate.setHours(hours, minutes, 0, 0);
-
-    return new Date() > bookingDate;
   };
 
   const getStatusBadge = (booking: Booking) => {
@@ -710,7 +683,14 @@ const MyBookingClient = () => {
                         <Clock className="w-4 h-4 text-muted-foreground mt-0.5" />
                         <div>
                           <p className="text-sm text-muted-foreground">Time</p>
-                          <p className="font-medium">{booking.time}</p>
+                          <p className="font-medium">
+                            {booking.time}
+                            {booking.duration_hours > 1 && (
+                              <Badge variant="outline" className="ml-2 text-xs">
+                                {booking.duration_hours} hours
+                              </Badge>
+                            )}
+                          </p>
                         </div>
                       </div>
                       <div className="flex items-start gap-3">
@@ -925,7 +905,8 @@ const MyBookingClient = () => {
                                 </span>
                               </div>
                             </div>
-                          ) : (booking.status === "CANCELLED" || booking.session_status === "CANCELLED") ||
+                          ) : booking.status === "CANCELLED" ||
+                            booking.session_status === "CANCELLED" ||
                             booking.refund_status === "COMPLETED" ? (
                             // Booking cancelled/refunded
                             <div className="bg-red-50 border border-red-200 p-3 rounded-lg">
@@ -990,7 +971,8 @@ const MyBookingClient = () => {
                               <p className="text-sm font-medium">
                                 Total Booking Value{" "}
                                 {booking.refund_status === "COMPLETED"
-                                  ? "(Before Refunded)" : ""}
+                                  ? "(Before Refunded)"
+                                  : ""}
                               </p>
                               <span className="text-green-700 text-2xl font-bold">
                                 IDR {booking.subtotal.toLocaleString("id-ID")}
@@ -1024,7 +1006,8 @@ const MyBookingClient = () => {
                               <p className="text-sm font-medium">
                                 Total Booking Value{" "}
                                 {booking.refund_status === "COMPLETED"
-                                  ? "(Before Refunded)" : ""}
+                                  ? "(Before Refunded)"
+                                  : ""}
                               </p>
                               <span className="text-green-700 text-2xl font-bold">
                                 IDR {booking.subtotal.toLocaleString("id-ID")}

@@ -149,11 +149,19 @@ export async function POST(request: NextRequest) {
         })
         .eq("id", booking.id);
 
-      // Confirm time slot is locked
-      await supabase
-        .from("time_slots")
-        .update({ available: false })
-        .eq("id", booking.time_slot_id);
+      // Confirm ALL time slots are locked
+      const { data: relatedSlots } = await supabase
+        .from("booking_time_slots")
+        .select("time_slot_id")
+        .eq("booking_id", booking.id);
+
+      if (relatedSlots && relatedSlots.length > 0) {
+        const slotIds = relatedSlots.map((r) => r.time_slot_id);
+        await supabase
+          .from("time_slots")
+          .update({ available: false })
+          .in("id", slotIds);
+      }
 
       // Check if its deposit
       // If total_amount is less than subtotal, it's a deposit payment
@@ -288,11 +296,19 @@ export async function POST(request: NextRequest) {
         })
         .eq("id", booking.id);
 
-      // Release time slot
-      await supabase
-        .from("time_slots")
-        .update({ available: true })
-        .eq("id", booking.time_slot_id);
+      // Release ALL time slots
+      const { data: relatedSlots } = await supabase
+        .from("booking_time_slots")
+        .select("time_slot_id")
+        .eq("booking_id", booking.id);
+
+      if (relatedSlots && relatedSlots.length > 0) {
+        const slotIds = relatedSlots.map((r) => r.time_slot_id);
+        await supabase
+          .from("time_slots")
+          .update({ available: true })
+          .in("id", slotIds);
+      }
 
       // Create failure notification
       await supabase.from("admin_notifications").insert({

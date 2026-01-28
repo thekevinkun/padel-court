@@ -64,8 +64,9 @@ export async function POST(
       .map(Number);
     bookingDateTime.setHours(hours, minutes, 0, 0);
 
-    const hoursUntilSession =
-      Math.round((bookingDateTime.getTime() - new Date().getTime()) / (1000 * 60 * 60));
+    const hoursUntilSession = Math.round(
+      (bookingDateTime.getTime() - new Date().getTime()) / (1000 * 60 * 60),
+    );
 
     console.log(`⏰ Session starts in ${hoursUntilSession} hours`);
 
@@ -136,14 +137,20 @@ export async function POST(
       );
     }
 
-    // Release time slot
-    if (booking.time_slots?.id) {
+    // Release ALL time slots
+    const { data: relatedSlots } = await supabase
+      .from("booking_time_slots")
+      .select("time_slot_id")
+      .eq("booking_id", bookingId);
+
+    if (relatedSlots && relatedSlots.length > 0) {
+      const slotIds = relatedSlots.map((r) => r.time_slot_id);
       await supabase
         .from("time_slots")
         .update({ available: true })
-        .eq("id", booking.time_slots.id);
+        .in("id", slotIds);
 
-      console.log("✅ Time slot released");
+      console.log(`✅ Released ${slotIds.length} time slot(s)`);
     }
 
     // Create admin notification

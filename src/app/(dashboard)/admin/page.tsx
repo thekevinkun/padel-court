@@ -15,9 +15,9 @@ import {
   Wifi,
   WifiOff,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 // import RealtimeDiagnostic from "@/components/dashboard/RealTimeDiagnostics";
 
@@ -69,7 +69,7 @@ export default function DashboardPage() {
       const { data: todayData } = await supabase
         .from("bookings")
         .select(
-          "total_amount, status, require_deposit, deposit_amount, subtotal, payment_fee, session_status, refund_amount",
+          "total_amount, status, require_deposit, deposit_amount, subtotal, payment_fee, session_status, remaining_balance, full_amount, refund_amount",
         )
         .eq("date", today)
         .neq("status", "CANCELLED"); // Exclude cancelled bookings
@@ -79,9 +79,12 @@ export default function DashboardPage() {
         todayData
           ?.filter((b) => b.status === "PAID") // Only PAID, not REFUNDED
           .reduce((sum, b) => {
-            const bookingRevenue = b.require_deposit
-              ? b.deposit_amount
-              : b.subtotal;
+            const bookingRevenue =
+              b.require_deposit && b.remaining_balance > 0
+                ? b.deposit_amount
+                : b.require_deposit && b.remaining_balance === 0
+                  ? b.full_amount
+                  : b.subtotal;
             return sum + bookingRevenue;
           }, 0) || 0;
 
@@ -141,11 +144,19 @@ export default function DashboardPage() {
       // Fetch recent bookings
       const { data: recent } = await supabase
         .from("bookings")
-        .select(`*, courts (name)`)
-        .eq("date", today) // Only today's bookings
-        .in("session_status", ["UPCOMING", "IN_PROGRESS"]) // Only active sessions
-        .order("time", { ascending: true }) // Order by time
-        .limit(10); // Get up to 10, we'll show 5 in UI
+        .select(
+          `
+          *, 
+          courts (name),
+          booking_time_slots (
+            id,
+            time_slots (time_start, time_end)
+          )
+        `,
+        )
+        .eq("date", today)
+        .order("date")
+        .limit(10);
 
       // Track refunds separately
       const todayRefundedBookings =
@@ -298,6 +309,7 @@ export default function DashboardPage() {
                 className="w-full text-accent-foreground hover:bg-transparent hover:text-accent"
                 variant="outline"
                 size="lg"
+                title="View all upcoming sessions ready for check-in"
               >
                 <CheckCircle className="w-4 h-4 mr-2" />
                 Check In Customers
@@ -308,6 +320,7 @@ export default function DashboardPage() {
                 className="w-full text-accent-foreground hover:bg-transparent hover:text-accent"
                 variant="outline"
                 size="lg"
+                title="View bookings with pending venue payments"
               >
                 <DollarSign className="w-4 h-4 mr-2" />
                 Process Venue Payments
@@ -318,6 +331,7 @@ export default function DashboardPage() {
                 className="w-full text-accent-foreground hover:bg-transparent hover:text-accent"
                 variant="outline"
                 size="lg"
+                title="View and manage today's court time slots"
               >
                 <Calendar className="w-4 h-4 mr-2" />
                 View Today's Schedule
@@ -428,13 +442,6 @@ export default function DashboardPage() {
               </p>
             ) : (
               recentBookings
-                .filter((booking) => {
-                  // Only show today's bookings that are upcoming or in progress
-                  const today = new Date().toLocaleDateString("en-CA", {
-                    timeZone: "Asia/Makassar",
-                  });
-                  return (booking.date === today);
-                })
                 .slice(0, 5) // Limit to 5 sessions
                 .map((booking) => (
                   <Link
@@ -483,6 +490,11 @@ export default function DashboardPage() {
                           <p className="text-sm text-muted-foreground capitalize">
                             {booking.courts?.name} •{" "}
                             {formatRelativeDate(booking.date)} • {booking.time}
+                            {booking.duration_hours > 1 && (
+                              <Badge variant="outline" className="ml-1 text-xs">
+                                {booking.duration_hours}h
+                              </Badge>
+                            )}
                           </p>
                         </div>
                       </div>
@@ -501,11 +513,13 @@ export default function DashboardPage() {
                             <span
                               className={`${booking.venue_payment_expired || booking.session_status === "CANCELLED" ? "line-through" : ""}`}
                             >
-                              +
-                              {booking.remaining_balance.toLocaleString(
-                                "id-ID",
-                              )}{" "}
-                              at venue
+                              {booking.remaining_balance > 0
+                                ? "+" + booking.remaining_balance.toLocaleString(
+                                    "id-ID",
+                                  ) + " at venue"
+                                : "+" + booking.venue_payment_amount.toLocaleString(
+                                    "id-ID",
+                                  ) + " at venue"}
                             </span>{" "}
                             {booking.venue_payment_expired
                               ? "(Expired)"

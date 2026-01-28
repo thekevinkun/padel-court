@@ -96,17 +96,25 @@ export async function POST(request: NextRequest) {
 
     console.log("✅ Booking status updated to CANCELLED");
 
-    // Release the time slot
-    const { error: releaseSlotError } = await supabase
-      .from("time_slots")
-      .update({ available: true })
-      .eq("id", booking.time_slot_id);
+    // Release ALL time slots
+    const { data: relatedSlots } = await supabase
+      .from("booking_time_slots")
+      .select("time_slot_id")
+      .eq("booking_id", booking.id);
 
-    if (releaseSlotError) {
-      console.error("❌ Error releasing time slot:", releaseSlotError);
-      // Continue anyway - booking is already cancelled
-    } else {
-      console.log("✅ Time slot released");
+    if (relatedSlots && relatedSlots.length > 0) {
+      const slotIds = relatedSlots.map((r) => r.time_slot_id);
+
+      const { error: releaseSlotError } = await supabase
+        .from("time_slots")
+        .update({ available: true })
+        .in("id", slotIds);
+
+      if (releaseSlotError) {
+        console.error("❌ Error releasing time slots:", releaseSlotError);
+      } else {
+        console.log(`✅ Released ${slotIds.length} time slot(s)`);
+      }
     }
 
     // Update payment record if exists

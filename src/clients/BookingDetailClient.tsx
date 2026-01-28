@@ -101,7 +101,12 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
           `
           *,
           courts (name, description),
-          venue_payments (*)
+          venue_payments (*),
+          booking_time_slots (
+            id,
+            time_slot_id,
+            time_slots (time_start, time_end, period, price_per_person)
+          )
         `,
         )
         .eq("id", bookingId)
@@ -763,9 +768,45 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                   <Clock className="w-4 h-4 text-muted-foreground mt-0.5" />
                   <div>
                     <p className="text-sm text-muted-foreground">Time</p>
-                    <p className="font-medium">{booking.time}</p>
+                    <p className="font-medium">
+                      {booking.time}
+                      {booking.duration_hours > 1 && (
+                        <Badge variant="outline" className="ml-2 text-xs">
+                          {booking.duration_hours} hours
+                        </Badge>
+                      )}
+                    </p>
                   </div>
                 </div>
+                {/* Optional: Show slot breakdown for multi-hour bookings */}
+                {booking.booking_time_slots &&
+                  booking.booking_time_slots.length > 1 && (
+                    <div className="col-span-2">
+                      <details className="text-xs">
+                        <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+                          View {booking.booking_time_slots.length} time slot
+                          breakdown
+                        </summary>
+                        <ul className="mt-2 space-y-1 ml-4 text-muted-foreground">
+                          {booking.booking_time_slots.map((bts) => {
+                            if (!bts.time_slots) return null;
+
+                            return (
+                              <li key={bts.id}>
+                                • {bts.time_slots.time_start.slice(0, 5)} -{" "}
+                                {bts.time_slots.time_end.slice(0, 5)} (
+                                {bts.time_slots.period}) - IDR{" "}
+                                {bts.time_slots.price_per_person.toLocaleString(
+                                  "id-ID",
+                                )}
+                                /pax
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </details>
+                    </div>
+                  )}
                 <div className="flex items-start gap-3">
                   <Users className="w-4 h-4 text-muted-foreground mt-0.5" />
                   <div>
@@ -786,7 +827,6 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
             </CardContent>
           </Card>
 
-          {/* Refund Section */}
           {/* Refund Section */}
           {canProcessRefund(booking) && (
             <Card
@@ -1056,9 +1096,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                     Court Booking
                     {booking.refund_status === "COMPLETED" && " (Refunded)"}
                   </span>
-                  <span
-                    className="font-medium"
-                  >
+                  <span className="font-medium">
                     IDR {booking.subtotal.toLocaleString("id-ID")}
                   </span>
                 </div>
@@ -1160,13 +1198,12 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                   <Separator />
 
                   {/* Total Booking Value */}
-                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg 
+                  <div
+                    className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg 
                     border-2 text-green-800 border-green-300"
                   >
                     <div className="flex justify-between items-center">
-                      <p className="text-sm font-medium">
-                        Total Booking Value
-                      </p>  
+                      <p className="text-sm font-medium">Total Booking Value</p>
                       <span className="text-2xl font-bold text-green-700">
                         IDR {booking.subtotal.toLocaleString("id-ID")}
                       </span>
@@ -1192,13 +1229,12 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                   <Separator />
 
                   {/* Total Booking Value */}
-                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border-2 
+                  <div
+                    className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border-2 
                     text-green-800 border-green-300"
                   >
                     <div className="flex justify-between items-center">
-                      <p className="text-sm font-medium">
-                        Total Booking Value
-                      </p>
+                      <p className="text-sm font-medium">Total Booking Value</p>
                       <span className="text-2xl font-bold">
                         IDR {booking.subtotal.toLocaleString("id-ID")}
                       </span>
@@ -1228,8 +1264,9 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
               )}
 
               {/* Total Revenue after cancelled (for deposit, not refund) */}
-              {(booking.customer_payment_choice === "DEPOSIT" &&
-                booking.session_status === "CANCELLED") && booking.refund_status !== "COMPLETED" && (
+              {booking.customer_payment_choice === "DEPOSIT" &&
+                booking.session_status === "CANCELLED" &&
+                booking.refund_status !== "COMPLETED" && (
                   <>
                     <Separator />
                     <div className="bg-green-50 border-2 border-green-300 p-4 rounded-lg">

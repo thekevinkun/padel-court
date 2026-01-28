@@ -7,7 +7,7 @@ import { supabase } from "@/lib/supabase/client";
 export function useRealtimeDashboardStats(
   initialStats: DashboardStats,
   onStatsUpdate: (stats: DashboardStats) => void,
-  onRecentBookingsUpdate: (bookings: Booking[]) => void
+  onRecentBookingsUpdate: (bookings: Booking[]) => void,
 ) {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const lastEventRef = useRef<{ id: string; timestamp: number } | null>(null);
@@ -59,14 +59,14 @@ export function useRealtimeDashboardStats(
               duration: Infinity,
             });
           } else if (payload.eventType === "UPDATE") {
-            const updatedBooking = payload.new as { 
-              customer_name: string; 
-              status: string; 
-              session_status: string 
+            const updatedBooking = payload.new as {
+              customer_name: string;
+              status: string;
+              session_status: string;
             };
-            const oldBooking = payload.old as { 
-              status: string; 
-              session_status: string 
+            const oldBooking = payload.old as {
+              status: string;
+              session_status: string;
             };
 
             const statusChanged = oldBooking.status !== updatedBooking.status;
@@ -111,15 +111,18 @@ export function useRealtimeDashboardStats(
                 oldBooking.session_status === "IN_PROGRESS" &&
                 updatedBooking.session_status === "COMPLETED"
               ) {
-                toast.success(`🏁 ${updatedBooking.customer_name} Session's Completed`, {
-                  description: `${oldStatus} → ${newStatus}`,
-                  duration: Infinity,
-                });
+                toast.success(
+                  `🏁 ${updatedBooking.customer_name} Session's Completed`,
+                  {
+                    description: `${oldStatus} → ${newStatus}`,
+                    duration: Infinity,
+                  },
+                );
               }
               // Ignore other session status transitions (e.g., UNKNOWN → UPCOMING)
             }
           }
-        }
+        },
       )
       .subscribe((status) => {
         console.log("📊 Dashboard stats subscription status:", status);
@@ -137,7 +140,7 @@ export function useRealtimeDashboardStats(
         const { data: todayData } = await supabase
           .from("bookings")
           .select(
-            "total_amount, status, require_deposit, deposit_amount, subtotal, payment_fee, session_status, refund_amount",
+            "total_amount, status, require_deposit, deposit_amount, subtotal, payment_fee, session_status, remaining_balance, full_amount, refund_amount",
           )
           .eq("date", today)
           .neq("status", "CANCELLED"); // Exclude cancelled bookings
@@ -147,12 +150,15 @@ export function useRealtimeDashboardStats(
           todayData
             ?.filter((b) => b.status === "PAID") // Only PAID, not REFUNDED
             .reduce((sum, b) => {
-              const bookingRevenue = b.require_deposit
-                ? b.deposit_amount
-                : b.subtotal;
+              const bookingRevenue =
+                b.require_deposit && b.remaining_balance > 0
+                  ? b.deposit_amount
+                  : b.require_deposit && b.remaining_balance === 0
+                    ? b.full_amount
+                    : b.subtotal;
               return sum + bookingRevenue;
             }, 0) || 0;
-          
+
         // Count only non-refunded bookings
         const todayBookings =
           todayData?.filter((b) => b.status !== "REFUNDED").length || 0;

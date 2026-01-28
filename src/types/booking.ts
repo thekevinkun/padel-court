@@ -14,12 +14,31 @@ export type VenuePaymentStatus = "PENDING" | "COMPLETED" | "EXPIRED";
 
 export type RefundStatus = "PENDING" | "APPROVED" | "REJECTED" | "COMPLETED";
 
+export interface BookingTimeSlot {
+  id: string;
+  booking_id: string;
+  time_slot_id: string;
+  created_at: string;
+  
+  // Relations (when joined)
+  time_slots?: {
+    id: string;
+    time_start: string;
+    time_end: string;
+    period: string;
+    price_per_person: number;
+    available: boolean;
+  };
+}
+
 export interface Booking {
   // Existing fields
   id: string;
   booking_ref: string;
   court_id: string;
-  time_slot_id: string;
+  duration_hours: number;
+  time_start: string;
+  time_end: string;
   date: string;
   time: string;
   customer_name: string;
@@ -58,13 +77,13 @@ export interface Booking {
   session_notes: string | null;
 
   // Relations (when joined)
+  booking_time_slots?: BookingTimeSlot[]; 
   courts?: {
     id: string;
     name: string;
     description: string;
     available: boolean;
   };
-
   venue_payments?: VenuePayment[];
 
   // REFUND FIELDS
@@ -94,7 +113,7 @@ export interface BookingWithVenuePayment {
 
 export interface BookingFormData {
   courtId?: string;
-  slotId?: string;
+  slotIds?: string[]; 
   date?: Date;
   time?: string;
   numberOfPlayers?: number;

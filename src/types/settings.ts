@@ -33,6 +33,7 @@ export interface SiteSettings {
   // Booking Rules
   min_advance_booking: number;
   max_advance_booking: number;
+  max_booking_hours: number;
   cancellation_window: number;
   require_deposit: boolean;
   deposit_percentage: number;

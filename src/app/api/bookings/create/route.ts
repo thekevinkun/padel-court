@@ -18,6 +18,7 @@ export async function POST(request: NextRequest) {
     } = await bookingIpLimiter.limit(clientIp);
 
     if (!ipSuccess) {
+      // Exceeded IP rate limit
       const error = createRateLimitResponse(
         false,
         ipReset,
@@ -36,12 +37,18 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Parse request body
     const body = await request.json();
+
+    // Extract fields from body
     const {
       courtId,
-      timeSlotId,
+      timeSlotIds, // CHANGED: Now array
       date,
       time,
+      timeStart,
+      timeEnd,
+      durationHours,
       customerName,
       customerEmail,
       customerPhone,
@@ -67,6 +74,7 @@ export async function POST(request: NextRequest) {
     } = await bookingEmailLimiter.limit(emailKey);
 
     if (!emailSuccess) {
+      // Exceeded email rate limit
       const error = createRateLimitResponse(
         false,
         emailReset,
@@ -87,7 +95,9 @@ export async function POST(request: NextRequest) {
     // Validate required fields
     if (
       !courtId ||
-      !timeSlotId ||
+      !timeSlotIds ||
+      !Array.isArray(timeSlotIds) ||
+      timeSlotIds.length === 0 || // CHANGED: Validate array
       !date ||
       !customerName ||
       !customerEmail ||
@@ -99,27 +109,52 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Initialize Supabase client
     const supabase = createServerClient();
 
-    // Check if time slot is still available
-    const { data: slot, error: slotError } = await supabase
+    // Check if ALL selected slots are available
+    const { data: slots, error: slotError } = await supabase
       .from("time_slots")
-      .select("available")
-      .eq("id", timeSlotId)
-      .single();
+      .select("id, available, time_start")
+      .in("id", timeSlotIds)
+      .eq("court_id", courtId)
+      .eq("date", date);
 
-    if (slotError || !slot) {
+    if (slotError || !slots || slots.length !== timeSlotIds.length) {
       return NextResponse.json(
-        { error: "Time slot not found" },
+        { error: "One or more time slots not found" },
         { status: 404 },
       );
     }
 
-    if (!slot.available) {
+    // Check if any slot is unavailable
+    const unavailableSlots = slots.filter((s) => !s.available);
+    if (unavailableSlots.length > 0) {
       return NextResponse.json(
-        { error: "Time slot is no longer available" },
+        { error: "One or more selected time slots are no longer available" },
         { status: 409 },
       );
+    }
+
+    // Verify slots are contiguous
+    const sortedSlots = slots.sort((a, b) =>
+      a.time_start.localeCompare(b.time_start),
+    );
+
+    // Loop through sorted slots to ensure each starts when the previous ends
+    for (let i = 1; i < sortedSlots.length; i++) {
+      // Compare end of previous slot to start of current slot
+      const prevEnd = sortedSlots[i - 1].time_start.slice(0, 2);
+      const currentStart = sortedSlots[i].time_start.slice(0, 2);
+      const hourDiff = parseInt(currentStart) - parseInt(prevEnd);
+
+      // If difference is not 1 hour, slots are not contiguous
+      if (hourDiff !== 1) {
+        return NextResponse.json(
+          { error: "Selected time slots must be contiguous" },
+          { status: 400 },
+        );
+      }
     }
 
     // Generate unique booking reference
@@ -157,9 +192,11 @@ export async function POST(request: NextRequest) {
       .insert({
         booking_ref: bookingRef,
         court_id: courtId,
-        time_slot_id: timeSlotId,
         date,
         time,
+        time_start: timeStart, // NEW
+        time_end: timeEnd, // NEW
+        duration_hours: durationHours, // NEW
         customer_name: customerName,
         customer_email: customerEmail,
         customer_phone: customerPhone,
@@ -170,13 +207,13 @@ export async function POST(request: NextRequest) {
         total_amount: totalAmount,
         payment_method: paymentMethod,
         notes: notes || null,
-        status: "PENDING", // Payment not done yet
+        status: "PENDING",
         require_deposit: actualRequireDeposit,
         deposit_amount: actualDepositAmount,
         full_amount: fullAmount || subtotal,
         remaining_balance: actualRemainingBalance,
         customer_payment_choice: actualCustomerPaymentChoice,
-        session_status: "UPCOMING", // Default session status
+        session_status: "UPCOMING",
         venue_payment_expired: false,
       })
       .select()
@@ -190,11 +227,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Temporarily lock the time slot (will be confirmed when payment succeeds)
+    // Create junction table entries
+    const junctionEntries = timeSlotIds.map((slotId: string) => ({
+      booking_id: booking.id,
+      time_slot_id: slotId,
+    }));
+
+    const { error: junctionError } = await supabase
+      .from("booking_time_slots")
+      .insert(junctionEntries);
+
+    if (junctionError) {
+      console.error("Error creating booking-slot relations:", junctionError);
+      // Rollback: delete the booking
+      await supabase.from("bookings").delete().eq("id", booking.id);
+      return NextResponse.json(
+        { error: "Failed to create booking relations" },
+        { status: 500 },
+      );
+    }
+
+    // Lock ALL selected slots
     await supabase
       .from("time_slots")
       .update({ available: false })
-      .eq("id", timeSlotId);
+      .in("id", timeSlotIds);
 
     // Create admin notification
     const notificationMessage = actualRequireDeposit

@@ -5,7 +5,7 @@ import { createAuthClient } from "@/lib/supabase/auth-server";
 // Endpoint to handle admin-initiated booking cancellations
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     // Extract booking ID and cancellation reason
@@ -54,14 +54,14 @@ export async function POST(
     if (booking.session_status === "COMPLETED") {
       return NextResponse.json(
         { error: "Cannot cancel a completed session" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (booking.session_status === "CANCELLED") {
       return NextResponse.json(
         { error: "Booking is already cancelled" },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -81,16 +81,24 @@ export async function POST(
       console.error("Error cancelling booking:", updateError);
       return NextResponse.json(
         { error: "Failed to cancel booking" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
-    // Release time slot
-    if (booking.time_slots?.id) {
+    // Release ALL time slots
+    const { data: relatedSlots } = await supabase
+      .from("booking_time_slots")
+      .select("time_slot_id")
+      .eq("booking_id", bookingId);
+
+    if (relatedSlots && relatedSlots.length > 0) {
+      const slotIds = relatedSlots.map((r) => r.time_slot_id);
       await supabase
         .from("time_slots")
         .update({ available: true })
-        .eq("id", booking.time_slots.id);
+        .in("id", slotIds);
+
+      console.log(`✅ Released ${slotIds.length} time slot(s)`);
     }
 
     // Create notification
@@ -115,7 +123,7 @@ export async function POST(
     console.error("💥 Unexpected error in cancel booking:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -192,3 +192,44 @@ export function getDisplayStatusIcon(displayStatus: string): LucideIcon {
 
   return icons[displayStatus] || Clock;
 }
+
+/**
+ * Get formatted time display for multi-hour bookings
+ */
+export function getTimeDisplay(booking: Booking): string {
+  return booking.time; // Already in "06:00 - 08:00" format
+}
+
+/**
+ * Get duration label
+ */
+export function getDurationLabel(booking: Booking): string {
+  if (booking.duration_hours === 1) {
+    return "1 hour";
+  }
+  return `${booking.duration_hours} hours`;
+}
+
+/**
+ * Get number of hours until booking starts
+ */
+export const getHoursUntilBooking = (booking: Booking): number => {
+  const bookingDateTime = new Date(booking.date);
+  const [hours, minutes, seconds] = booking.time_start.split(":").map(Number);
+
+  bookingDateTime.setHours(hours, minutes, seconds || 0, 0);
+  const diffInHours =
+    (bookingDateTime.getTime() - new Date().getTime()) / (1000 * 60 * 60);
+
+  return Math.round(diffInHours);
+};
+
+/**
+ * Check if booking has expired (time has passed)
+ */
+export function isBookingExpired(booking: Booking): boolean {
+  const bookingDate = new Date(booking.date);
+  const [hours, minutes, seconds] = booking.time_end.split(":").map(Number);
+  bookingDate.setHours(hours, minutes, seconds || 0, 0);
+  return new Date() > bookingDate;
+}

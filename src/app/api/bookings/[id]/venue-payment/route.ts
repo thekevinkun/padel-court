@@ -4,7 +4,7 @@ import { createAuthClient } from "@/lib/supabase/auth-server";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id: bookingId } = await params;
@@ -51,11 +51,10 @@ export async function POST(
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
     }
 
-    // 4. Check if booking time has passed (NEW CHECK)
+    // Check if booking time has passed
     const bookingDate = new Date(booking.date);
-    const timeEnd = booking.time.split(" - ")[1]; // "09:00 - 10:00" -> "10:00"
-    const [hours, minutes] = timeEnd.split(":").map(Number);
-    bookingDate.setHours(hours, minutes, 0, 0);
+    const [hours, minutes, seconds] = booking.time_end.split(":").map(Number); // Use time_end field
+    bookingDate.setHours(hours, minutes, seconds || 0, 0);
 
     const now = new Date();
     const hasTimePassed = now > bookingDate;
@@ -72,7 +71,7 @@ export async function POST(
           error: "Booking time has passed. Venue payment window expired.",
           expired: true,
         },
-        { status: 410 } // 410 Gone
+        { status: 410 }, // 410 Gone
       );
     }
 
@@ -81,10 +80,10 @@ export async function POST(
       return NextResponse.json(
         {
           error: `Amount must be exactly IDR ${booking.remaining_balance.toLocaleString(
-            "id-ID"
+            "id-ID",
           )}`,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -92,7 +91,7 @@ export async function POST(
     if (booking.venue_payment_received) {
       return NextResponse.json(
         { error: "Venue payment already recorded for this booking" },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -113,7 +112,7 @@ export async function POST(
       console.error("Error recording venue payment:", paymentError);
       return NextResponse.json(
         { error: "Failed to record payment" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -136,7 +135,7 @@ export async function POST(
       await supabase.from("venue_payments").delete().eq("id", venuePayment.id);
       return NextResponse.json(
         { error: "Failed to update booking" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -148,7 +147,7 @@ export async function POST(
       message: `Booking ${
         booking.booking_ref
       } - Received IDR ${amount.toLocaleString(
-        "id-ID"
+        "id-ID",
       )} via ${paymentMethod} at venue by ${booking.customer_name}`,
       read: false,
     });
@@ -156,7 +155,7 @@ export async function POST(
     console.log(
       `Venue payment recorded: ${
         booking.booking_ref
-      } - IDR ${amount.toLocaleString("id-ID")}`
+      } - IDR ${amount.toLocaleString("id-ID")}`,
     );
 
     return NextResponse.json({
@@ -168,7 +167,7 @@ export async function POST(
     console.error("Unexpected error in venue payment:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

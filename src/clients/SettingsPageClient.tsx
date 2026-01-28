@@ -22,7 +22,6 @@ import {
   Info,
   CheckCircle2,
   AlertCircle,
-  DollarSign,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -654,6 +653,28 @@ const SettingsPageClient = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="minAdvance">
+                    Maximum Booking Hours (hours)
+                  </Label>
+                  <Input
+                    id="maxBookingHours"
+                    type="number"
+                    min="0"
+                    value={settings.max_booking_hours}
+                    onChange={(e) =>
+                      updateField(
+                        "max_booking_hours",
+                        parseInt(e.target.value) || 0,
+                      )
+                    }
+                    className="mt-1"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Customer can book a maximum of this many hours per session
+                  </p>
+                </div>
+
+                <div>
+                  <Label htmlFor="minAdvance">
                     Minimum Advance Booking (hours)
                   </Label>
                   <Input
@@ -670,7 +691,8 @@ const SettingsPageClient = () => {
                     className="mt-1"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Customer must book at least this many hours in advance
+                    Customer must book at least this many hours in advance on
+                    date
                   </p>
                 </div>
 
@@ -701,7 +723,6 @@ const SettingsPageClient = () => {
 
               <div>
                 <h3 className="font-semibold mb-3 flex items-center gap-2">
-                  <DollarSign className="w-5 h-5 text-forest" />
                   Refund Policy Settings
                 </h3>
                 <Alert className="mb-4">
@@ -720,7 +741,7 @@ const SettingsPageClient = () => {
                         htmlFor="refundFullHours"
                         className="text-sm font-semibold text-green-700"
                       >
-                        ✅ Full Refund (100%)
+                        Full Refund (100%)
                       </Label>
                       <div className="flex gap-2 items-center mt-1">
                         <Input
@@ -751,7 +772,7 @@ const SettingsPageClient = () => {
                         htmlFor="refundPartialHours"
                         className="text-sm font-semibold text-blue-700"
                       >
-                        ⚖️ Partial Refund
+                        Partial Refund
                       </Label>
                       <div className="flex gap-2 items-center mt-1">
                         <Input
@@ -782,7 +803,7 @@ const SettingsPageClient = () => {
                         htmlFor="refundPartialPercentage"
                         className="text-sm font-semibold text-blue-700"
                       >
-                        💰 Partial Refund %
+                        Partial Refund %
                       </Label>
                       <div className="flex gap-2 items-center mt-1">
                         <Input
