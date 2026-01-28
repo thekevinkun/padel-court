@@ -5,7 +5,7 @@ import { createAuthClient } from "@/lib/supabase/auth-server";
 import { RevenueData } from "@/types/reports";
 
 // Cache TTL: 5 minutes for reports
-const CACHE_TTL = 900; // seconds
+const CACHE_TTL = 300; // seconds
 
 export async function GET(request: NextRequest) {
   try {
@@ -134,18 +134,26 @@ export async function GET(request: NextRequest) {
       return sum + (b.require_deposit ? b.deposit_amount : b.subtotal);
     }, 0);
 
-    // Venue revenue (cash collected at venue) - ONLY PAID
+    // Only count venue payments that have been received
     const venueRevenue = paidBookings.reduce((sum, b) => {
-      return sum + (b.venue_payment_amount || 0);
+      return sum + (b.venue_payment_received ? b.venue_payment_amount || 0 : 0);
     }, 0);
 
-    // Total revenue = actual booking value (subtotal) - ONLY PAID
-    const totalRevenue = paidBookings.reduce((sum, b) => sum + b.subtotal, 0);
+    // Gross Revenue = Money actually collected (online + venue payments received)
+    const totalRevenue = paidBookings.reduce((sum, b) => {
+      const onlineCollected = b.require_deposit ? b.deposit_amount : b.subtotal;
+      const venueCollected = b.venue_payment_received
+        ? b.venue_payment_amount || 0
+        : 0;
+      return sum + onlineCollected + venueCollected;
+    }, 0);
 
-    // Net revenue = what actually received (after Midtrans fees) - ONLY PAID
+    // Net Revenue = Money collected minus (MIDTRANS) fees
     const netRevenue = paidBookings.reduce((sum, b) => {
       const onlineNet = b.total_amount - b.payment_fee;
-      const venueNet = b.venue_payment_amount || 0;
+      const venueNet = b.venue_payment_received
+        ? b.venue_payment_amount || 0
+        : 0;
       return sum + onlineNet + venueNet;
     }, 0);
 
@@ -199,19 +207,24 @@ export async function GET(request: NextRequest) {
       previousBookings?.filter((b) => b.status === "REFUNDED") || [];
 
     const prevTotalBookings = prevPaidBookings.length;
-    const prevTotalRevenue = prevPaidBookings.reduce(
-      (sum, b) => sum + b.subtotal,
-      0,
-    );
+    const prevTotalRevenue = prevPaidBookings.reduce((sum, b) => {
+      const onlineCollected = b.require_deposit ? b.deposit_amount : b.subtotal;
+      const venueCollected = b.venue_payment_received
+        ? b.venue_payment_amount || 0
+        : 0;
+      return sum + onlineCollected + venueCollected;
+    }, 0);
     const prevOnlineRevenue = prevPaidBookings.reduce((sum, b) => {
       return sum + (b.require_deposit ? b.deposit_amount : b.subtotal);
     }, 0);
     const prevVenueRevenue = prevPaidBookings.reduce((sum, b) => {
-      return sum + (b.venue_payment_amount || 0);
+      return sum + (b.venue_payment_received ? b.venue_payment_amount || 0 : 0);
     }, 0);
     const prevNetRevenue = prevPaidBookings.reduce((sum, b) => {
       const onlineNet = b.total_amount - b.payment_fee;
-      const venueNet = b.venue_payment_amount || 0;
+      const venueNet = b.venue_payment_received
+        ? b.venue_payment_amount || 0
+        : 0;
       return sum + onlineNet + venueNet;
     }, 0);
     const prevTotalRefunds = prevRefundedBookings.length;
@@ -254,12 +267,14 @@ export async function GET(request: NextRequest) {
           };
         }
         const online = b.require_deposit ? b.deposit_amount : b.subtotal;
-        const venue = b.venue_payment_amount || 0;
+        const venue = b.venue_payment_received
+          ? b.venue_payment_amount || 0
+          : 0;
         const onlineNet = b.total_amount - b.payment_fee;
 
         acc[date].onlineRevenue += online;
         acc[date].venueRevenue += venue;
-        acc[date].totalRevenue += b.subtotal;
+        acc[date].totalRevenue += online + venue;
         acc[date].netRevenue += onlineNet + venue;
         acc[date].feesAbsorbed += b.payment_fee;
 
@@ -338,16 +353,23 @@ export async function GET(request: NextRequest) {
 
     console.log("💳 Final Payment Methods:", paymentMethods);
 
-    // Top Performing Courts - ONLY PAID
+    // Top Performing Courts - (online + venue payments received)
     const courtStats = paidBookings.reduce(
       (acc: Record<string, { bookings: number; revenue: number }>, b) => {
-        const courtName = b.courts?.name || "Unknown";
-
+        const courtName = b.courts?.name || "Unknown Court";
         if (!acc[courtName]) {
           acc[courtName] = { bookings: 0, revenue: 0 };
         }
         acc[courtName].bookings += 1;
-        acc[courtName].revenue += b.subtotal;
+
+        // Only count collected revenue (online + venue if received)
+        const onlineCollected = b.require_deposit
+          ? b.deposit_amount
+          : b.subtotal;
+        const venueCollected = b.venue_payment_received
+          ? b.venue_payment_amount || 0
+          : 0;
+        acc[courtName].revenue += onlineCollected + venueCollected;
 
         return acc;
       },
@@ -365,24 +387,41 @@ export async function GET(request: NextRequest) {
       .slice(0, 5);
 
     // Best and Worst Performers
+    // Only show "worst" if there are 2+ courts (otherwise it's the same as best!)
     const bestCourt = topCourts.length > 0 ? topCourts[0] : null;
     const worstCourt =
-      topCourts.length > 0 ? topCourts[topCourts.length - 1] : null;
+      topCourts.length > 1 ? topCourts[topCourts.length - 1] : null;
 
-    // Peak Hours Analysis - ONLY PAID
-    const hourStats = paidBookings.reduce((acc: Record<string, number>, b) => {
-      // Extract hour from time (e.g., "14:00 - 15:00" -> "14:00")
-      const hour = b.time.split(" - ")[0];
-      if (!acc[hour]) {
-        acc[hour] = 0;
-      }
-      acc[hour] += 1;
-      return acc;
-    }, {});
+    // Peak Hours Analysis - (online + venue payments received)
+    const hourStats = paidBookings.reduce(
+      (acc: Record<string, { bookings: number; revenue: number }>, b) => {
+        const hour = b.time.split(" - ")[0];
+        if (!acc[hour]) {
+          acc[hour] = { bookings: 0, revenue: 0 };
+        }
+        acc[hour].bookings += 1;
+
+        // Only count collected revenue
+        const onlineCollected = b.require_deposit
+          ? b.deposit_amount
+          : b.subtotal;
+        const venueCollected = b.venue_payment_received
+          ? b.venue_payment_amount || 0
+          : 0;
+        acc[hour].revenue += onlineCollected + venueCollected;
+
+        return acc;
+      },
+      {},
+    );
 
     // Sorting peak hours by bookings
     const peakHours = Object.entries(hourStats)
-      .map(([hour, bookings]) => ({ hour, bookings: bookings as number }))
+      .map(([hour, stats]) => ({
+        hour,
+        bookings: stats.bookings,
+        revenue: stats.revenue,
+      }))
       .sort((a, b) => b.bookings - a.bookings);
 
     // Peak vs Off-Peak Analysis
@@ -413,12 +452,18 @@ export async function GET(request: NextRequest) {
       // Extract start hour like "14:00"
       const hour = b.time.split(" - ")[0];
 
-      // Use the actual revenue (deposit or subtotal) NOT total_amount
+      // Only count collected revenue (online + venue if received)
+      const onlineCollected = b.require_deposit ? b.deposit_amount : b.subtotal;
+      const venueCollected = b.venue_payment_received
+        ? b.venue_payment_amount || 0
+        : 0;
+      const collectedRevenue = onlineCollected + venueCollected;
+
       if (peakHoursList.includes(hour)) {
-        peakRevenue += b.subtotal;
+        peakRevenue += collectedRevenue;
         peakBookings += 1;
       } else if (offPeakHoursList.includes(hour)) {
-        offPeakRevenue += b.subtotal;
+        offPeakRevenue += collectedRevenue;
         offPeakBookings += 1;
       }
     });

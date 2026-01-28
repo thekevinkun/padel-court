@@ -878,7 +878,9 @@ const ReportsPageClient = () => {
 
         {/* Best/Worst Performers */}
         {(analytics.bestCourt || analytics.worstCourt) && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div
+            className={`grid grid-cols-1 ${analytics.worstCourt ? "md:grid-cols-2" : ""} gap-6 mb-8`}
+          >
             {/* Best Performer */}
             {analytics.bestCourt && (
               <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
