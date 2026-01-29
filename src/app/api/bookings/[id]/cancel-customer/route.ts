@@ -10,9 +10,17 @@ export async function POST(
     // Extract booking ID and cancellation reason
     const { id: bookingId } = await params;
     const body = await request.json();
-    const { reason } = body;
+    const { reason, email, bookingRef } = body;
 
-    console.log("Customer cancellation request:", bookingId);
+    // Validate required fields
+    if (!email || !bookingRef) {
+      return NextResponse.json(
+        { error: "Email and booking reference required" },
+        { status: 400 },
+      );
+    }
+
+    console.log("Customer cancellation request:", bookingId, email, bookingRef);
 
     // Initialize Supabase client
     const supabase = createServerClient();
@@ -20,12 +28,19 @@ export async function POST(
     // Get booking details
     const { data: booking, error: bookingError } = await supabase
       .from("bookings")
-      .select("*, courts(name), time_slots(id)")
+      .select("*, courts(name)")
       .eq("id", bookingId)
+      .eq("customer_email", email.toLowerCase().trim()) // Security: must match email
+      .eq("booking_ref", bookingRef.toUpperCase().trim()) // Security: must match ref
       .single();
 
+    console.log("Fetched booking for cancellation:", booking);
+
     if (bookingError || !booking) {
-      return NextResponse.json({ error: "Booking not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Booking not found: ", bookingError },
+        { status: 404 },
+      );
     }
 
     // Validation checks
