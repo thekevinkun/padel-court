@@ -45,7 +45,7 @@ export function useAdminNotifications() {
 
       // Optimistic update
       setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+        prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
       );
       setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (error) {
@@ -97,7 +97,7 @@ export function useAdminNotifications() {
         toast.error("Failed to delete notification");
       }
     },
-    [notifications]
+    [notifications],
   );
 
   // Initial fetch
@@ -141,7 +141,7 @@ export function useAdminNotifications() {
                 }
               : undefined,
           });
-        }
+        },
       )
       .on(
         "postgres_changes",
@@ -155,31 +155,20 @@ export function useAdminNotifications() {
 
           console.log("Notification updated:", updated);
 
-          setNotifications((prev) =>
-            prev.map((n) => (n.id === updated.id ? updated : n))
-          );
-
-          // Recalculate unread count based on current state
-          setNotifications((currentNotifications) => {
-            const oldNotification = currentNotifications.find(
-              (n) => n.id === updated.id
+          setNotifications((prev) => {
+            const newNotifications = prev.map((n) =>
+              n.id === updated.id ? updated : n,
             );
 
-            if (oldNotification && !oldNotification.read && updated.read) {
-              setUnreadCount((prev) => Math.max(0, prev - 1));
-            } else if (
-              oldNotification &&
-              oldNotification.read &&
-              !updated.read
-            ) {
-              setUnreadCount((prev) => prev + 1);
-            }
+            // Recalculate unread count from the updated notifications array
+            const newUnreadCount = newNotifications.filter(
+              (n) => !n.read,
+            ).length;
+            setUnreadCount(newUnreadCount);
 
-            return currentNotifications.map((n) =>
-              n.id === updated.id ? updated : n
-            );
+            return newNotifications;
           });
-        }
+        },
       )
       .subscribe((status) => {
         console.log("Notification subscription status:", status);

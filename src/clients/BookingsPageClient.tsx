@@ -438,23 +438,32 @@ const BookingsPageClient = () => {
                         <div className="font-medium">
                           IDR {booking.total_amount.toLocaleString("id-ID")}
                         </div>
-                        {booking.require_deposit && (
+                        {booking.refund_status === "COMPLETED" ? (
                           <div className="text-xs text-orange-600 mt-1">
-                            {booking.remaining_balance > 0
-                              ? "Balance: IDR " + booking.remaining_balance.toLocaleString(
-                                  "id-ID",
-                                )
-                              : "Venue: IDR " + booking.venue_payment_amount.toLocaleString(
-                                  "id-ID",
-                                )}
-                            {"\n"}
-                            {booking.venue_payment_expired
-                              ? "(Expired)"
-                              : booking.status === "REFUNDED" ||
-                                  booking.session_status === "CANCELLED"
-                                ? "(Cancelled)"
-                                : ""}
+                            Refunded: IDR{" "}
+                            {booking.refund_amount.toLocaleString("id-ID")}
                           </div>
+                        ) : (
+                          booking.require_deposit && (
+                            <div className="text-xs text-orange-600 mt-1">
+                              {booking.remaining_balance > 0
+                                ? "Balance: IDR " +
+                                  booking.remaining_balance.toLocaleString(
+                                    "id-ID",
+                                  )
+                                : "Venue: IDR " +
+                                  booking.venue_payment_amount.toLocaleString(
+                                    "id-ID",
+                                  )}
+                              {"\n"}
+                              {booking.venue_payment_expired
+                                ? "(Expired)"
+                                : booking.status === "REFUNDED" ||
+                                    booking.session_status === "CANCELLED"
+                                  ? "(Cancelled)"
+                                  : ""}
+                            </div>
+                          )
                         )}
                       </TableCell>
                       <TableCell>{getStatusBadge(booking)}</TableCell>

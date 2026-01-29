@@ -152,9 +152,7 @@ const NotificationPanel = ({ isOpen, onClose }: NotificationPanelProps) => {
             </div>
 
             {/* Notifications List */}
-            <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent 
-              [&::-webkit-scrollbar-thumb]:bg-primary [&::-webkit-scrollbar-thumb]:rounded-full 
-              [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-transparent"
+            <div className="flex-1 custom-scrollbar"
             >
               {loading ? (
                 <div className="flex items-center justify-center h-64">

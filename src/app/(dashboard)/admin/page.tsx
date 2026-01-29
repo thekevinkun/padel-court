@@ -77,16 +77,22 @@ export default function DashboardPage() {
       // Revenue = actual booking revenue (including refunded)
       const todayRevenue =
         todayData?.reduce((sum, b) => {
-          const bookingRevenue =
-            b.refund_status === "COMPLETED"
-              ? b.refund_amount
-              : b.require_deposit && b.remaining_balance > 0
-                ? b.deposit_amount
-                : b.require_deposit && b.remaining_balance === 0
-                  ? b.full_amount
-                  : b.subtotal;
+          let bookingRevenue = 0;
+
+          if (b.refund_status === "COMPLETED") {
+            bookingRevenue = b.refund_amount;
+          } else if (b.status === "PAID") {
+            if (b.require_deposit && b.remaining_balance > 0) {
+              bookingRevenue = b.deposit_amount;
+            } else if (b.require_deposit && b.remaining_balance === 0) {
+              bookingRevenue = b.full_amount;
+            } else {
+              bookingRevenue = b.subtotal;
+            }
+          }
+
           return sum + bookingRevenue;
-        }, 0) || 0;
+        }, 0) ?? 0;
 
       // Count only non-refunded bookings
       const todayBookings =
@@ -156,7 +162,7 @@ export default function DashboardPage() {
         `,
         )
         .eq("date", today)
-        .order("date")
+        .order("created_at", { ascending: false })
         .limit(10);
 
       // Track refunds separately
@@ -244,7 +250,6 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Welcome Message with Real-time Indicator */}
       {/* Welcome Message with Real-time Indicator */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}

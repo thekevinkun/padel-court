@@ -189,7 +189,11 @@ const MyBookingClient = () => {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ reason: cancelReason }),
+          body: JSON.stringify({
+            reason: cancelReason,
+            email: booking.customer_email, // Send for verification
+            bookingRef: booking.booking_ref, // Send for verification
+          }),
         },
       );
 
@@ -556,10 +560,10 @@ const MyBookingClient = () => {
                   <Info
                     className={`h-4 w-4 ${
                       getRefundType(booking) === "FULL"
-                        ? "text-green-600"
+                        ? "!text-green-600"
                         : getRefundType(booking) === "PARTIAL"
-                          ? "text-blue-600"
-                          : "text-orange-600"
+                          ? "!text-blue-600"
+                          : "!text-orange-600"
                     }`}
                   />
                   <AlertDescription
@@ -575,13 +579,13 @@ const MyBookingClient = () => {
                     <p className="text-sm mt-1">
                       {getRefundType(booking) === "FULL" ? (
                         <>
-                          ✅ <strong>Full refund available</strong> - Session is{" "}
+                          <strong>Full refund available</strong> - Session is{" "}
                           {getHoursUntilBooking(booking)} hours away (≥24hrs
                           policy)
                         </>
                       ) : getRefundType(booking) === "PARTIAL" ? (
                         <>
-                          ⚖️ <strong>50% refund available</strong> - Session is{" "}
+                          <strong>50% refund available</strong> - Session is{" "}
                           {getHoursUntilBooking(booking)} hours away (12-24hrs
                           policy)
                           <br />
@@ -594,7 +598,7 @@ const MyBookingClient = () => {
                         </>
                       ) : (
                         <>
-                          ⚠️ <strong>No refund available</strong> - Session is{" "}
+                          <strong>No refund available</strong> - Session is{" "}
                           {getHoursUntilBooking(booking)} hours away (&lt;12hrs
                           policy)
                         </>
@@ -1073,7 +1077,6 @@ const MyBookingClient = () => {
 
                 <div className="space-y-4">
                   {/* Cancellation Policy Notice */}
-                  {/* Cancellation Policy Notice */}
                   <Alert
                     className={
                       getRefundType(booking) === "FULL"
@@ -1086,10 +1089,10 @@ const MyBookingClient = () => {
                     <AlertCircle
                       className={`h-4 w-4 ${
                         getRefundType(booking) === "FULL"
-                          ? "text-green-600"
+                          ? "!text-green-600"
                           : getRefundType(booking) === "PARTIAL"
-                            ? "text-blue-600"
-                            : "text-orange-600"
+                            ? "!text-blue-600"
+                            : "!text-orange-600"
                       }`}
                     />
                     <AlertDescription
@@ -1103,7 +1106,7 @@ const MyBookingClient = () => {
                     >
                       {getRefundType(booking) === "FULL" ? (
                         <>
-                          <strong>✅ Full Refund (100%)</strong>
+                          <strong>Full Refund (100%)</strong>
                           <p className="text-sm mt-1">
                             Session starts in {getHoursUntilBooking(booking)}{" "}
                             hours (≥24hrs before). You will receive:{" "}
@@ -1114,7 +1117,7 @@ const MyBookingClient = () => {
                         </>
                       ) : getRefundType(booking) === "PARTIAL" ? (
                         <>
-                          <strong>⚖️ Partial Refund (50%)</strong>
+                          <strong>Partial Refund (50%)</strong>
                           <p className="text-sm mt-1">
                             Session starts in {getHoursUntilBooking(booking)}{" "}
                             hours (12-24hrs before). You will receive:{" "}
