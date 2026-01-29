@@ -38,11 +38,14 @@ interface FinancialSummary {
   netRevenue: number;
   totalFeesAbsorbed: number;
   totalBookings: number;
+  revenueContributingBookings: number;
   averageBookingValue: number;
   depositBookings: number;
   fullPaymentBookings: number;
   totalRefunds?: number;
   totalRefundAmount?: number;
+  fullRefunds: number;
+  partialRefunds: number;
   netRevenueAfterRefunds?: number;
 }
 

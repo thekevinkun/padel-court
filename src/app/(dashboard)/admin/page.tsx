@@ -69,24 +69,24 @@ export default function DashboardPage() {
       const { data: todayData } = await supabase
         .from("bookings")
         .select(
-          "total_amount, status, require_deposit, deposit_amount, subtotal, payment_fee, session_status, remaining_balance, full_amount, refund_amount",
+          "total_amount, status, require_deposit, deposit_amount, subtotal, payment_fee, session_status, remaining_balance, full_amount, refund_status, refund_amount",
         )
         .eq("date", today)
         .neq("status", "CANCELLED"); // Exclude cancelled bookings
 
-      // Revenue = actual booking revenue (excluding refunded)
+      // Revenue = actual booking revenue (including refunded)
       const todayRevenue =
-        todayData
-          ?.filter((b) => b.status === "PAID") // Only PAID, not REFUNDED
-          .reduce((sum, b) => {
-            const bookingRevenue =
-              b.require_deposit && b.remaining_balance > 0
+        todayData?.reduce((sum, b) => {
+          const bookingRevenue =
+            b.refund_status === "COMPLETED"
+              ? b.refund_amount
+              : b.require_deposit && b.remaining_balance > 0
                 ? b.deposit_amount
                 : b.require_deposit && b.remaining_balance === 0
                   ? b.full_amount
                   : b.subtotal;
-            return sum + bookingRevenue;
-          }, 0) || 0;
+          return sum + bookingRevenue;
+        }, 0) || 0;
 
       // Count only non-refunded bookings
       const todayBookings =
@@ -111,6 +111,7 @@ export default function DashboardPage() {
         .select("remaining_balance")
         .eq("status", "PAID")
         .eq("session_status", "UPCOMING")
+        .eq("date", today)
         .eq("require_deposit", true)
         .eq("venue_payment_received", false)
         .eq("venue_payment_expired", false)
@@ -507,26 +508,37 @@ export default function DashboardPage() {
                           ).toLocaleString("id-ID")}
                         </p>
 
-                        {(booking.require_deposit ||
-                          getDisplayStatus(booking) === "DEPOSIT PAID") && (
-                          <p className="text-xs text-orange-600">
-                            <span
-                              className={`${booking.venue_payment_expired || booking.session_status === "CANCELLED" ? "line-through" : ""}`}
-                            >
-                              {booking.remaining_balance > 0
-                                ? "+" + booking.remaining_balance.toLocaleString(
-                                    "id-ID",
-                                  ) + " at venue"
-                                : "+" + booking.venue_payment_amount.toLocaleString(
-                                    "id-ID",
-                                  ) + " at venue"}
-                            </span>{" "}
-                            {booking.venue_payment_expired
-                              ? "(Expired)"
-                              : booking.session_status === "CANCELLED"
-                                ? "(Not collected)"
-                                : ""}
-                          </p>
+                        {booking.refund_status === "COMPLETED" ? (
+                          <div className="text-xs text-orange-600 mt-1">
+                            Refunded: IDR{" "}
+                            {booking.refund_amount.toLocaleString("id-ID")}
+                          </div>
+                        ) : (
+                          (booking.require_deposit ||
+                            getDisplayStatus(booking) === "DEPOSIT PAID") && (
+                            <p className="text-xs text-orange-600">
+                              <span
+                                className={`${booking.venue_payment_expired || booking.session_status === "CANCELLED" ? "line-through" : ""}`}
+                              >
+                                {booking.remaining_balance > 0
+                                  ? "+" +
+                                    booking.remaining_balance.toLocaleString(
+                                      "id-ID",
+                                    ) +
+                                    " at venue"
+                                  : "+" +
+                                    booking.venue_payment_amount.toLocaleString(
+                                      "id-ID",
+                                    ) +
+                                    " at venue"}
+                              </span>{" "}
+                              {booking.venue_payment_expired
+                                ? "(Expired)"
+                                : booking.session_status === "CANCELLED"
+                                  ? "(Not collected)"
+                                  : ""}
+                            </p>
+                          )
                         )}
                         <p className="text-sm text-muted-foreground">
                           {getDisplayStatus(booking)} •{" "}

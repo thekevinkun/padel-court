@@ -547,6 +547,23 @@ const ReportsPageClient = () => {
                   IDR {(summary.totalRefundAmount || 0).toLocaleString("id-ID")}{" "}
                   refunded
                 </p>
+                {/* Show breakdown of full vs partial */}
+                {(summary.fullRefunds > 0 || summary.partialRefunds > 0) && (
+                  <div className="mt-2 text-xs text-gray-600 space-y-1">
+                    {summary.fullRefunds > 0 && (
+                      <div>
+                        • {summary.fullRefunds} full refund
+                        {summary.fullRefunds > 1 ? "s" : ""}
+                      </div>
+                    )}
+                    {summary.partialRefunds > 0 && (
+                      <div>
+                        • {summary.partialRefunds} partial refund
+                        {summary.partialRefunds > 1 ? "s" : ""}
+                      </div>
+                    )}
+                  </div>
+                )}
                 <span
                   className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mt-2 ${
                     (summary.totalRefunds || 0) / summary.totalBookings < 0.1
@@ -789,14 +806,14 @@ const ReportsPageClient = () => {
               <div className="space-y-2">
                 <p className="text-4xl font-bold text-green-600">
                   {Math.round(
-                    ((summary.totalBookings - (summary.totalRefunds || 0)) /
+                    (summary.revenueContributingBookings /
                       summary.totalBookings) *
                       100,
                   )}
                   %
                 </p>
                 <p className="text-sm text-gray-600">
-                  {summary.totalBookings - (summary.totalRefunds || 0)} out of{" "}
+                  {summary.revenueContributingBookings} out of{" "}
                   {summary.totalBookings} bookings completed
                 </p>
                 <div className="w-full bg-green-200 rounded-full h-2 mt-3">
@@ -804,7 +821,7 @@ const ReportsPageClient = () => {
                     className="bg-green-500 h-2 rounded-full transition-all"
                     style={{
                       width: `${
-                        ((summary.totalBookings - (summary.totalRefunds || 0)) /
+                        (summary.revenueContributingBookings /
                           summary.totalBookings) *
                         100
                       }%`,

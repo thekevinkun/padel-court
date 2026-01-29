@@ -140,24 +140,24 @@ export function useRealtimeDashboardStats(
         const { data: todayData } = await supabase
           .from("bookings")
           .select(
-            "total_amount, status, require_deposit, deposit_amount, subtotal, payment_fee, session_status, remaining_balance, full_amount, refund_amount",
+            "total_amount, status, require_deposit, deposit_amount, subtotal, payment_fee, session_status, remaining_balance, full_amount, refund_status, refund_amount",
           )
           .eq("date", today)
           .neq("status", "CANCELLED"); // Exclude cancelled bookings
 
-        // Revenue = actual booking revenue (excluding refunded)
+        // Revenue = actual booking revenue (including refunded)
         const todayRevenue =
-          todayData
-            ?.filter((b) => b.status === "PAID") // Only PAID, not REFUNDED
-            .reduce((sum, b) => {
-              const bookingRevenue =
-                b.require_deposit && b.remaining_balance > 0
+          todayData?.reduce((sum, b) => {
+            const bookingRevenue =
+              b.refund_status === "COMPLETED"
+                ? b.refund_amount
+                : b.require_deposit && b.remaining_balance > 0
                   ? b.deposit_amount
                   : b.require_deposit && b.remaining_balance === 0
                     ? b.full_amount
                     : b.subtotal;
-              return sum + bookingRevenue;
-            }, 0) || 0;
+            return sum + bookingRevenue;
+          }, 0) || 0;
 
         // Count only non-refunded bookings
         const todayBookings =
@@ -181,6 +181,7 @@ export function useRealtimeDashboardStats(
           .from("bookings")
           .select("remaining_balance")
           .eq("status", "PAID")
+          .eq("date", today)
           .eq("session_status", "UPCOMING")
           .eq("require_deposit", true)
           .eq("venue_payment_received", false)
@@ -216,9 +217,19 @@ export function useRealtimeDashboardStats(
         // Fetch recent bookings
         const { data: recentBookings } = await supabase
           .from("bookings")
-          .select(`*, courts (name)`)
-          .order("created_at", { ascending: false })
-          .limit(5);
+          .select(
+            `
+            *, 
+            courts (name),
+            booking_time_slots (
+              id,
+              time_slots (time_start, time_end)
+            )
+          `,
+          )
+          .eq("date", today)
+          .order("date")
+          .limit(10);
 
         // Track refunds separately
         const todayRefundedBookings =
