@@ -4,8 +4,8 @@ import { createServerClient } from "@/lib/supabase/server";
 import { createAuthClient } from "@/lib/supabase/auth-server";
 import { RevenueData } from "@/types/reports";
 
-// Cache TTL: 1 minute for reports
-const CACHE_TTL = 60; // seconds
+// Cache TTL: 5 minute for reports
+const CACHE_TTL = 300; // seconds
 
 export async function GET(request: NextRequest) {
   try {
@@ -87,7 +87,18 @@ export async function GET(request: NextRequest) {
         `
         *,
         courts (name),
-        venue_payments (*)
+        venue_payments (*),
+        booking_equipment (
+          id,
+          quantity,
+          subtotal,
+          equipment (id, name, category)
+        ),
+        booking_players (
+          id,
+          player_name,
+          is_primary_booker
+        )
       `,
       )
       .gte("date", startDate)
@@ -123,6 +134,12 @@ export async function GET(request: NextRequest) {
       // Payment fee
       const fee = b.payment_fee || 0;
 
+      // Equipment revenue (already included in totalKept, just tracking separately)
+      const equipmentRevenue = b.equipment_subtotal || 0;
+
+      // Court revenue (total - equipment)
+      const courtRevenue = totalKept - equipmentRevenue;
+
       return {
         ...b,
         onlineKept, // Money kept from online payment (after refunds)
@@ -131,6 +148,8 @@ export async function GET(request: NextRequest) {
         refunded, // Amount refunded
         fee, // Payment processing fee
         hasRevenue: totalKept > 0, // Does this booking contribute revenue?
+        equipmentRevenue,
+        courtRevenue,
       };
     });
 
@@ -144,7 +163,6 @@ export async function GET(request: NextRequest) {
     const revenueBookings = processedBookings.filter((b) => b.hasRevenue);
 
     // SUMMARY CALCULATIONS
-
     // Total Bookings = ALL bookings (including refunded)
     const totalBookings = processedBookings.length;
 
@@ -211,6 +229,26 @@ export async function GET(request: NextRequest) {
       (b) => b.totalKept > 0,
     ).length;
 
+    // Equipment Statistics
+    const equipmentRevenue = processedBookings.reduce(
+      (sum, b) => sum + (b.equipmentRevenue || 0),
+      0,
+    );
+    const courtRevenue = totalRevenue - equipmentRevenue;
+    const bookingsWithEquipment = processedBookings.filter(
+      (b) => b.has_equipment_rental,
+    ).length;
+    const equipmentRentalRate =
+      totalBookings > 0 ? (bookingsWithEquipment / totalBookings) * 100 : 0;
+
+    // Player Statistics
+    const totalPlayers = processedBookings.reduce(
+      (sum, b) => sum + (b.number_of_players || 0),
+      0,
+    );
+    const averagePlayersPerBooking =
+      totalBookings > 0 ? totalPlayers / totalBookings : 0;
+
     const summary = {
       totalRevenue,
       netRevenue,
@@ -227,6 +265,12 @@ export async function GET(request: NextRequest) {
       fullRefunds,
       partialRefunds,
       netRevenueAfterRefunds,
+      equipmentRevenue,
+      courtRevenue,
+      bookingsWithEquipment,
+      equipmentRentalRate,
+      totalPlayers,
+      averagePlayersPerBooking,
     };
 
     console.log("📊 Summary:", summary);
@@ -300,15 +344,17 @@ export async function GET(request: NextRequest) {
             totalRevenue: 0,
             netRevenue: 0,
             feesAbsorbed: 0,
+            equipmentRevenue: 0, // NEW
+            courtRevenue: 0, // NEW
           };
         }
-
         acc[date].onlineRevenue += b.onlineKept;
         acc[date].venueRevenue += b.venueKept;
         acc[date].totalRevenue += b.totalKept;
         acc[date].netRevenue += b.totalKept - b.fee;
         acc[date].feesAbsorbed += b.fee;
-
+        acc[date].equipmentRevenue += b.equipmentRevenue || 0; // NEW
+        acc[date].courtRevenue += b.courtRevenue || 0; // NEW
         return acc;
       },
       {},
@@ -391,6 +437,43 @@ export async function GET(request: NextRequest) {
     const bestCourt = topCourts.length > 0 ? topCourts[0] : null;
     const worstCourt =
       topCourts.length > 1 ? topCourts[topCourts.length - 1] : null;
+
+    // EQUIPMENT ANALYSIS
+    const equipmentStats = processedBookings.reduce(
+      (
+        acc: Record<
+          string,
+          { name: string; quantity: number; revenue: number; bookings: number }
+        >,
+        b,
+      ) => {
+        if (b.booking_equipment && b.booking_equipment.length > 0) {
+          b.booking_equipment.forEach((item: any) => {
+            const equipId = item.equipment?.id || "unknown";
+            const equipName = item.equipment?.name || "Unknown Equipment";
+
+            if (!acc[equipId]) {
+              acc[equipId] = {
+                name: equipName,
+                quantity: 0,
+                revenue: 0,
+                bookings: 0,
+              };
+            }
+
+            acc[equipId].quantity += item.quantity;
+            acc[equipId].revenue += item.subtotal;
+            acc[equipId].bookings += 1;
+          });
+        }
+        return acc;
+      },
+      {},
+    );
+
+    const equipmentBreakdown = Object.values(equipmentStats).sort(
+      (a, b) => b.revenue - a.revenue,
+    );
 
     // PEAK HOURS ANALYSIS
     const hourStats = processedBookings.reduce(
@@ -484,6 +567,7 @@ export async function GET(request: NextRequest) {
       worstCourt,
       peakHours,
       peakVsOffPeak,
+      equipmentBreakdown,
     };
 
     // CACHE THE RESPONSE

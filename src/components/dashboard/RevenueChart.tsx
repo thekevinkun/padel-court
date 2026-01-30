@@ -20,6 +20,8 @@ const RevenueChart = ({ data }: { data: RevenueData[] }) => {
       month: "short",
       day: "numeric",
     }),
+    "Court Revenue": item.courtRevenue,
+    "Equipment Revenue": item.equipmentRevenue,
     "Online Revenue": item.onlineRevenue,
     "Venue Revenue": item.venueRevenue,
     "Gross Revenue": item.totalRevenue,
@@ -132,6 +134,16 @@ const RevenueChart = ({ data }: { data: RevenueData[] }) => {
             fill="url(#colorVenue)"
           />
 
+          {/* Equipment Revenue - Purple */}
+          <Line
+            type="monotone"
+            dataKey="Equipment Revenue"
+            stroke="#a855f7"
+            strokeWidth={2}
+            strokeDasharray="3 3"
+            dot={{ fill: "#a855f7", r: 3 }}
+          />
+
           {/* Actual Earnings - Emerald (dotted) */}
           <Line
             type="monotone"
@@ -145,7 +157,7 @@ const RevenueChart = ({ data }: { data: RevenueData[] }) => {
       </ResponsiveContainer>
 
       {/* Legend Info */}
-      <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-5 text-sm justify-items-center">
+      <div className="mt-4 grid grid-cols-2 md:grid-cols-5 gap-4 text-sm justify-items-center">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-green-500"></div>
           <div>
@@ -166,6 +178,13 @@ const RevenueChart = ({ data }: { data: RevenueData[] }) => {
           <div>
             <p className="text-gray-600">Venue Revenue</p>
             <p className="text-xs text-gray-500">Cash collected</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+          <div>
+            <p className="text-gray-600">Equipment</p>
+            <p className="text-xs text-gray-500">Rental revenue</p>
           </div>
         </div>
         <div className="flex items-center gap-2">

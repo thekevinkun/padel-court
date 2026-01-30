@@ -18,7 +18,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
-import { Booking } from "@/types/booking";
+import { useSettings } from "@/hooks/useSettings";
+import { Booking, BookingEquipment, BookingPlayer } from "@/types/booking";
 import { supabase } from "@/lib/supabase/client";
 import { generateBookingReceipt } from "@/lib/pdf-generator";
 import { sendWhatsAppReceipt } from "@/lib/whatsapp";
@@ -26,6 +27,7 @@ import { sendWhatsAppReceipt } from "@/lib/whatsapp";
 const BookingSuccessPageClient = () => {
   const params = useParams();
   const router = useRouter();
+  const { settings } = useSettings();
   const bookingRef = params.bookingRef as string;
 
   const [booking, setBooking] = useState<Booking | null>(null);
@@ -94,13 +96,29 @@ const BookingSuccessPageClient = () => {
         .from("bookings")
         .select(
           `
-          *,
-          courts (name, description),
-          booking_time_slots (
-            id,
-            time_slots (time_start, time_end, period, price_per_person)
-          )
-        `,
+    *,
+    courts (name, description),
+    booking_time_slots (
+      id,
+      time_slots (time_start, time_end, period, price_per_person)
+    ),
+    booking_equipment (
+      id,
+      equipment_id,
+      quantity,
+      price_per_unit,
+      subtotal,
+      equipment (id, name, category, description)
+    ),
+    booking_players (
+      id,
+      player_order,
+      player_name,
+      player_email,
+      player_whatsapp,
+      is_primary_booker
+    )
+  `,
         )
         .eq("booking_ref", bookingRef)
         .single();
@@ -136,6 +154,21 @@ const BookingSuccessPageClient = () => {
         total: data.total_amount,
         notes: data.notes || "-",
         timestamp: new Date(data.created_at).toLocaleString("en-ID"),
+        equipmentRentals: data.booking_equipment?.map(
+          (item: BookingEquipment) => ({
+            name: item.equipment?.name || "Equipment",
+            quantity: item.quantity,
+            subtotal: item.subtotal,
+          }),
+        ),
+        additionalPlayers: data.booking_players
+          ?.filter((p: BookingPlayer) => !p.is_primary_booker)
+          .map((p: BookingPlayer) => ({
+            name: p.player_name,
+            email: p.player_email,
+            whatsapp: p.player_whatsapp,
+          })),
+        logoUrl: settings?.logo_url || "",
       };
 
       const blob = await generateBookingReceipt(receiptData);
@@ -184,6 +217,19 @@ const BookingSuccessPageClient = () => {
       total: booking.total_amount,
       notes: booking.notes || "-",
       timestamp: new Date(booking.created_at).toLocaleString("en-ID"),
+      equipmentRentals: booking.booking_equipment?.map((item) => ({
+        name: item.equipment?.name || "Equipment",
+        quantity: item.quantity,
+        subtotal: item.subtotal,
+      })),
+      additionalPlayers: booking.booking_players
+        ?.filter((p) => !p.is_primary_booker)
+        .map((p) => ({
+          name: p.player_name,
+          email: p.player_email || "",
+          whatsapp: p.player_whatsapp || "",
+        })),
+      logoUrl: settings?.logo_url || "",
     };
 
     const whatsappNumber =
@@ -249,7 +295,7 @@ const BookingSuccessPageClient = () => {
               Your booking has been confirmed. See you on the court!
             </p>
 
-            {/* ✅ NEW - Email Confirmation Message */}
+            {/* Email Confirmation Message */}
             {booking && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
@@ -325,6 +371,28 @@ const BookingSuccessPageClient = () => {
                   </span>
                 </div>
 
+                {/* Show player names if available */}
+                {booking.booking_players &&
+                  booking.booking_players.length > 0 && (
+                    <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded mt-2">
+                      <div className="font-semibold mb-1">Players:</div>
+                      {booking.booking_players
+                        .sort((a, b) => a.player_order - b.player_order)
+                        .map((player) => (
+                          <div
+                            key={player.id}
+                            className="flex items-center gap-1"
+                          >
+                            <span>•</span>
+                            <span>{player.player_name}</span>
+                            {player.is_primary_booker && (
+                              <span className="text-blue-600">(You)</span>
+                            )}
+                          </div>
+                        ))}
+                    </div>
+                  )}
+
                 <Separator className="my-4" />
 
                 {/* Payment Summary */}
@@ -333,12 +401,38 @@ const BookingSuccessPageClient = () => {
                     Payment Summary
                   </h4>
 
+                  {/* Court Booking */}
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">
                       Court Booking:
                     </span>
-                    <span>IDR {booking.subtotal.toLocaleString("id-ID")}</span>
+                    <span>
+                      IDR{" "}
+                      {(
+                        booking.subtotal - booking.equipment_subtotal
+                      ).toLocaleString("id-ID")}
+                    </span>
                   </div>
+
+                  {/* Equipment Rental (if any) */}
+                  {booking.has_equipment_rental &&
+                    booking.equipment_subtotal > 0 && (
+                      <>
+                        {booking.booking_equipment?.map((item) => (
+                          <div
+                            key={item.id}
+                            className="flex justify-between text-sm pl-4"
+                          >
+                            <span className="text-muted-foreground">
+                              • {item.equipment?.name} ({item.quantity}x):
+                            </span>
+                            <span>
+                              IDR {item.subtotal.toLocaleString("id-ID")}
+                            </span>
+                          </div>
+                        ))}
+                      </>
+                    )}
 
                   {booking.require_deposit ? (
                     <>

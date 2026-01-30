@@ -18,6 +18,7 @@ import {
   Wallet,
   Receipt,
   Trophy,
+  Users,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -631,7 +632,6 @@ const ReportsPageClient = () => {
           title="Revenue Breakdown"
           description="How your revenue is collected and processed"
         />
-
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           {/* Online Payments */}
           <Card className="hover:shadow-lg transition-shadow">
@@ -758,6 +758,88 @@ const ReportsPageClient = () => {
                   <p className="text-xs text-gray-500">
                     💡 Venue payments have no fees
                   </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Court Revenue */}
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-green-100 rounded-lg">
+                    <Trophy className="w-5 h-5 text-green-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">
+                      Court Revenue
+                    </h3>
+                    <p className="text-xs text-gray-500">Court bookings</p>
+                  </div>
+                </div>
+                <InfoTooltip text="Revenue from court time bookings (excludes equipment)" />
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-3xl font-bold text-green-600">
+                    IDR {summary.courtRevenue.toLocaleString("id-ID")}
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {Math.round(
+                      (summary.courtRevenue / summary.totalRevenue) * 100,
+                    )}
+                    % of total revenue
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Equipment Revenue */}
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-purple-100 rounded-lg">
+                    <Trophy className="w-5 h-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">
+                      Equipment Revenue
+                    </h3>
+                    <p className="text-xs text-gray-500">Racket rentals</p>
+                  </div>
+                </div>
+                <InfoTooltip text="Revenue from equipment rentals (rackets, etc.)" />
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-3xl font-bold text-purple-600">
+                    IDR {summary.equipmentRevenue.toLocaleString("id-ID")}
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {Math.round(
+                      (summary.equipmentRevenue / summary.totalRevenue) * 100,
+                    )}
+                    % of total revenue
+                  </p>
+                </div>
+                <div className="pt-3 border-t border-gray-100">
+                  <div className="flex justify-between text-sm mb-2">
+                    <span className="text-gray-600">Rental rate</span>
+                    <span className="font-medium">
+                      {summary.equipmentRentalRate.toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">
+                      Bookings with equipment
+                    </span>
+                    <span className="font-medium">
+                      {summary.bookingsWithEquipment}
+                    </span>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -1224,6 +1306,157 @@ const ReportsPageClient = () => {
             </CardContent>
           </Card>
         </div>
+      </div>
+
+      {/* NEW: 🎾 EQUIPMENT & PLAYER ANALYTICS */}
+      <div>
+        <SectionHeader
+          icon={Trophy}
+          title="Equipment & Player Analytics"
+          description="Rental statistics and player engagement metrics"
+        />
+
+        {/* Equipment Stats Row */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {/* Rental Rate */}
+          <Card className="bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-200">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-purple-500 rounded-lg">
+                  <Trophy className="w-5 h-5 text-white" />
+                </div>
+                <h3 className="font-semibold text-gray-900">
+                  Equipment Rental Rate
+                </h3>
+              </div>
+              <div className="space-y-2">
+                <p className="text-4xl font-bold text-purple-600">
+                  {summary.equipmentRentalRate.toFixed(1)}%
+                </p>
+                <p className="text-sm text-gray-600">
+                  {summary.bookingsWithEquipment} out of {summary.totalBookings}{" "}
+                  bookings
+                </p>
+                <div className="w-full bg-purple-200 rounded-full h-3 mt-3">
+                  <div
+                    className="bg-purple-500 h-3 rounded-full transition-all"
+                    style={{
+                      width: `${summary.equipmentRentalRate}%`,
+                    }}
+                  ></div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Average Players */}
+          <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-200">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-blue-500 rounded-lg">
+                  <Users className="w-5 h-5 text-white" />
+                </div>
+                <h3 className="font-semibold text-gray-900">Average Players</h3>
+              </div>
+              <div className="space-y-2">
+                <p className="text-4xl font-bold text-blue-600">
+                  {summary.averagePlayersPerBooking.toFixed(1)}
+                </p>
+                <p className="text-sm text-gray-600">
+                  {summary.totalPlayers} total players across all bookings
+                </p>
+                <div className="mt-3 pt-3 border-t border-blue-200">
+                  <p className="text-xs text-gray-500">
+                    💡 Most bookings are for{" "}
+                    {Math.round(summary.averagePlayersPerBooking)} players
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Equipment Revenue Impact */}
+          <Card className="bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-amber-500 rounded-lg">
+                  <DollarSign className="w-5 h-5 text-white" />
+                </div>
+                <h3 className="font-semibold text-gray-900">
+                  Equipment Impact
+                </h3>
+              </div>
+              <div className="space-y-2">
+                <p className="text-4xl font-bold text-amber-600">
+                  +
+                  {(
+                    (summary.equipmentRevenue / summary.courtRevenue) *
+                    100
+                  ).toFixed(1)}
+                  %
+                </p>
+                <p className="text-sm text-gray-600">
+                  Additional revenue from equipment
+                </p>
+                <div className="mt-3 pt-3 border-t border-amber-200">
+                  <p className="text-xs text-gray-500">
+                    💡 Equipment adds IDR{" "}
+                    {summary.equipmentRevenue.toLocaleString("id-ID")} to court
+                    revenue
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Equipment Breakdown Chart */}
+        {analytics.equipmentBreakdown &&
+          analytics.equipmentBreakdown.length > 0 && (
+            <Card className="mb-8">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Trophy className="w-5 h-5 text-forest" />
+                  Popular Equipment
+                </CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Which equipment items are rented most frequently
+                </p>
+              </CardHeader>
+              <CardContent className="pt-4">
+                <div className="space-y-4">
+                  {analytics.equipmentBreakdown.map((item, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center font-bold text-purple-600">
+                          #{index + 1}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-900">
+                            {item.name}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            Rented in {item.bookings} bookings
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-purple-600 text-lg">
+                          {item.quantity}x
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          IDR {item.revenue.toLocaleString("id-ID")} revenue
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
       </div>
 
       {/* Revenue Formula Explainer */}

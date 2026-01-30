@@ -11,6 +11,16 @@ export interface BookingConfirmationEmailProps {
   depositAmount?: number;
   remainingBalance?: number;
   paymentMethod: string;
+  equipmentRentals?: Array<{
+    name: string;
+    quantity: number;
+    subtotal: number;
+  }>;
+  additionalPlayers?: Array<{
+    name: string;
+    email?: string;
+    whatsapp?: string;
+  }>;
   logoUrl: string;
 }
 
@@ -24,6 +34,16 @@ export interface BookingReminderEmailProps {
   requireDeposit: boolean;
   remainingBalance?: number;
   venuePaymentReceived?: boolean;
+  equipmentRentals?: Array<{
+    name: string;
+    quantity: number;
+    subtotal: number;
+  }>;
+  additionalPlayers?: Array<{
+    name: string;
+    email?: string;
+    whatsapp?: string;
+  }>;
   logoUrl: string;
 }
 
@@ -40,6 +60,16 @@ export interface BookingEmailData {
   depositAmount?: number;
   remainingBalance?: number;
   paymentMethod: string;
+  equipmentRentals?: Array<{
+    name: string;
+    quantity: number;
+    subtotal: number;
+  }>;
+  additionalPlayers?: Array<{
+    name: string;
+    email?: string;
+    whatsapp?: string;
+  }>;
 }
 
 export interface ReminderEmailData {
@@ -52,6 +82,16 @@ export interface ReminderEmailData {
   requireDeposit: boolean;
   remainingBalance?: number;
   venuePaymentReceived?: boolean;
+  equipmentRentals?: Array<{
+    name: string;
+    quantity: number;
+    subtotal: number;
+  }>;
+  additionalPlayers?: Array<{
+    name: string;
+    email?: string;
+    whatsapp?: string;
+  }>;
 }
 
 export interface RefundConfirmationEmailProps {

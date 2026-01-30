@@ -1,4 +1,4 @@
-import { ReceiptData } from "./pdf-generator";
+import { ReceiptData } from "@/types/booking";
 
 /**
  * Sends booking receipt details via WhatsApp
@@ -11,7 +11,7 @@ import { ReceiptData } from "./pdf-generator";
 export const sendWhatsAppReceipt = (
   phoneNumber: string,
   receiptData: ReceiptData,
-  _pdfBlob?: Blob
+  _pdfBlob?: Blob,
 ) => {
   // Clean phone number - remove all non-digit characters
   const cleanNumber = phoneNumber.replace(/\D/g, "");
@@ -20,8 +20,8 @@ export const sendWhatsAppReceipt = (
   const formattedNumber = cleanNumber.startsWith("62")
     ? cleanNumber
     : cleanNumber.startsWith("0")
-    ? `62${cleanNumber.slice(1)}`
-    : `62${cleanNumber}`;
+      ? `62${cleanNumber.slice(1)}`
+      : `62${cleanNumber}`;
 
   // Create formatted WhatsApp message
   const message = formatWhatsAppMessage(receiptData);
@@ -49,10 +49,33 @@ export const sendWhatsAppReceipt = (
  * Formats booking data into a WhatsApp-friendly message
  */
 const formatWhatsAppMessage = (data: ReceiptData): string => {
-  const divider = "━━━━━━━━━━━━━━━━━━━━";
+  const divider = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
+
+  // Calculate court subtotal
+  const equipmentTotal =
+    data.equipmentRentals?.reduce((sum, item) => sum + item.subtotal, 0) || 0;
+  const courtSubtotal = data.subtotal - equipmentTotal;
+
+  // Build player list
+  let playerList = `• ${data.customerName} (You)`;
+  if (data.additionalPlayers && data.additionalPlayers.length > 0) {
+    data.additionalPlayers.forEach((player) => {
+      playerList += `\n• ${player.name}`;
+    });
+  }
+
+  // Build equipment list
+  let equipmentSection = "";
+  if (data.equipmentRentals && data.equipmentRentals.length > 0) {
+    equipmentSection = `\n${divider}\n\n🎾 *Equipment Rental:*\n`;
+    data.equipmentRentals.forEach((item) => {
+      equipmentSection += `• ${item.name} (${item.quantity}x): IDR ${item.subtotal.toLocaleString("id-ID")}\n`;
+    });
+  }
 
   return `
 🎾 *PADEL BATU ALAM PERMAI*
+
 ${divider}
 
 ✅ *BOOKING CONFIRMED*
@@ -63,28 +86,36 @@ ${data.bookingRef}
 ${divider}
 
 👤 *Customer Details:*
-• Name: ${data.customerName}
-• Email: ${data.email}
-• Phone: ${data.phone}
+- Name: ${data.customerName}
+- Email: ${data.email}
+- Phone: ${data.phone}
 
 ${divider}
 
-🏟️ *Booking Details:*
-• Court: ${data.courtName}
-• Date: ${data.date}
-• Time: ${data.time}
-• Players: ${data.numberOfPlayers} ${
+🏟 *Booking Details:*
+- Court: ${data.courtName}
+- Date: ${data.date}
+- Time: ${data.time}
+- Players: ${data.numberOfPlayers} ${
     data.numberOfPlayers === 1 ? "person" : "people"
   }
 
+👥 *Players:*
+${playerList}
 ${
-  data.notes && data.notes !== "-"
-    ? `• Notes: ${data.notes}\n\n${divider}\n\n`
-    : `\n${divider}\n\n`
-}💰 *Payment Summary:*
-• Court Booking: IDR ${data.subtotal.toLocaleString("id-ID")}
-• Payment Fee: IDR ${data.paymentFee.toLocaleString("id-ID")}
-• *TOTAL PAID: IDR ${data.total.toLocaleString("id-ID")}*
+  data.notes && data.notes !== "-" ? `\n• Notes: ${data.notes}` : ""
+}${equipmentSection}
+
+${divider}
+
+💰 *Payment Summary:*
+- Court Booking: IDR ${courtSubtotal.toLocaleString("id-ID")}${
+    equipmentTotal > 0
+      ? `\n• Equipment: IDR ${equipmentTotal.toLocaleString("id-ID")}`
+      : ""
+  }
+- Payment Fee: IDR ${data.paymentFee.toLocaleString("id-ID")}
+- *TOTAL PAID: IDR ${data.total.toLocaleString("id-ID")}*
 
 ${divider}
 
@@ -110,14 +141,14 @@ _For inquiries: +62 812 3456 7890_
  */
 export const sendSimpleWhatsAppReceipt = (
   phoneNumber: string,
-  receiptData: ReceiptData
+  receiptData: ReceiptData,
 ) => {
   const cleanNumber = phoneNumber.replace(/\D/g, "");
   const formattedNumber = cleanNumber.startsWith("62")
     ? cleanNumber
     : cleanNumber.startsWith("0")
-    ? `62${cleanNumber.slice(1)}`
-    : `62${cleanNumber}`;
+      ? `62${cleanNumber.slice(1)}`
+      : `62${cleanNumber}`;
 
   const message = `
 🎾 *BOOKING CONFIRMED*
@@ -172,6 +203,6 @@ export const formatPhoneDisplay = (phone: string): string => {
   // Format as: +62 812 3456 7890
   return `+${formatted.slice(0, 2)} ${formatted.slice(2, 5)} ${formatted.slice(
     5,
-    9
+    9,
   )} ${formatted.slice(9)}`;
 };

@@ -39,13 +39,23 @@ export function useRealtimeBookings(initialBookings: Booking[] = []) {
             .from("bookings")
             .select(
               `
-              *, 
-              courts(id, name, description, available),
-              booking_time_slots(
-                id,
-                time_slots(time_start, time_end)
-              )
-            `,
+    *,
+    courts(id, name, description, available),
+    booking_time_slots(
+      id,
+      time_slots(time_start, time_end)
+    ),
+    booking_equipment(
+      id,
+      quantity,
+      equipment(name)
+    ),
+    booking_players(
+      id,
+      player_name,
+      is_primary_booker
+    )
+  `,
             )
             .eq("id", newBooking.id)
             .single();
@@ -118,13 +128,23 @@ export function useRealtimeBookings(initialBookings: Booking[] = []) {
             .from("bookings")
             .select(
               `
-              *, 
-              courts(id, name, description, available),
-              booking_time_slots(
-                id,
-                time_slots(time_start, time_end)
-              )
-            `,
+    *,
+    courts(id, name, description, available),
+    booking_time_slots(
+      id,
+      time_slots(time_start, time_end)
+    ),
+    booking_equipment(
+      id,
+      quantity,
+      equipment(name)
+    ),
+    booking_players(
+      id,
+      player_name,
+      is_primary_booker
+    )
+  `,
             )
             .eq("id", updatedBooking.id)
             .single();

@@ -22,6 +22,8 @@ export default function BookingReminderEmail({
   requireDeposit,
   remainingBalance,
   venuePaymentReceived,
+  equipmentRentals,
+  additionalPlayers,
   logoUrl,
 }: BookingReminderEmailProps) {
   const needsPayment =
@@ -182,7 +184,11 @@ export default function BookingReminderEmail({
                 <td style={listItem}>• Wear appropriate sports attire</td>
               </tr>
               <tr>
-                <td style={listItem}>• Bring water and towel</td>
+                <td style={listItem}>
+                  {equipmentRentals && equipmentRentals.length > 0
+                    ? `• Your equipment will be ready: ${equipmentRentals.map((e) => `${e.name} (${e.quantity}x)`).join(", ")}`
+                    : "• Bring water and towel"}
+                </td>
               </tr>
             </table>
           </Section>
@@ -247,7 +253,9 @@ export default function BookingReminderEmail({
                 >
                   <tr>
                     <td align="center">
-                      <Text style={footerText}>Looking forward to seeing you on the court!</Text>
+                      <Text style={footerText}>
+                        Looking forward to seeing you on the court!
+                      </Text>
                       <Text style={footerTextSmall}>
                         Padel Batu Alam Permai
                         <br />

@@ -1,6 +1,11 @@
 import { VenuePayment } from "./reports";
 
-export type BookingStatus = "PENDING" | "PAID" | "CANCELLED" | "EXPIRED" | "REFUNDED";
+export type BookingStatus =
+  | "PENDING"
+  | "PAID"
+  | "CANCELLED"
+  | "EXPIRED"
+  | "REFUNDED";
 
 export type SessionStatus =
   | "UPCOMING"
@@ -19,7 +24,7 @@ export interface BookingTimeSlot {
   booking_id: string;
   time_slot_id: string;
   created_at: string;
-  
+
   // Relations (when joined)
   time_slots?: {
     id: string;
@@ -77,7 +82,7 @@ export interface Booking {
   session_notes: string | null;
 
   // Relations (when joined)
-  booking_time_slots?: BookingTimeSlot[]; 
+  booking_time_slots?: BookingTimeSlot[];
   courts?: {
     id: string;
     name: string;
@@ -94,6 +99,14 @@ export interface Booking {
   refund_method: string | null;
   refunded_by: string | null;
   refund_notes: string | null;
+
+  // Equipment rental fields
+  equipment_subtotal: number;
+  has_equipment_rental: boolean;
+
+  // Relations (when joined)
+  booking_equipment?: BookingEquipment[];
+  booking_players?: BookingPlayer[];
 }
 
 export interface BookingWithVenuePayment {
@@ -113,7 +126,7 @@ export interface BookingWithVenuePayment {
 
 export interface BookingFormData {
   courtId?: string;
-  slotIds?: string[]; 
+  slotIds?: string[];
   date?: Date;
   time?: string;
   numberOfPlayers?: number;
@@ -124,4 +137,83 @@ export interface BookingFormData {
   notes?: string;
   agreeTerms?: boolean;
   paymentChoice?: PaymentChoice;
+
+  equipmentRentals?: Array<{
+    equipmentId: string;
+    quantity: number;
+    pricePerUnit: number;
+  }>;
+
+  additionalPlayers?: Array<{
+    name?: string;
+    email?: string;
+    whatsapp?: string;
+  }>;
+}
+
+// Equipment types
+export interface Equipment {
+  id: string;
+  name: string;
+  category: string;
+  price_per_session: number;
+  available_quantity: number;
+  is_active: boolean;
+  description: string | null;
+  image_url: string | null;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BookingEquipment {
+  id: string;
+  booking_id: string;
+  equipment_id: string;
+  quantity: number;
+  price_per_unit: number;
+  subtotal: number;
+  created_at: string;
+  // Relations (when joined)
+  equipment?: Equipment;
+}
+
+export interface BookingPlayer {
+  id: string;
+  booking_id: string;
+  player_order: number;
+  player_name: string;
+  player_email: string | null;
+  player_whatsapp: string | null;
+  is_primary_booker: boolean;
+  created_at: string;
+}
+
+export interface ReceiptData {
+  bookingRef: string;
+  customerName: string;
+  email: string;
+  phone: string;
+  courtName: string;
+  date: string;
+  time: string;
+  numberOfPlayers: number;
+  pricePerPerson: number;
+  subtotal: number;
+  paymentMethod: string;
+  paymentFee: number;
+  total: number;
+  notes: string;
+  timestamp: string;
+  equipmentRentals?: Array<{
+    name: string;
+    quantity: number;
+    subtotal: number;
+  }>;
+  additionalPlayers?: Array<{
+    name: string;
+    email?: string;
+    whatsapp?: string;
+  }>;
+  logoUrl: string | "";
 }

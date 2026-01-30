@@ -75,7 +75,11 @@ export default function RefundConfirmationEmail({
                 >
                   <tr>
                     <td align="center">
-                      <Text style={refundText}>✅ Refund Confirmed</Text>
+                      <Text style={refundText}>
+                        {refundAmount >= originalAmount
+                          ? "✅ Full Refund Confirmed"
+                          : "⚖️ Partial Refund Confirmed"}
+                      </Text>
                       <Text style={bookingRefText}>
                         Booking Ref: <strong>{bookingRef}</strong>
                       </Text>
@@ -237,8 +241,8 @@ export default function RefundConfirmationEmail({
                   </tr>
                   <tr>
                     <td style={listItem}>
-                      3. You'll see the credit in your bank statement as
-                      "REFUND - PADEL BAP"
+                      3. You'll see the credit in your bank statement as "REFUND
+                      - PADEL BAP"
                     </td>
                   </tr>
                 </>

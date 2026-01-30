@@ -18,6 +18,7 @@ import {
   XCircle,
   Info,
   Phone,
+  Trophy,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -722,6 +723,98 @@ const MyBookingClient = () => {
                     </CardContent>
                   </Card>
 
+                  {/* Equipment Rental Section */}
+                  {booking.booking_equipment &&
+                    booking.booking_equipment.length > 0 && (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <Trophy className="w-5 h-5" />
+                            Equipment Rental
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          {booking.booking_equipment.map((item) => (
+                            <div
+                              key={item.id}
+                              className="flex items-center justify-between p-3 bg-muted/30 rounded-lg"
+                            >
+                              <div className="flex-1">
+                                <p className="font-medium text-sm">
+                                  {item.equipment?.name || "Equipment"}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  Quantity: {item.quantity}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-sm font-semibold">
+                                  IDR {item.subtotal.toLocaleString("id-ID")}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                          <Separator />
+                          <div className="flex justify-between items-center">
+                            <span className="font-semibold text-sm">
+                              Equipment Total:
+                            </span>
+                            <span className="font-bold text-green-700">
+                              IDR{" "}
+                              {booking.equipment_subtotal.toLocaleString(
+                                "id-ID",
+                              )}
+                            </span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                  {/* Players Section */}
+                  {booking.booking_players &&
+                    booking.booking_players.length > 0 && (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <Users className="w-5 h-5" />
+                            Players ({booking.booking_players.length})
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-2">
+                            {booking.booking_players
+                              .sort((a, b) => a.player_order - b.player_order)
+                              .map((player) => (
+                                <div
+                                  key={player.id}
+                                  className={`p-3 rounded-lg text-sm ${
+                                    player.is_primary_booker
+                                      ? "bg-blue-50 border border-blue-200"
+                                      : "bg-muted/30"
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <p className="font-medium">
+                                        {player.player_name}
+                                      </p>
+                                      {player.is_primary_booker && (
+                                        <p className="text-xs text-blue-600 mt-1">
+                                          Primary Booker
+                                        </p>
+                                      )}
+                                    </div>
+                                    <span className="text-xs text-muted-foreground">
+                                      Player {player.player_order}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
                   {/* Session Timeline */}
                   {booking.checked_in_at && (
                     <Card>
@@ -847,17 +940,38 @@ const MyBookingClient = () => {
                         </>
                       )}
 
-                      {/* Court Booking (Original Amount) */}
+                      {/* Court Booking */}
                       <div className="bg-gray-50 p-3 rounded-lg">
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">
                             Court Booking
                           </span>
                           <span className="font-medium">
-                            IDR {booking.subtotal.toLocaleString("id-ID")}
+                            IDR{" "}
+                            {(
+                              booking.subtotal - booking.equipment_subtotal
+                            ).toLocaleString("id-ID")}
                           </span>
                         </div>
                       </div>
+
+                      {/* Equipment Rental (if any) */}
+                      {booking.has_equipment_rental &&
+                        booking.equipment_subtotal > 0 && (
+                          <div className="bg-gray-50 p-3 rounded-lg">
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">
+                                Equipment Rental
+                              </span>
+                              <span className="font-medium">
+                                IDR{" "}
+                                {booking.equipment_subtotal.toLocaleString(
+                                  "id-ID",
+                                )}
+                              </span>
+                            </div>
+                          </div>
+                        )}
 
                       <Separator />
 

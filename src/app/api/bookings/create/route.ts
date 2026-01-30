@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     // Extract fields from body
     const {
       courtId,
-      timeSlotIds, // CHANGED: Now array
+      timeSlotIds, // Array of selected time slots
       date,
       time,
       timeStart,
@@ -63,6 +63,8 @@ export async function POST(request: NextRequest) {
       depositAmount,
       fullAmount,
       paymentChoice,
+      equipmentRentals, // Array of equipment rentals
+      additionalPlayers, // Array of guest players
     } = body;
 
     // RATE LIMITING - Check email-based rate limit
@@ -215,6 +217,17 @@ export async function POST(request: NextRequest) {
         customer_payment_choice: actualCustomerPaymentChoice,
         session_status: "UPCOMING",
         venue_payment_expired: false,
+        equipment_subtotal:
+          equipmentRentals && equipmentRentals.length > 0
+            ? equipmentRentals.reduce(
+                (
+                  sum: number,
+                  item: { quantity: number; pricePerUnit: number },
+                ) => sum + item.quantity * item.pricePerUnit,
+                0,
+              )
+            : 0,
+        has_equipment_rental: equipmentRentals && equipmentRentals.length > 0,
       })
       .select()
       .single();
@@ -253,8 +266,88 @@ export async function POST(request: NextRequest) {
       .update({ available: false })
       .in("id", timeSlotIds);
 
+    // Create equipment rentals (if any)
+    if (equipmentRentals && equipmentRentals.length > 0) {
+      const equipmentEntries = equipmentRentals.map(
+        (rental: {
+          equipmentId: string;
+          quantity: number;
+          pricePerUnit: number;
+        }) => ({
+          booking_id: booking.id,
+          equipment_id: rental.equipmentId,
+          quantity: rental.quantity,
+          price_per_unit: rental.pricePerUnit,
+          subtotal: rental.quantity * rental.pricePerUnit,
+        }),
+      );
+
+      const { error: equipmentError } = await supabase
+        .from("booking_equipment")
+        .insert(equipmentEntries);
+
+      if (equipmentError) {
+        console.error("Error creating equipment rentals:", equipmentError);
+        // Rollback: delete the booking
+        await supabase.from("bookings").delete().eq("id", booking.id);
+        return NextResponse.json(
+          { error: "Failed to create equipment rentals" },
+          { status: 500 },
+        );
+      }
+    }
+
+    // Create player records (if any)
+    const playerEntries = [
+      // Primary booker (always exists)
+      {
+        booking_id: booking.id,
+        player_order: 1,
+        player_name: customerName,
+        player_email: customerEmail,
+        player_whatsapp: customerWhatsapp,
+        is_primary_booker: true,
+      },
+    ];
+
+    // Add additional players (if provided)
+    if (additionalPlayers && additionalPlayers.length > 0) {
+      additionalPlayers.forEach(
+        (
+          player: { name?: string; email?: string; whatsapp?: string },
+          index: number,
+        ) => {
+          // Only add if at least name is provided
+          if (player.name && player.name.trim()) {
+            playerEntries.push({
+              booking_id: booking.id,
+              player_order: index + 2, // 2, 3, 4, etc.
+              player_name: player.name.trim(),
+              player_email: player.email?.trim() || null,
+              player_whatsapp: player.whatsapp?.trim() || null,
+              is_primary_booker: false,
+            });
+          }
+        },
+      );
+    }
+
+    const { error: playersError } = await supabase
+      .from("booking_players")
+      .insert(playerEntries);
+
+    if (playersError) {
+      console.error("Error creating player records:", playersError);
+      // Rollback: delete the booking (cascades to equipment too)
+      await supabase.from("bookings").delete().eq("id", booking.id);
+      return NextResponse.json(
+        { error: "Failed to create player records" },
+        { status: 500 },
+      );
+    }
+
     // Create admin notification
-    const notificationMessage = actualRequireDeposit
+    let notificationMessage = actualRequireDeposit
       ? `Booking ${bookingRef} created. Customer: ${customerName}. Deposit: IDR ${totalAmount.toLocaleString(
           "id-ID",
         )}. Balance: IDR ${actualRemainingBalance.toLocaleString("id-ID")}.`

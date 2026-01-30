@@ -45,6 +45,8 @@ export async function sendBookingConfirmation(data: BookingEmailData) {
         depositAmount: data.depositAmount,
         remainingBalance: data.remainingBalance,
         paymentMethod: data.paymentMethod,
+        equipmentRentals: data.equipmentRentals,
+        additionalPlayers: data.additionalPlayers,
         logoUrl,
       }),
     );
@@ -104,6 +106,8 @@ export async function sendBookingReminder(data: ReminderEmailData) {
         requireDeposit: data.requireDeposit,
         remainingBalance: data.remainingBalance,
         venuePaymentReceived: data.venuePaymentReceived,
+        equipmentRentals: data.equipmentRentals,
+        additionalPlayers: data.additionalPlayers,
         logoUrl,
       }),
     );

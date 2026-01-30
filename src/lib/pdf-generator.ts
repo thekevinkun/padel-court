@@ -1,77 +1,82 @@
 import jsPDF from "jspdf";
-
-export interface ReceiptData {
-  bookingRef: string;
-  customerName: string;
-  email: string;
-  phone: string;
-  courtName: string;
-  date: string;
-  time: string;
-  numberOfPlayers: number;
-  pricePerPerson: number;
-  subtotal: number;
-  paymentMethod: string;
-  paymentFee: number;
-  total: number;
-  notes: string;
-  timestamp: string;
-}
+import { ReceiptData } from "@/types/booking";
 
 export const generateBookingReceipt = async (
-  data: ReceiptData
+  data: ReceiptData,
 ): Promise<Blob> => {
   const doc = new jsPDF();
-  
-  // // Colors
-  // const primaryColor = "#ffcc00"; // yellow
-  // const accentColor = "#2d6a4f"; // forest green
-  // const textColor = "#1f2937";
-  // const lightGray = "#f3f4f6";
 
-  // Header - Club Name
+  // Load logo image
+  const logoUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/logos/logo.png`;
+  let logoBase64 = "";
+
+  try {
+    // Fetch logo and convert to base64
+    const response = await fetch(logoUrl);
+    const blob = await response.blob();
+    logoBase64 = await new Promise<string>((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.readAsDataURL(blob);
+    });
+  } catch (error) {
+    console.error("Failed to load logo:", error);
+    // Continue without logo
+  }
+
+  // Header - Club Name with Logo
   doc.setFillColor(255, 204, 0); // yellow
-  doc.rect(0, 0, 210, 40, "F");
-  
+  doc.rect(0, 0, 210, 50, "F");
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const logoWidth = 55;
+  const logoHeight = 25;
+  const logoY = 8;
+
+  // Add logo if loaded
+  if (logoBase64) {
+    const logoX = (pageWidth - logoWidth) / 2;
+    doc.addImage(logoBase64, "png", logoX, logoY, logoWidth, logoHeight);
+  }
+
   doc.setTextColor(0, 0, 0);
-  doc.setFontSize(24);
-  doc.setFont("helvetica", "bold");
-  doc.text("PADEL BATU ALAM PERMAI", 105, 18, { align: "center" });
-  
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
-  doc.text("Premium Padel Courts • Batu Alam Permai", 105, 28, {
+  doc.text("Premium Padel Courts • Batu Alam Permai", 105, 38, {
     align: "center",
   });
+  doc.setFontSize(8);
+  doc.setTextColor(64, 64, 64);
+  doc.text("Samarinda, East Kalimantan", 105, 44, { align: "center" });
 
   // Booking Reference Badge
   doc.setFillColor(255, 204, 0); // yellow
-  doc.roundedRect(15, 50, 80, 12, 3, 3, "F");
+  doc.roundedRect(15, 60, 80, 12, 3, 3, "F");
   doc.setTextColor(0, 0, 0);
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
-  doc.text("BOOKING REF:", 20, 57);
-  doc.text(data.bookingRef, 55, 57);
+  doc.text("BOOKING REF:", 20, 67);
+  doc.text(data.bookingRef, 55, 67);
 
   // Payment Status Badge
   doc.setFillColor(34, 197, 94); // green
-  doc.roundedRect(115, 50, 80, 12, 3, 3, "F");
+  doc.roundedRect(115, 60, 80, 12, 3, 3, "F");
   doc.setTextColor(255, 255, 255);
-  doc.text("✔ CONFIRMED", 155, 57, { align: "center" });
+  doc.text("CONFIRMED", 155, 67, { align: "center" });
 
   // Reset text color
   doc.setTextColor(31, 41, 55);
 
   // Customer Information Section
-  let yPos = 75;
+  let yPos = 85; // Changed from 75 to 85
   doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
   doc.text("Customer Information", 15, yPos);
-  
+
   yPos += 10;
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
-  
+
   const customerInfo = [
     ["Name:", data.customerName],
     ["Email:", data.email],
@@ -91,7 +96,7 @@ export const generateBookingReceipt = async (
   doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
   doc.text("Booking Details", 15, yPos);
-  
+
   yPos += 10;
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
@@ -100,7 +105,10 @@ export const generateBookingReceipt = async (
     ["Court:", data.courtName],
     ["Date:", data.date],
     ["Time:", data.time],
-    ["Players:", `${data.numberOfPlayers} ${data.numberOfPlayers === 1 ? "person" : "people"}`],
+    [
+      "Players:",
+      `${data.numberOfPlayers} ${data.numberOfPlayers === 1 ? "person" : "people"}`,
+    ],
     ["Notes:", data.notes],
   ];
 
@@ -112,28 +120,90 @@ export const generateBookingReceipt = async (
     yPos += 7;
   });
 
+  // Equipment Rental Section
+  if (data.equipmentRentals && data.equipmentRentals.length > 0) {
+    yPos += 8;
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Equipment Rental", 15, yPos);
+    yPos += 10;
+
+    doc.setFontSize(10);
+    data.equipmentRentals.forEach((item) => {
+      doc.setFont("helvetica", "normal");
+      doc.text(`• ${item.name}`, 15, yPos);
+      doc.text(`${item.quantity}x`, 50, yPos);
+      doc.text(`IDR ${item.subtotal.toLocaleString("id-ID")}`, 190, yPos, {
+        align: "right",
+      });
+      yPos += 6;
+    });
+  }
+
+  // Additional Players Section
+  if (data.additionalPlayers && data.additionalPlayers.length > 0) {
+    yPos += 8;
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Players", 15, yPos);
+    yPos += 10;
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+
+    // Primary booker
+    doc.text(`• ${data.customerName} (Primary Booker)`, 15, yPos);
+    yPos += 6;
+
+    // Additional players
+    data.additionalPlayers.forEach((player) => {
+      doc.text(`• ${player.name}`, 15, yPos);
+      yPos += 6;
+    });
+  }
+
   // Payment Summary Box
   yPos += 8;
   doc.setFillColor(243, 244, 246); // light gray
   doc.roundedRect(15, yPos, 180, 45, 3, 3, "F");
-  
+
   yPos += 8;
   doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
   doc.text("Payment Summary", 20, yPos);
-  
+
   yPos += 10;
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
 
+  // Calculate court subtotal
+  const equipmentTotal =
+    data.equipmentRentals?.reduce((sum, item) => sum + item.subtotal, 0) || 0;
+  const courtSubtotal = data.subtotal - equipmentTotal;
+
   // Price breakdown
-  const priceBreakdown = [
+  const priceBreakdown: string[][] = [
     [
-      `Court Booking (${data.numberOfPlayers}x IDR ${data.pricePerPerson.toLocaleString("id-ID")})`,
-      `IDR ${data.subtotal.toLocaleString("id-ID")}`,
+      `Court Booking (${data.numberOfPlayers}x IDR ${(courtSubtotal / data.numberOfPlayers).toLocaleString("id-ID")})`,
+      `IDR ${courtSubtotal.toLocaleString("id-ID")}`,
     ],
-    [`Payment Fee (${data.paymentMethod})`, `IDR ${data.paymentFee.toLocaleString("id-ID")}`],
   ];
+
+  // Add equipment if any
+  if (data.equipmentRentals && data.equipmentRentals.length > 0) {
+    data.equipmentRentals.forEach((item) => {
+      priceBreakdown.push([
+        `${item.name} (${item.quantity}x)`,
+        `IDR ${item.subtotal.toLocaleString("id-ID")}`,
+      ]);
+    });
+  }
+
+  // Add payment fee
+  priceBreakdown.push([
+    `Payment Fee (${data.paymentMethod})`,
+    `IDR ${data.paymentFee.toLocaleString("id-ID")}`,
+  ]);
 
   priceBreakdown.forEach(([label, value]) => {
     doc.setFont("helvetica", "normal");
@@ -164,12 +234,12 @@ export const generateBookingReceipt = async (
   yPos += 15;
   doc.setFillColor(255, 251, 235); // light yellow
   doc.roundedRect(15, yPos, 180, 30, 3, 3, "F");
-  
+
   yPos += 8;
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
   doc.text("! Important Information:", 20, yPos);
-  
+
   yPos += 6;
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
@@ -183,28 +253,17 @@ export const generateBookingReceipt = async (
   yPos += 15;
   doc.setFontSize(8);
   doc.setTextColor(107, 114, 128);
-  doc.text(
-    `Booking Time: ${data.timestamp}`,
-    105,
-    yPos,
-    { align: "center" }
-  );
-  
+  doc.text(`Booking Time: ${data.timestamp}`, 105, yPos, { align: "center" });
+
   yPos += 5;
-  doc.text(
-    "Thank you for choosing Padel Batu Alam Permai!",
-    105,
-    yPos,
-    { align: "center" }
-  );
-  
+  doc.text("Thank you for choosing Padel Batu Alam Permai!", 105, yPos, {
+    align: "center",
+  });
+
   yPos += 4;
-  doc.text(
-    "Contact: +62 812 3456 7890 | info@padelbap.com",
-    105,
-    yPos,
-    { align: "center" }
-  );
+  doc.text("Contact: +62 812 3456 7890 | info@padelbap.com", 105, yPos, {
+    align: "center",
+  });
 
   // Convert to Blob
   const pdfBlob = doc.output("blob");

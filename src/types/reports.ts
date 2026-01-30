@@ -16,6 +16,8 @@ export interface RevenueData {
   totalRevenue: number;
   netRevenue: number;
   feesAbsorbed: number;
+  equipmentRevenue: number;
+  courtRevenue: number;
 }
 
 export interface CourtData {
@@ -29,6 +31,13 @@ export interface PaymentMethodBreakdown {
   count: number;
   amount: number;
   percentage: number;
+}
+
+export interface EquipmentBreakdown {
+  name: string;
+  quantity: number;
+  revenue: number;
+  bookings: number;
 }
 
 interface FinancialSummary {
@@ -47,6 +56,12 @@ interface FinancialSummary {
   fullRefunds: number;
   partialRefunds: number;
   netRevenueAfterRefunds?: number;
+  equipmentRevenue: number;
+  courtRevenue: number;
+  bookingsWithEquipment: number;
+  equipmentRentalRate: number;
+  totalPlayers: number;
+  averagePlayersPerBooking: number;
 }
 
 export interface AnalyticsData {
@@ -84,4 +99,5 @@ export interface AnalyticsData {
       hours: string;
     };
   };
+  equipmentBreakdown: EquipmentBreakdown[];
 }

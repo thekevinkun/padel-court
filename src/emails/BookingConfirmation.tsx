@@ -25,8 +25,14 @@ export default function BookingConfirmationEmail({
   depositAmount,
   remainingBalance,
   paymentMethod,
+  equipmentRentals,
+  additionalPlayers,
   logoUrl,
 }: BookingConfirmationEmailProps) {
+  // Calculate equipment total
+  const equipmentTotal =
+    equipmentRentals?.reduce((sum, item) => sum + item.subtotal, 0) || 0;
+
   return (
     <Html>
       <Head />
@@ -45,7 +51,9 @@ export default function BookingConfirmationEmail({
                   style={{ margin: "0 auto 16px" }}
                 />
                 <Heading style={h1}>Booking Confirmed!</Heading>
-                <Text style={headerText}>GET READY FOR AN AMAZING PADEL SESSION!</Text>
+                <Text style={headerText}>
+                  GET READY FOR AN AMAZING PADEL SESSION!
+                </Text>
               </td>
             </tr>
           </table>
@@ -112,14 +120,94 @@ export default function BookingConfirmationEmail({
                   {numberOfPlayers}
                 </td>
               </tr>
+              {/* Player Names */}
+              {additionalPlayers && additionalPlayers.length > 0 && (
+                <tr>
+                  <td
+                    colSpan={2}
+                    style={{
+                      paddingTop: "8px",
+                      fontSize: "12px",
+                      color: "#6b7280",
+                    }}
+                  >
+                    <div style={{ paddingLeft: "8px" }}>
+                      <div>• {customerName} (Primary Booker)</div>
+                      {additionalPlayers.map((player, index) => (
+                        <div key={index}>• {player.name}</div>
+                      ))}
+                    </div>
+                  </td>
+                </tr>
+              )}
             </table>
           </Section>
 
           <Hr style={hr} />
 
+          {/* Equipment Rental Section */}
+          {equipmentRentals && equipmentRentals.length > 0 && (
+            <>
+              <Section style={section}>
+                <Heading style={h2}>Equipment Rental</Heading>
+                <table
+                  width="100%"
+                  cellPadding="0"
+                  cellSpacing="0"
+                  style={{ marginTop: "16px" }}
+                >
+                  {equipmentRentals.map((item, index) => (
+                    <tr key={index}>
+                      <td style={detailLabel}>
+                        {item.name} ({item.quantity}x):
+                      </td>
+                      <td style={detailValue}>
+                        IDR {item.subtotal.toLocaleString("id-ID")}
+                      </td>
+                    </tr>
+                  ))}
+                </table>
+              </Section>
+              <Hr style={hr} />
+            </>
+          )}
+
           {/* Payment Summary */}
           <Section style={section}>
             <Heading style={h2}>Payment Summary</Heading>
+
+            {/* Court Booking */}
+            <table
+              width="100%"
+              cellPadding="0"
+              cellSpacing="0"
+              style={{ marginTop: "16px" }}
+            >
+              <tr>
+                <td style={detailLabel}>Court Booking:</td>
+                <td style={detailValue}>
+                  IDR{" "}
+                  {(requireDeposit
+                    ? (depositAmount || 0) +
+                      (remainingBalance || 0) -
+                      equipmentTotal
+                    : totalAmount - equipmentTotal
+                  ).toLocaleString("id-ID")}
+                </td>
+              </tr>
+
+              {/* Equipment (if any) */}
+              {equipmentTotal > 0 && (
+                <tr>
+                  <td style={{ ...detailLabel, paddingTop: "8px" }}>
+                    Equipment Rental:
+                  </td>
+                  <td style={{ ...detailValue, paddingTop: "8px" }}>
+                    IDR {equipmentTotal.toLocaleString("id-ID")}
+                  </td>
+                </tr>
+              )}
+            </table>
 
             <table
               width="100%"

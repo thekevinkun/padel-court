@@ -48,15 +48,31 @@ export async function POST(request: NextRequest) {
       .from("bookings")
       .select(
         `
-      *,
-      courts (id, name, description, available),
-      venue_payments (*),
-      booking_time_slots (
-        id,
-        time_slot_id,
-        time_slots (time_start, time_end, period, price_per_person)
-      )
-    `,
+    *,
+    courts (id, name, description, available),
+    venue_payments (*),
+    booking_time_slots (
+      id,
+      time_slot_id,
+      time_slots (time_start, time_end, period, price_per_person)
+    ),
+    booking_equipment (
+      id,
+      equipment_id,
+      quantity,
+      price_per_unit,
+      subtotal,
+      equipment (id, name, category, description)
+    ),
+    booking_players (
+      id,
+      player_order,
+      player_name,
+      player_email,
+      player_whatsapp,
+      is_primary_booker
+    )
+  `,
       )
       .eq("customer_email", email.toLowerCase().trim())
       .eq("booking_ref", bookingRef.toUpperCase().trim())

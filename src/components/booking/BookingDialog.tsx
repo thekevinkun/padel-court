@@ -56,6 +56,7 @@ const steps = [
 ];
 
 const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
+  const { settings } = useSettings();
   const [currentStep, setCurrentStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -66,7 +67,34 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
     slotIds: [], // Multiple slot selection
   });
 
-  const { settings } = useSettings();
+  // Equipment rental state
+  const [availableEquipment, setAvailableEquipment] = useState<
+    Array<{
+      id: string;
+      name: string;
+      category: string;
+      price_per_session: number;
+      description: string | null;
+    }>
+  >([]);
+  const [loadingEquipment, setLoadingEquipment] = useState(false);
+  const [equipmentQuantities, setEquipmentQuantities] = useState<
+    Record<string, number>
+  >({});
+
+  // Additional players state
+  const [additionalPlayers, setAdditionalPlayers] = useState<
+    Array<{
+      name: string;
+      email: string;
+      whatsapp: string;
+    }>
+  >([
+    { name: "", email: "", whatsapp: "" },
+    { name: "", email: "", whatsapp: "" },
+    { name: "", email: "", whatsapp: "" },
+  ]);
+
   const [courts, setCourts] = useState<Court[]>([]);
   const [timeSlots, setTimeSlots] = useState<
     Array<{
@@ -81,6 +109,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
 
   useEffect(() => {
     fetchCourts();
+    fetchEquipment();
   }, []);
 
   useEffect(() => {
@@ -97,6 +126,31 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
       .order("name");
     if (!error && data) {
       setCourts(data);
+    }
+  };
+
+  // Fetch available equipment
+  const fetchEquipment = async () => {
+    setLoadingEquipment(true);
+    try {
+      const response = await fetch("/api/equipment/available");
+      const data = await response.json();
+
+      if (data.success && data.equipment) {
+        setAvailableEquipment(data.equipment);
+
+        // Initialize quantities to 0
+        const initialQuantities: Record<string, number> = {};
+        data.equipment.forEach((item: { id: string }) => {
+          initialQuantities[item.id] = 0;
+        });
+        setEquipmentQuantities(initialQuantities);
+      }
+    } catch (error) {
+      console.error("Error fetching equipment:", error);
+      toast.error("Failed to load equipment options");
+    } finally {
+      setLoadingEquipment(false);
     }
   };
 
@@ -143,16 +197,20 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
   // Calculate duration
   const duration = sortedSelectedSlots.length;
 
-  // Calculate total for multiple slots
+  // Calculate total for multiple slots (court + equipment)
   const calculateTotal = () => {
     if (sortedSelectedSlots.length === 0 || !formData.numberOfPlayers) return 0;
 
-    const subtotal = sortedSelectedSlots.reduce((sum, slot) => {
+    // Court subtotal
+    const courtSubtotal = sortedSelectedSlots.reduce((sum, slot) => {
       if (!formData.numberOfPlayers) return 0;
-
       return sum + slot.pricePerPerson * formData.numberOfPlayers;
     }, 0);
-    return subtotal;
+
+    // Equipment subtotal
+    const equipmentSubtotal = calculateEquipmentSubtotal();
+
+    return courtSubtotal + equipmentSubtotal;
   };
 
   // Calculate deposit for multiple slots
@@ -166,6 +224,49 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
     if (!settings.require_deposit) return 0;
     const subtotal = calculateTotal();
     return Math.round(subtotal * (settings.deposit_percentage / 100));
+  };
+
+  // Calculate equipment subtotal
+  const calculateEquipmentSubtotal = (): number => {
+    let total = 0;
+    Object.entries(equipmentQuantities).forEach(([equipmentId, quantity]) => {
+      if (quantity > 0) {
+        const equipment = availableEquipment.find((e) => e.id === equipmentId);
+        if (equipment) {
+          total += equipment.price_per_session * quantity;
+        }
+      }
+    });
+    return total;
+  };
+
+  // Get equipment rentals array for API
+  const getEquipmentRentals = () => {
+    const rentals: Array<{
+      equipmentId: string;
+      quantity: number;
+      pricePerUnit: number;
+    }> = [];
+
+    Object.entries(equipmentQuantities).forEach(([equipmentId, quantity]) => {
+      if (quantity > 0) {
+        const equipment = availableEquipment.find((e) => e.id === equipmentId);
+        if (equipment) {
+          rentals.push({
+            equipmentId: equipment.id,
+            quantity: quantity,
+            pricePerUnit: equipment.price_per_session,
+          });
+        }
+      }
+    });
+
+    return rentals;
+  };
+
+  // Check if any equipment is selected
+  const hasEquipmentSelected = (): boolean => {
+    return Object.values(equipmentQuantities).some((qty) => qty > 0);
   };
 
   const isTimeSlotPassed = (
@@ -247,9 +348,9 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
           timeSlotIds: formData.slotIds, // Array of slot IDs
           date: formData.date?.toLocaleDateString("en-CA"),
           time: timeDisplay, // "06:00 - 08:00"
-          timeStart: timeStart, // NEW
-          timeEnd: timeEnd, // NEW
-          durationHours: duration, // NEW
+          timeStart: timeStart,
+          timeEnd: timeEnd,
+          durationHours: duration,
           customerName: formData.name,
           customerEmail: formData.email,
           customerPhone: formData.phone,
@@ -264,6 +365,14 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
           depositAmount: depositAmount,
           fullAmount: total,
           paymentChoice: paymentChoice,
+          equipmentRentals: getEquipmentRentals(),
+          additionalPlayers: additionalPlayers
+            .filter((p) => p.name.trim() !== "")
+            .map((p) => ({
+              name: p.name.trim(),
+              email: p.email.trim() || undefined,
+              whatsapp: p.whatsapp.trim() || undefined,
+            })),
         }),
       });
 
@@ -318,6 +427,21 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
   const resetAndClose = () => {
     setCurrentStep(1);
     setFormData({ date: new Date(), numberOfPlayers: 4, slotIds: [] });
+
+    // Reset equipment quantities
+    const resetQuantities: Record<string, number> = {};
+    availableEquipment.forEach((item) => {
+      resetQuantities[item.id] = 0;
+    });
+    setEquipmentQuantities(resetQuantities);
+
+    // Reset additional players
+    setAdditionalPlayers([
+      { name: "", email: "", whatsapp: "" },
+      { name: "", email: "", whatsapp: "" },
+      { name: "", email: "", whatsapp: "" },
+    ]);
+
     onOpenChange(false);
   };
 
@@ -685,12 +809,20 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                     <Label>Number of Players</Label>
                     <Select
                       value={formData.numberOfPlayers?.toString()}
-                      onValueChange={(value) =>
+                      onValueChange={(value) => {
+                        const numPlayers = parseInt(value);
                         setFormData({
                           ...formData,
-                          numberOfPlayers: parseInt(value),
-                        })
-                      }
+                          numberOfPlayers: numPlayers,
+                        });
+                        
+                        // Reset additional players when number changes
+                        setAdditionalPlayers([
+                          { name: "", email: "", whatsapp: "" },
+                          { name: "", email: "", whatsapp: "" },
+                          { name: "", email: "", whatsapp: "" },
+                        ]);
+                      }}
                     >
                       <SelectTrigger className="mt-2">
                         <SelectValue />
@@ -703,6 +835,143 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  {/* Equipment Rental Section */}
+                  <div className="">
+                    <Label className="text-base font-semibold">
+                      Equipment Rental (Optional)
+                    </Label>
+                    <p className="text-xs text-muted-foreground mt-1 mb-4">
+                      Add equipment to your booking. Prices are per session.
+                    </p>
+
+                    {loadingEquipment ? (
+                      <div className="flex items-center justify-center py-4">
+                        <Loader2 className="h-5 w-5 animate-spin text-forest" />
+                        <span className="ml-2 text-sm text-muted-foreground">
+                          Loading equipment...
+                        </span>
+                      </div>
+                    ) : availableEquipment.length === 0 ? (
+                      <div className="text-center py-4 text-sm text-muted-foreground">
+                        No equipment available at the moment
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {availableEquipment.map((equipment) => (
+                          <Card
+                            key={equipment.id}
+                            className={`transition-all ${
+                              equipmentQuantities[equipment.id] > 0
+                                ? "border-forest ring-2 ring-forest/20"
+                                : "hover:border-forest/50"
+                            }`}
+                          >
+                            <CardContent className="p-4">
+                              <div className="flex items-center justify-between gap-4">
+                                {/* Equipment Info */}
+                                <div className="flex-1">
+                                  <h4 className="font-semibold text-sm">
+                                    {equipment.name}
+                                  </h4>
+                                  <p className="text-xs text-muted-foreground mt-0.5">
+                                    {equipment.description}
+                                  </p>
+                                  <p className="text-sm font-bold text-forest mt-1">
+                                    IDR{" "}
+                                    {equipment.price_per_session.toLocaleString(
+                                      "id-ID",
+                                    )}
+                                    <span className="text-xs font-normal text-muted-foreground">
+                                      {" "}
+                                      / session
+                                    </span>
+                                  </p>
+                                </div>
+
+                                {/* Quantity Selector */}
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-8 w-8 p-0"
+                                    onClick={() => {
+                                      const current =
+                                        equipmentQuantities[equipment.id] || 0;
+                                      if (current > 0) {
+                                        setEquipmentQuantities({
+                                          ...equipmentQuantities,
+                                          [equipment.id]: current - 1,
+                                        });
+                                      }
+                                    }}
+                                    disabled={
+                                      !equipmentQuantities[equipment.id] ||
+                                      equipmentQuantities[equipment.id] === 0
+                                    }
+                                  >
+                                    -
+                                  </Button>
+                                  <span className="w-8 text-center font-semibold">
+                                    {equipmentQuantities[equipment.id] || 0}
+                                  </span>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-8 w-8 p-0"
+                                    onClick={() => {
+                                      const current =
+                                        equipmentQuantities[equipment.id] || 0;
+                                      setEquipmentQuantities({
+                                        ...equipmentQuantities,
+                                        [equipment.id]: current + 1,
+                                      });
+                                    }}
+                                    disabled={
+                                      equipmentQuantities[equipment.id] >= 10
+                                    } // Max 10 per item
+                                  >
+                                    +
+                                  </Button>
+                                </div>
+                              </div>
+
+                              {/* Show subtotal if quantity > 0 */}
+                              {equipmentQuantities[equipment.id] > 0 && (
+                                <div className="mt-3 pt-3 border-t text-right">
+                                  <span className="text-xs text-muted-foreground">
+                                    Subtotal:{" "}
+                                  </span>
+                                  <span className="font-bold text-forest">
+                                    IDR{" "}
+                                    {(
+                                      equipment.price_per_session *
+                                      equipmentQuantities[equipment.id]
+                                    ).toLocaleString("id-ID")}
+                                  </span>
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+                        ))}
+
+                        {/* Equipment Total */}
+                        {/* {hasEquipmentSelected() && (
+                          <Alert className="bg-blue-50 border-blue-200">
+                            <Info className="h-4 w-4 text-blue-600" />
+                            <AlertDescription className="text-blue-800">
+                              <strong>Equipment Total:</strong> IDR{" "}
+                              {calculateEquipmentSubtotal().toLocaleString(
+                                "id-ID",
+                              )}
+                            </AlertDescription>
+                          </Alert>
+                        )} */}
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex justify-end gap-3 pt-4">
@@ -796,6 +1065,110 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                       rows={3}
                     />
                   </div>
+                  {/* Additional Players Section */}
+                  {formData.numberOfPlayers && formData.numberOfPlayers > 1 && (
+                    <div className="pt-4 border-t">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <Label className="text-base font-semibold">
+                            👥 Additional Players (Optional)
+                          </Label>
+                          <div className="flex items-center gap-1.5 mt-1">
+                            <Info className="h-4 w-4 text-muted-foreground" />
+                            <p className="text-xs text-muted-foreground">
+                              You're booking for {formData.numberOfPlayers} players. Add your
+                              friends' information if available.
+                            </p>
+                          </div>
+                          
+                        </div>
+                        
+                      </div>
+
+                      <div className="space-y-4">
+                        {Array.from({
+                          length: (formData.numberOfPlayers || 1) - 1,
+                        }).map((_, index) => (
+                          <Card key={index} className="bg-muted/30">
+                            <CardContent className="p-4">
+                              <h4 className="font-semibold text-sm mb-3">
+                                Player {index + 2}
+                              </h4>
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <div>
+                                  <Label
+                                    htmlFor={`player-${index}-name`}
+                                    className="text-xs"
+                                  >
+                                    Name
+                                  </Label>
+                                  <Input
+                                    id={`player-${index}-name`}
+                                    value={additionalPlayers[index]?.name || ""}
+                                    onChange={(e) => {
+                                      const updated = [...additionalPlayers];
+                                      updated[index] = {
+                                        ...updated[index],
+                                        name: e.target.value,
+                                      };
+                                      setAdditionalPlayers(updated);
+                                    }}
+                                    placeholder="Friend's name"
+                                    className="mt-1"
+                                  />
+                                </div>
+                                <div>
+                                  <Label
+                                    htmlFor={`player-${index}-email`}
+                                    className="text-xs"
+                                  >
+                                    Email
+                                  </Label>
+                                  <Input
+                                    id={`player-${index}-email`}
+                                    type="email"
+                                    value={additionalPlayers[index]?.email || ""}
+                                    onChange={(e) => {
+                                      const updated = [...additionalPlayers];
+                                      updated[index] = {
+                                        ...updated[index],
+                                        email: e.target.value,
+                                      };
+                                      setAdditionalPlayers(updated);
+                                    }}
+                                    placeholder="friend@example.com"
+                                    className="mt-1"
+                                  />
+                                </div>
+                                <div>
+                                  <Label
+                                    htmlFor={`player-${index}-whatsapp`}
+                                    className="text-xs"
+                                  >
+                                    WhatsApp
+                                  </Label>
+                                  <Input
+                                    id={`player-${index}-whatsapp`}
+                                    value={additionalPlayers[index]?.whatsapp || ""}
+                                    onChange={(e) => {
+                                      const updated = [...additionalPlayers];
+                                      updated[index] = {
+                                        ...updated[index],
+                                        whatsapp: e.target.value,
+                                      };
+                                      setAdditionalPlayers(updated);
+                                    }}
+                                    placeholder="+62 812..."
+                                    className="mt-1"
+                                  />
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div className="flex justify-between gap-3 pt-4">
                     <Button
                       onClick={() => setCurrentStep(1)}
@@ -839,11 +1212,60 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                       <h4 className="font-semibold mb-4">Booking Summary</h4>
 
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Court:</span>
-                        <span className="font-medium">
-                          {selectedCourt?.name}
+                        <span>
+                          Court Booking ({duration} hour
+                          {duration > 1 ? "s" : ""} × {formData.numberOfPlayers}{" "}
+                          player
+                          {formData.numberOfPlayers !== 1 ? "s" : ""}):
+                        </span>
+                        <span>
+                          IDR{" "}
+                          {sortedSelectedSlots
+                            .reduce((sum, slot) => {
+                              if (!formData.numberOfPlayers) return 0;
+                              return (
+                                sum +
+                                slot.pricePerPerson * formData.numberOfPlayers
+                              );
+                            }, 0)
+                            .toLocaleString("id-ID")}
                         </span>
                       </div>
+
+                      {/* Equipment breakdown */}
+                      {hasEquipmentSelected() && (
+                        <>
+                          <div className="text-sm space-y-2 mt-2">
+                            <div className="font-semibold text-muted-foreground">
+                              Equipment Rental:
+                            </div>
+                            {availableEquipment.map((equipment) => {
+                              const quantity =
+                                equipmentQuantities[equipment.id];
+                              if (quantity > 0) {
+                                return (
+                                  <div
+                                    key={equipment.id}
+                                    className="flex justify-between pl-4"
+                                  >
+                                    <span className="text-muted-foreground">
+                                      {quantity}× {equipment.name}
+                                    </span>
+                                    <span>
+                                      IDR{" "}
+                                      {(
+                                        equipment.price_per_session * quantity
+                                      ).toLocaleString("id-ID")}
+                                    </span>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            })}
+                          </div>
+                          <Separator className="my-2" />
+                        </>
+                      )}
 
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Date:</span>
@@ -883,7 +1305,17 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                         </span>
                       </div>
 
-                      <Separator />
+                      {/* Show player names if provided */}
+                      {additionalPlayers.some((p) => p.name.trim() !== "") && (
+                        <div className="text-xs text-muted-foreground mt-2 pl-4">
+                          <div>• {formData.name} (You)</div>
+                          {additionalPlayers
+                            .filter((p) => p.name.trim() !== "")
+                            .map((player, idx) => (
+                              <div key={idx}>• {player.name}</div>
+                            ))}
+                        </div>
+                      )}
 
                       <div className="flex justify-between text-sm">
                         <span>Court Booking:</span>
@@ -1035,7 +1467,9 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                               </Card>
                             </RadioGroup>
                           </div>
+
                           <Separator />
+
                           <div className="bg-gradient-to-r from-forest/10 to-forest/5 p-4 rounded-lg">
                             <div className="flex justify-between items-center gap-2">
                               <div>
@@ -1045,7 +1479,9 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                                     : `Deposit (${settings.deposit_percentage}%)`}
                                 </p>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                  Payment will be processed on next page
+                                  {hasEquipmentSelected()
+                                    ? "Includes court booking + equipment rental"
+                                    : "Payment will be processed on next page"}
                                 </p>
                               </div>
                               <span className="text-2xl font-bold text-forest">
@@ -1085,14 +1521,10 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                     <Alert className="bg-yellow-50 border-yellow-200">
                       <Info className="h-4 w-4 text-yellow-600" />
                       <AlertDescription className="text-sm text-yellow-800">
-                        <strong>Cancellation Policy:</strong> Free cancellation
-                        up to {settings.cancellation_window} hours before your
-                        booking. After that,
-                        {formData.paymentChoice === "FULL" ||
-                        !settings.require_deposit
-                          ? " payment is"
-                          : " deposit is"}{" "}
-                        non-refundable.
+                        <strong>Cancellation Policy:</strong>
+                        Full refund (100%) for cancellations made at least 24 hours before the session. 
+                        Cancellations made 12–24 hours prior are eligible for a 50% refund. 
+                        No refunds are available for cancellations within 12 hours of the session start time.
                       </AlertDescription>
                     </Alert>
                   )}
@@ -1126,7 +1558,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                       {settings && settings.cancellation_window > 0 && (
                         <>
                           {" "}
-                          I understand the {settings.cancellation_window}-hour
+                          I understand the
                           cancellation policy.
                         </>
                       )}

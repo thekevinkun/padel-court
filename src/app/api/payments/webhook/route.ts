@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
+import { BookingEquipment, BookingPlayer } from "@/types/booking";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const midtransClient = require("midtrans-client");
@@ -42,9 +43,25 @@ export async function POST(request: NextRequest) {
       .from("bookings")
       .select(
         `
-          *,
-          courts (name, description)
-        `,
+    *,
+    courts (name, description),
+    booking_equipment (
+      id,
+      equipment_id,
+      quantity,
+      price_per_unit,
+      subtotal,
+      equipment (id, name, category, description)
+    ),
+    booking_players (
+      id,
+      player_order,
+      player_name,
+      player_email,
+      player_whatsapp,
+      is_primary_booker
+    )
+  `,
       )
       .eq("booking_ref", bookingRef)
       .single();
@@ -192,12 +209,31 @@ export async function POST(request: NextRequest) {
       // Send confirmation email
       try {
         const { sendBookingConfirmation } = await import("@/lib/email");
+
+        // Prepare equipment rentals for email
+        const equipmentRentals =
+          booking.booking_equipment?.map((item: BookingEquipment) => ({
+            name: item.equipment?.name || "Unknown Equipment",
+            quantity: item.quantity,
+            subtotal: item.subtotal,
+          })) || [];
+
+        // Prepare additional players (exclude primary booker)
+        const additionalPlayers =
+          booking.booking_players
+            ?.filter((p: BookingPlayer) => !p.is_primary_booker)
+            .map((p: BookingPlayer) => ({
+              name: p.player_name,
+              email: p.player_email,
+              whatsapp: p.player_whatsapp,
+            })) || [];
+
         await sendBookingConfirmation({
           customerName: booking.customer_name,
           customerEmail: booking.customer_email,
           bookingRef: booking.booking_ref,
           courtName: booking.courts.name,
-          date: new Date(booking.date).toLocaleDateString("en-ID", {
+          date: new Date(booking.date).toLocaleDateString("id-ID", {
             weekday: "long",
             year: "numeric",
             month: "long",
@@ -210,6 +246,10 @@ export async function POST(request: NextRequest) {
           depositAmount: booking.deposit_amount,
           remainingBalance: booking.remaining_balance,
           paymentMethod: paymentType,
+          equipmentRentals:
+            equipmentRentals.length > 0 ? equipmentRentals : undefined,
+          additionalPlayers:
+            additionalPlayers.length > 0 ? additionalPlayers : undefined,
         });
         console.log("✅ Confirmation email sent");
       } catch (emailError) {
@@ -251,6 +291,14 @@ export async function POST(request: NextRequest) {
             requireDeposit: booking.require_deposit,
             remainingBalance: booking.remaining_balance,
             venuePaymentReceived: booking.venue_payment_received,
+            equipmentRentals:
+              booking.equipmentRentals.length > 0
+                ? booking.equipmentRentals
+                : undefined,
+            additionalPlayers:
+              booking.additionalPlayers.length > 0
+                ? booking.additionalPlayers
+                : undefined,
           });
 
           // Mark reminder as sent

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { sendBookingReminder } from "@/lib/email";
+import { BookingEquipment, BookingPlayer } from "@/types/booking";
 
 // API route to send reminder emails for upcoming bookings
 // Scheduled to run every hour via cron job
@@ -33,7 +34,20 @@ export async function GET(request: NextRequest) {
       .select(
         `
         *,
-        courts (name)
+        courts (name),
+        booking_equipment (
+          id,
+          quantity,
+          subtotal,
+          equipment (name)
+        ),
+        booking_players (
+          id,
+          player_name,
+          player_email,
+          player_whatsapp,
+          is_primary_booker
+        )
       `,
       )
       .eq("status", "PAID")
@@ -81,6 +95,20 @@ export async function GET(request: NextRequest) {
               requireDeposit: booking.require_deposit,
               remainingBalance: booking.remaining_balance,
               venuePaymentReceived: booking.venue_payment_received,
+              equipmentRentals: booking.booking_equipment?.map(
+                (item: BookingEquipment) => ({
+                  name: item.equipment?.name || "Equipment",
+                  quantity: item.quantity,
+                  subtotal: item.subtotal,
+                }),
+              ),
+              additionalPlayers: booking.booking_players
+                ?.filter((p: BookingPlayer) => !p.is_primary_booker)
+                .map((p: BookingPlayer) => ({
+                  name: p.player_name,
+                  email: p.player_email,
+                  whatsapp: p.player_whatsapp,
+                })),
             });
 
             // Mark as sent

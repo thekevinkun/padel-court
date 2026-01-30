@@ -63,7 +63,9 @@ export default function CancellationConfirmationEmail({
                     <td align="center">
                       <Text style={refundEligible ? successText : warningText}>
                         {refundEligible
-                          ? "✅ Full Refund Approved"
+                          ? refundAmount >= originalAmount
+                            ? "✅ Full Refund Approved"
+                            : "⚖️ Partial Refund Approved"
                           : "⚠️ Cancellation Confirmed"}
                       </Text>
                       <Text style={bookingRefText}>
@@ -91,8 +93,10 @@ export default function CancellationConfirmationEmail({
             <Text style={paragraph}>
               Your booking cancellation has been processed successfully.
               {refundEligible
-                ? " Since you cancelled more than 24 hours in advance, you are eligible for a full refund."
-                : " Unfortunately, since the cancellation was made less than 24 hours before your booking, no refund is available per our cancellation policy."}
+                ? refundAmount >= originalAmount
+                  ? " Since you cancelled ≥24 hours in advance, you are eligible for a full refund."
+                  : " Since you cancelled 12-24 hours in advance, you are eligible for a 50% refund per our cancellation policy."
+                : " Unfortunately, since the cancellation was made less than 12 hours before your booking, no refund is available per our cancellation policy."}
             </Text>
           </Section>
 
@@ -159,7 +163,8 @@ export default function CancellationConfirmationEmail({
               >
                 <tr>
                   <td>
-                    <Heading style={h2}>💰 Refund Information</Heading>
+                    {refundAmount >= originalAmount ? "💰" : "⚖️"} Refund
+                    Information
                     <table
                       width="100%"
                       cellPadding="0"
@@ -215,6 +220,13 @@ export default function CancellationConfirmationEmail({
               >
                 <tr>
                   <td style={listItem}>
+                    {refundAmount >= originalAmount
+                      ? "• Full refund: 100% of your payment will be returned"
+                      : "• Partial refund: 50% of your payment will be returned"}
+                  </td>
+                </tr>
+                <tr>
+                  <td style={listItem}>
                     1. Your refund will be processed to your{" "}
                     <strong>original payment method</strong>
                   </td>
@@ -245,8 +257,8 @@ export default function CancellationConfirmationEmail({
                     <Heading style={h3}>⚠️ Cancellation Policy</Heading>
                     <Text style={warningTextFull}>
                       Your booking was cancelled{" "}
-                      <strong>{hoursBeforeBooking} hours</strong>{" "}
-                      before the scheduled time.
+                      <strong>{hoursBeforeBooking} hours</strong> before the
+                      scheduled time.
                     </Text>
                     <Text style={warningTextFull}>
                       Our policy requires cancellations to be made at least{" "}

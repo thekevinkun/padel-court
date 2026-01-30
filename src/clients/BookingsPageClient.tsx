@@ -111,14 +111,23 @@ const BookingsPageClient = () => {
         .from("bookings")
         .select(
           `
-          *,
-          courts (name, description),
-          booking_time_slots (
-            id,
-            time_slot_id,
-            time_slots (time_start, time_end, period, price_per_person)
-          )
-        `,
+    *,
+    courts (name, description),
+    booking_time_slots (
+      id,
+      time_slots (time_start, time_end)
+    ),
+    booking_equipment (
+      id,
+      quantity,
+      equipment (name)
+    ),
+    booking_players (
+      id,
+      player_name,
+      is_primary_booker
+    )
+  `,
         )
         .order("created_at", { ascending: false });
 
@@ -387,7 +396,7 @@ const BookingsPageClient = () => {
                   <TableHead className="font-medium">Amount</TableHead>
                   <TableHead className="font-medium">Status</TableHead>
                   <TableHead className="font-medium">Session</TableHead>
-                  <TableHead className="font-medium">Actions</TableHead>
+                  <TableHead className="font-medium sr-only">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -400,13 +409,17 @@ const BookingsPageClient = () => {
                 ) : (
                   filteredBookings.map((booking) => (
                     <TableRow key={booking.id}>
-                      <TableCell className="font-mono text-sm font-medium">
-                        {booking.booking_ref}
-                        {booking.customer_payment_choice === "DEPOSIT" && (
-                          <Badge variant="outline" className="ml-2 text-xs">
-                            Deposit
-                          </Badge>
-                        )}
+                      <TableCell>
+                        <div className="font-mono text-sm font-medium">
+                          {booking.customer_payment_choice === "DEPOSIT" && (
+                            <Badge variant="outline" className="text-xs">
+                              Deposit
+                            </Badge>
+                          )}
+                          <div>
+                            {booking.booking_ref}
+                          </div>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div>
@@ -465,6 +478,27 @@ const BookingsPageClient = () => {
                             </div>
                           )
                         )}
+
+                        {/* Equipment & Players Badges */}
+                        <div className="flex gap-1 mt-2">
+                          {booking.has_equipment_rental && (
+                            <Badge
+                              variant="outline"
+                              className="text-xs bg-purple-50 text-purple-700 border-purple-300"
+                            >
+                              🎾 Equipment
+                            </Badge>
+                          )}
+                          {booking.booking_players &&
+                            booking.booking_players.length > 1 && (
+                              <Badge
+                                variant="outline"
+                                className="text-xs bg-blue-50 text-blue-700 border-blue-300"
+                              >
+                                👥 {booking.booking_players.length}
+                              </Badge>
+                            )}
+                        </div>
                       </TableCell>
                       <TableCell>{getStatusBadge(booking)}</TableCell>
                       <TableCell>
