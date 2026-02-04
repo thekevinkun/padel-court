@@ -80,30 +80,30 @@ export async function GET(request: NextRequest) {
       daysDiff,
     });
 
-    // FETCH CURRENT PERIOD BOOKINGS
+    // FETCH CURRENT PERIOD BOOKINGS - Include ALL statuses
     const { data: bookings, error: bookingsError } = await supabase
       .from("bookings")
       .select(
         `
-        *,
-        courts (name),
-        venue_payments (*),
-        booking_equipment (
-          id,
-          quantity,
-          subtotal,
-          equipment (id, name, category)
-        ),
-        booking_players (
-          id,
-          player_name,
-          is_primary_booker
-        )
-      `,
+    *,
+    courts (name),
+    venue_payments (*),
+    booking_equipment (
+      id,
+      quantity,
+      subtotal,
+      equipment (id, name, category)
+    ),
+    booking_players (
+      id,
+      player_name,
+      is_primary_booker
+    )
+  `,
       )
       .gte("date", startDate)
       .lte("date", endDate)
-      .in("status", ["PAID", "REFUNDED"]);
+      .in("status", ["PAID", "REFUNDED", "CANCELLED", "EXPIRED"]);
 
     if (bookingsError) {
       console.error("❌ Bookings fetch error:", bookingsError);
@@ -114,13 +114,23 @@ export async function GET(request: NextRequest) {
 
     // PROCESS BOOKINGS - Calculate actual money flow for each booking
     const processedBookings = bookings.map((b) => {
-      // How much did customer pay online?
-      const onlinePaid = b.require_deposit ? b.deposit_amount : b.total_amount;
+      // Determine if session actually happened
+      const isOngoing = b.session_status === "UPCOMING";
+      const isCompleted =
+        b.session_status === "COMPLETED" || b.session_status === "IN_PROGRESS";
+      const isCancelled = b.session_status === "CANCELLED";
+
+      // How much did customer pay online? (only if they actually paid)
+      let onlinePaid = 0;
+      if (b.status === "PAID" || b.status === "REFUNDED") {
+        onlinePaid = b.require_deposit ? b.deposit_amount : b.total_amount;
+      }
+      // If status is CANCELLED or EXPIRED without payment, onlinePaid stays 0
 
       // How much was refunded?
       const refunded = parseFloat(b.refund_amount || "0");
 
-      // How much online money did we keep?
+      // How much online money did we keep? (regardless of completion)
       const onlineKept = onlinePaid - refunded;
 
       // Venue payment (only if received)
@@ -131,63 +141,95 @@ export async function GET(request: NextRequest) {
       // Total revenue from this booking
       const totalKept = onlineKept + venueKept;
 
-      // Payment fee
+      // Equipment revenue (from database)
+      const equipmentSubtotal = parseFloat(b.equipment_subtotal || "0");
+
+      // Court revenue (subtotal minus equipment)
+      const courtSubtotal = b.subtotal - equipmentSubtotal;
+
+      // Calculate equipment/court revenue split
+      let equipmentRevenue = 0;
+      let courtRevenue = 0;
+
+      if (isCompleted) {
+        // Session happened - count actual equipment and court revenue
+        equipmentRevenue = equipmentSubtotal;
+        courtRevenue = courtSubtotal;
+      } else if (totalKept > 0) {
+        // Session cancelled but we kept money - it's all court revenue (cancellation penalty)
+        equipmentRevenue = 0;
+        courtRevenue = totalKept;
+      }
+
+      // Payment fee (counted for ALL bookings that had payment, even cancelled - Option 1: court absorbs)
       const fee = b.payment_fee || 0;
-
-      // Equipment revenue (already included in totalKept, just tracking separately)
-      const equipmentRevenue = b.equipment_subtotal || 0;
-
-      // Court revenue (total - equipment)
-      const courtRevenue = totalKept - equipmentRevenue;
 
       return {
         ...b,
-        onlineKept, // Money kept from online payment (after refunds)
-        venueKept, // Money kept from venue payment
-        totalKept, // Total revenue from this booking
-        refunded, // Amount refunded
-        fee, // Payment processing fee
-        hasRevenue: totalKept > 0, // Does this booking contribute revenue?
+        onlineKept,
+        venueKept,
+        totalKept,
+        refunded,
+        fee,
+        hasRevenue: totalKept > 0,
         equipmentRevenue,
         courtRevenue,
+        isOngoing,
+        isCompleted,
+        isCancelled,
       };
     });
 
     console.log("📊 Processed bookings:", {
       total: processedBookings.length,
+      ongoing: processedBookings.filter((b) => b.isOngoing).length,
+      completed: processedBookings.filter((b) => b.isCompleted).length,
+      cancelled: processedBookings.filter((b) => b.isCancelled).length,
       withRevenue: processedBookings.filter((b) => b.hasRevenue).length,
       refunded: processedBookings.filter((b) => b.refunded > 0).length,
     });
 
-    // Only count bookings that contributed revenue
+    // Separate bookings by status
+    const ongoingBookings = processedBookings.filter((b) => b.isOngoing);
+    const completedBookings = processedBookings.filter((b) => b.isCompleted);
+    const cancelledBookings = processedBookings.filter((b) => b.isCancelled);
     const revenueBookings = processedBookings.filter((b) => b.hasRevenue);
 
     // SUMMARY CALCULATIONS
-    // Total Bookings = ALL bookings (including refunded)
+    // Total Bookings = ALL bookings attempted (PAID, REFUNDED, CANCELLED, EXPIRED)
     const totalBookings = processedBookings.length;
 
-    // Revenue Contributing Bookings = Bookings that kept money
+    // Ongoing Bookings = Sessions that neither completed nor cancelled, BUT PAID (UPCOMING)
+    const totalOngoingBookings = ongoingBookings.length;
+
+    // Completed Bookings = Sessions that actually happened
+    const totalCompletedBookings = completedBookings.length;
+
+    // Cancelled Bookings = Sessions that didn't happen
+    const totalCancelledBookings = cancelledBookings.length;
+
+    // Revenue Contributing Bookings = Bookings that kept money (same as completed in most cases)
     const revenueContributingBookings = revenueBookings.length;
 
-    // Gross Revenue = Total money kept (online + venue, after refunds)
+    // Gross Revenue = Total money kept (from ALL bookings, regardless of completion)
     const totalRevenue = processedBookings.reduce(
       (sum, b) => sum + b.totalKept,
       0,
     );
 
-    // Online Revenue = Money kept from online payments (after refunds)
+    // Online Revenue = Money kept from online payments (all bookings)
     const onlineRevenue = processedBookings.reduce(
       (sum, b) => sum + b.onlineKept,
       0,
     );
 
-    // Venue Revenue = Money kept from venue payments
+    // Venue Revenue = Money kept from venue payments (all bookings)
     const venueRevenue = processedBookings.reduce(
       (sum, b) => sum + b.venueKept,
       0,
     );
 
-    // Total Fees
+    // Total Fees = ALL fees paid (including cancelled bookings - Option 1: court absorbs)
     const totalFeesAbsorbed = processedBookings.reduce(
       (sum, b) => sum + b.fee,
       0,
@@ -199,10 +241,14 @@ export async function GET(request: NextRequest) {
     // Actual Earnings = Net Revenue (same thing now, refunds already accounted for)
     const netRevenueAfterRefunds = netRevenue;
 
-    // Average Booking Value (only count bookings with revenue)
+    // Average Booking Value (revenue from completed sessions / number of completed sessions)
+    const completedRevenue = completedBookings.reduce(
+      (sum, b) => sum + b.totalKept,
+      0,
+    );
     const averageBookingValue =
-      revenueContributingBookings > 0
-        ? totalRevenue / revenueContributingBookings
+      totalCompletedBookings > 0
+        ? completedRevenue / totalCompletedBookings
         : 0;
 
     // Deposit vs Full Payment (count ALL bookings, not just revenue ones)
@@ -214,40 +260,84 @@ export async function GET(request: NextRequest) {
     ).length;
 
     // Refund Statistics
-    const refundedBookings = processedBookings.filter((b) => b.refunded > 0);
+    const refundedBookings = processedBookings.filter((b) => {
+      const refundAmount = parseFloat(b.refund_amount || "0");
+      return refundAmount > 0;
+    });
+
     const totalRefunds = refundedBookings.length;
-    const totalRefundAmount = processedBookings.reduce(
-      (sum, b) => sum + b.refunded,
+    const totalRefundAmount = refundedBookings.reduce(
+      (sum, b) => sum + parseFloat(b.refund_amount || "0"),
       0,
     );
 
     // Full vs Partial refunds
-    const fullRefunds = refundedBookings.filter(
-      (b) => b.onlineKept === 0 && b.venueKept === 0,
-    ).length;
-    const partialRefunds = refundedBookings.filter(
-      (b) => b.totalKept > 0,
-    ).length;
+    // Full refund = Got money back AND kept nothing (totalKept = 0)
+    const fullRefunds = refundedBookings.filter((b) => {
+      const refundAmount = parseFloat(b.refund_amount || "0");
+      const onlinePaid = b.require_deposit ? b.deposit_amount : b.total_amount;
+      // Full refund means refund amount equals what they paid
+      return refundAmount >= onlinePaid;
+    }).length;
 
-    // Equipment Statistics
+    // Partial refund = Got money back BUT kept some (totalKept > 0)
+    const partialRefunds = refundedBookings.filter((b) => {
+      const refundAmount = parseFloat(b.refund_amount || "0");
+      const onlinePaid = b.require_deposit ? b.deposit_amount : b.total_amount;
+      // Partial refund means refund amount is less than what they paid
+      return refundAmount > 0 && refundAmount < onlinePaid;
+    }).length;
+
+    // Equipment Statistics (from all bookings with revenue)
     const equipmentRevenue = processedBookings.reduce(
       (sum, b) => sum + (b.equipmentRevenue || 0),
       0,
     );
-    const courtRevenue = totalRevenue - equipmentRevenue;
+    const courtRevenue = processedBookings.reduce(
+      (sum, b) => sum + (b.courtRevenue || 0),
+      0,
+    );
+    // Equipment adoption rate (from ALL bookings to show trend)
     const bookingsWithEquipment = processedBookings.filter(
       (b) => b.has_equipment_rental,
     ).length;
     const equipmentRentalRate =
       totalBookings > 0 ? (bookingsWithEquipment / totalBookings) * 100 : 0;
 
-    // Player Statistics
-    const totalPlayers = processedBookings.reduce(
+    // Also track completed sessions with equipment
+    const completedWithEquipment = completedBookings.filter(
+      (b) => b.has_equipment_rental,
+    ).length;
+
+    // Player Statistics (ONLY count completed bookings)
+    const totalPlayers = completedBookings.reduce(
       (sum, b) => sum + (b.number_of_players || 0),
       0,
     );
     const averagePlayersPerBooking =
-      totalBookings > 0 ? totalPlayers / totalBookings : 0;
+      totalCompletedBookings > 0 ? totalPlayers / totalCompletedBookings : 0;
+
+    // Calculate most common player count (MODE)
+    const playerCountFrequency: Record<number, number> = {};
+    completedBookings.forEach((b) => {
+      const count = b.number_of_players || 0;
+      playerCountFrequency[count] = (playerCountFrequency[count] || 0) + 1;
+    });
+
+    // Find the maximum frequency
+    const maxFrequency = Math.max(...Object.values(playerCountFrequency));
+
+    // Get all player counts that have this maximum frequency (handles ties)
+    const mostCommonCounts = Object.entries(playerCountFrequency)
+      .filter(([_, freq]) => freq === maxFrequency)
+      .map(([count, _]) => parseInt(count))
+      .sort((a, b) => a - b); // Sort numerically ascending
+
+    // Format as "3-4" if tie, or "3" if single value
+    const mostCommonPlayerCount =
+      mostCommonCounts.length > 1
+        ? `${mostCommonCounts[0]}-${mostCommonCounts[mostCommonCounts.length - 1]}`
+        : mostCommonCounts[0]?.toString() || "0";
 
     const summary = {
       totalRevenue,
@@ -256,6 +346,9 @@ export async function GET(request: NextRequest) {
       venueRevenue,
       totalFeesAbsorbed,
       totalBookings,
+      totalOngoingBookings,
+      totalCompletedBookings,
+      totalCancelledBookings,
       revenueContributingBookings,
       averageBookingValue,
       depositBookings,
@@ -268,9 +361,11 @@ export async function GET(request: NextRequest) {
       equipmentRevenue,
       courtRevenue,
       bookingsWithEquipment,
+      completedWithEquipment,
       equipmentRentalRate,
       totalPlayers,
       averagePlayersPerBooking,
+      mostCommonPlayerCount,
     };
 
     console.log("📊 Summary:", summary);
@@ -285,7 +380,12 @@ export async function GET(request: NextRequest) {
 
     // Process previous period bookings the same way
     const prevProcessed = (previousBookings || []).map((b) => {
-      const onlinePaid = b.require_deposit ? b.deposit_amount : b.total_amount;
+      // How much did customer pay online? (only if they actually paid)
+      // If status is CANCELLED or EXPIRED without payment, onlinePaid stays 0
+      let onlinePaid = 0;
+      if (b.status === "PAID" || b.status === "REFUNDED") {
+        onlinePaid = b.require_deposit ? b.deposit_amount : b.total_amount;
+      }
       const refunded = parseFloat(b.refund_amount || "0");
       const onlineKept = onlinePaid - refunded;
       const venueKept = b.venue_payment_received
@@ -332,8 +432,11 @@ export async function GET(request: NextRequest) {
 
     console.log("📊 Comparison:", comparison);
 
-    // REVENUE TIMELINE (group by date)
-    const revenueByDate = processedBookings.reduce(
+    // REVENUE TIMELINE (group by date) - All bookings with revenue
+    const revenueBookingsWithRevenue = processedBookings.filter(
+      (b) => b.hasRevenue,
+    );
+    const revenueByDate = revenueBookingsWithRevenue.reduce(
       (acc: Record<string, RevenueData>, b) => {
         const date = b.date;
         if (!acc[date]) {
@@ -344,8 +447,8 @@ export async function GET(request: NextRequest) {
             totalRevenue: 0,
             netRevenue: 0,
             feesAbsorbed: 0,
-            equipmentRevenue: 0, // NEW
-            courtRevenue: 0, // NEW
+            equipmentRevenue: 0,
+            courtRevenue: 0,
           };
         }
         acc[date].onlineRevenue += b.onlineKept;
@@ -353,20 +456,20 @@ export async function GET(request: NextRequest) {
         acc[date].totalRevenue += b.totalKept;
         acc[date].netRevenue += b.totalKept - b.fee;
         acc[date].feesAbsorbed += b.fee;
-        acc[date].equipmentRevenue += b.equipmentRevenue || 0; // NEW
-        acc[date].courtRevenue += b.courtRevenue || 0; // NEW
+        acc[date].equipmentRevenue += b.equipmentRevenue || 0;
+        acc[date].courtRevenue += b.courtRevenue || 0;
         return acc;
       },
       {},
     );
-
     const revenueTimeline = Object.values(revenueByDate).sort((a, b) =>
       a.date.localeCompare(b.date),
     );
 
-    // PAYMENT METHODS (only count money we kept)
-    const paymentMethodsMap = processedBookings.reduce(
-      (acc: Record<string, { count: number; amount: number }>, b) => {
+    // PAYMENT METHODS (count money we kept from ALL bookings with revenue)
+    const paymentMethodsMap = processedBookings
+      .filter((b) => b.hasRevenue)
+      .reduce((acc: Record<string, { count: number; amount: number }>, b) => {
         // Only count if we kept money from online payment
         if (b.onlineKept > 0) {
           const method = b.payment_method?.toUpperCase() || "UNKNOWN";
@@ -376,7 +479,6 @@ export async function GET(request: NextRequest) {
           acc[method].count += 1;
           acc[method].amount += b.onlineKept;
         }
-
         // Venue payment (if received)
         if (b.venueKept > 0) {
           const venueMethod =
@@ -389,15 +491,11 @@ export async function GET(request: NextRequest) {
         }
 
         return acc;
-      },
-      {},
-    );
-
+      }, {});
     const totalAmount = Object.values(paymentMethodsMap).reduce(
       (sum, m) => sum + m.amount,
       0,
     );
-
     const paymentMethods = Object.entries(paymentMethodsMap).map(
       ([method, data]) => ({
         method,
@@ -409,22 +507,21 @@ export async function GET(request: NextRequest) {
 
     console.log("💳 Payment Methods:", paymentMethods);
 
-    // TOP COURTS (only revenue we kept)
-    const courtStats = processedBookings.reduce(
-      (acc: Record<string, { bookings: number; revenue: number }>, b) => {
-        if (b.hasRevenue) {
+    // TOP COURTS (revenue from ALL bookings that kept money)
+    const courtStats = processedBookings
+      .filter((b) => b.hasRevenue)
+      .reduce(
+        (acc: Record<string, { bookings: number; revenue: number }>, b) => {
           const courtName = b.courts?.name || "Unknown Court";
           if (!acc[courtName]) {
             acc[courtName] = { bookings: 0, revenue: 0 };
           }
           acc[courtName].bookings += 1;
           acc[courtName].revenue += b.totalKept;
-        }
-        return acc;
-      },
-      {},
-    );
-
+          return acc;
+        },
+        {},
+      );
     const topCourts = Object.entries(courtStats)
       .map(([courtName, stats]) => ({
         courtName,
@@ -433,13 +530,12 @@ export async function GET(request: NextRequest) {
       }))
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 5);
-
     const bestCourt = topCourts.length > 0 ? topCourts[0] : null;
     const worstCourt =
       topCourts.length > 1 ? topCourts[topCourts.length - 1] : null;
 
-    // EQUIPMENT ANALYSIS
-    const equipmentStats = processedBookings.reduce(
+    // EQUIPMENT ANALYSIS (ONLY COMPLETED sessions)
+    const equipmentStats = completedBookings.reduce(
       (
         acc: Record<
           string,
@@ -451,7 +547,6 @@ export async function GET(request: NextRequest) {
           b.booking_equipment.forEach((item: any) => {
             const equipId = item.equipment?.id || "unknown";
             const equipName = item.equipment?.name || "Unknown Equipment";
-
             if (!acc[equipId]) {
               acc[equipId] = {
                 name: equipName,
@@ -460,7 +555,6 @@ export async function GET(request: NextRequest) {
                 bookings: 0,
               };
             }
-
             acc[equipId].quantity += item.quantity;
             acc[equipId].revenue += item.subtotal;
             acc[equipId].bookings += 1;
@@ -470,13 +564,12 @@ export async function GET(request: NextRequest) {
       },
       {},
     );
-
     const equipmentBreakdown = Object.values(equipmentStats).sort(
       (a, b) => b.revenue - a.revenue,
     );
 
-    // PEAK HOURS ANALYSIS
-    const hourStats = processedBookings.reduce(
+    // PEAK HOURS ANALYSIS (ONLY COMPLETED sessions)
+    const hourStats = completedBookings.reduce(
       (acc: Record<string, { bookings: number; revenue: number }>, b) => {
         if (b.hasRevenue) {
           const hour = b.time.split(" - ")[0];
@@ -490,7 +583,6 @@ export async function GET(request: NextRequest) {
       },
       {},
     );
-
     const peakHours = Object.entries(hourStats)
       .map(([hour, stats]) => ({
         hour,
@@ -520,10 +612,9 @@ export async function GET(request: NextRequest) {
     let offPeakRevenue = 0;
     let offPeakBookings = 0;
 
-    processedBookings.forEach((b) => {
+    completedBookings.forEach((b) => {
       if (b.hasRevenue) {
         const hour = b.time.split(" - ")[0];
-
         if (peakHoursList.includes(hour)) {
           peakRevenue += b.totalKept;
           peakBookings += 1;

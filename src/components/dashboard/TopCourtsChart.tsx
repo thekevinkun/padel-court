@@ -164,12 +164,12 @@ const TopCourtsChart = ({ data }: { data: CourtData[] }) => {
             <div className="text-right">
               <p className="font-bold text-green-600 text-lg">
                 IDR{" "}
-                {court.revenue.toLocaleString("id-ID", { notation: "compact" })}
+                {court.revenue.toLocaleString("en-ID", { notation: "compact" })}
               </p>
               <p className="text-xs text-gray-500">
                 Avg: IDR{" "}
                 {Math.round(court.revenue / court.bookings).toLocaleString(
-                  "id-ID",
+                  "en-ID",
                   {
                     notation: "compact",
                   }

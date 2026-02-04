@@ -14,36 +14,25 @@ import { PaymentMethodBreakdown } from "@/types/reports";
 const PaymentMethodChart = ({ data }: { data: PaymentMethodBreakdown[] }) => {
   // Color mapping: Online methods = Blue shades, Venue methods = Amber shades
   const getColorForMethod = (method: string) => {
-    if (method.startsWith("VENUE_")) {
-      // Venue payments - Amber shades
-      const venueColors = ["#f59e0b", "#fb923c", "#fdba74", "#fcd34d"];
-      const venueIndex = [
-        "VENUE_CASH",
-        "VENUE_DEBIT_CARD",
-        "VENUE_BANK_TRANSFER",
-        "VENUE_QRIS",
-      ].indexOf(method);
-      return venueColors[venueIndex] || "#f59e0b";
-    } else {
-      // Online payments - Blue/Green shades
-      const onlineColors = [
-        "#3b82f6",
-        "#10b981",
-        "#8b5cf6",
-        "#06b6d4",
-        "#ec4899",
-      ];
-      const onlineIndex = [
-        "CREDIT_CARD",
-        "BANK_TRANSFER",
-        "GOPAY",
-        "SHOPEEPAY",
-        "DANA",
-        "QRIS",
-        "OTHER_QRIS",
-      ].indexOf(method);
-      return onlineColors[onlineIndex] || "#3b82f6";
-    }
+    const colorMap: { [key: string]: string } = {
+      // Online - Distinct vibrant colors
+      CREDIT_CARD: "#3b82f6", // Blue
+      BANK_TRANSFER: "#10b981", // Green
+      ECHANNEL: "#3DED97", // Seafoam Green
+      QRIS: "#8b5cf6", // Purple
+      GOPAY: "#22c55e", // Emerald
+      SHOPEEPAY: "#f97316", // Orange
+      DANA: "#06b6d4", // Cyan
+      OTHER_QRIS: "#a855f7", // Light Purple
+
+      // Venue - Warm tones
+      VENUE_CASH: "#f59e0b", // Amber
+      VENUE_DEBIT_CARD: "#fb923c", // Orange
+      VENUE_BANK_TRANSFER: "#ea580c", // Dark Orange
+      VENUE_QRIS: "#fbbf24", // Yellow
+    };
+
+    return colorMap[method] || "#6b7280";
   };
 
   // Format payment method names for better display
@@ -51,6 +40,7 @@ const PaymentMethodChart = ({ data }: { data: PaymentMethodBreakdown[] }) => {
     const methodMap: { [key: string]: string } = {
       CREDIT_CARD: "💳 Credit Card",
       BANK_TRANSFER: "🏦 Bank Transfer",
+      ECHANNEL: "📱 E-Channel",
       GOPAY: "🟢 GoPay",
       SHOPEEPAY: "🟠 ShopeePay",
       DANA: "💙 DANA",
@@ -59,6 +49,7 @@ const PaymentMethodChart = ({ data }: { data: PaymentMethodBreakdown[] }) => {
       VENUE_CASH: "💵 Venue Cash",
       VENUE_DEBIT_CARD: "💳 Venue Debit",
       VENUE_BANK_TRANSFER: "🏦 Venue Transfer",
+      VENUE_QRIS: "📱 Venue QRIS",
     };
     return methodMap[method] || method;
   };
@@ -113,52 +104,100 @@ const PaymentMethodChart = ({ data }: { data: PaymentMethodBreakdown[] }) => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const renderLegend = (props: any) => {
     const { payload } = props;
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-6">
-        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-        {payload.map((entry: any, index: number) => {
-          // Find the matching data by name instead of using index
-          const data = chartData.find((item) => item.name === entry.value);
-          if (!data) return null;
 
-          return (
+    // Separate and sort online vs venue payments by revenue
+    const onlinePayments = payload
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .filter((entry: any) => {
+        const data = chartData.find((item) => item.name === entry.value);
+        const method = payload.find((p: any) => p.value === entry.value);
+        // Check the original method name from the data, not the formatted display name
+        return data && !data.name.toUpperCase().includes("VENUE");
+      })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .sort((a: any, b: any) => {
+        const dataA = chartData.find((item) => item.name === a.value);
+        const dataB = chartData.find((item) => item.name === b.value);
+        return (dataB?.value || 0) - (dataA?.value || 0);
+      });
+
+    const venuePayments = payload
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .filter((entry: any) => {
+        const data = chartData.find((item) => item.name === entry.value);
+        return data && data.name.toUpperCase().includes("VENUE");
+      })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .sort((a: any, b: any) => {
+        const dataA = chartData.find((item) => item.name === a.value);
+        const dataB = chartData.find((item) => item.name === b.value);
+        return (dataB?.value || 0) - (dataA?.value || 0);
+      });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const renderPaymentItem = (entry: any, index: number) => {
+      const data = chartData.find((item) => item.name === entry.value);
+      if (!data) return null;
+
+      return (
+        <div
+          key={`legend-${index}`}
+          className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          <div className="flex items-center gap-3">
             <div
-              key={`legend-${index}`}
-              className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-4 h-4 rounded-full"
-                  style={{ backgroundColor: entry.color }}
-                ></div>
-                <div>
-                  <p className="font-medium text-gray-900 text-sm">
-                    {entry.value}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {data.count} transactions
-                  </p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="font-semibold text-gray-900 text-sm">
-                  IDR{" "}
-                  {data.value.toLocaleString("id-ID", { notation: "compact" })}
-                </p>
-                <p className="text-xs text-gray-500">
-                  {data.percentage.toFixed(1)}%
-                </p>
-              </div>
+              className="w-4 h-4 rounded-full flex-shrink-0"
+              style={{ backgroundColor: entry.color }}
+            ></div>
+            <div>
+              <p className="font-medium text-gray-900 text-sm">{entry.value}</p>
+              <p className="text-xs text-gray-500">{data.count} transactions</p>
             </div>
-          );
-        })}
+          </div>
+          <div className="text-right">
+            <p className="font-semibold text-gray-900 text-sm">
+              IDR {data.value.toLocaleString("en-ID", { notation: "compact" })}
+            </p>
+            <p className="text-xs text-gray-500">
+              {data.percentage.toFixed(1)}%
+            </p>
+          </div>
+        </div>
+      );
+    };
+
+    return (
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        {/* Online Payments - Left */}
+        <div className="flex flex-col">
+          <h4 className="sr-only">
+            Online Payments
+          </h4>
+          <div className="space-y-2 overflow-y-auto max-h-[400px] pr-2">
+            {onlinePayments.map((entry: any, index: number) =>
+              renderPaymentItem(entry, index),
+            )}
+          </div>
+        </div>
+
+        {/* Venue Payments - Right */}
+        <div className="flex flex-col">
+          <h4 className="sr-only">
+            Venue Payments
+          </h4>
+          <div className="space-y-2 overflow-y-auto max-h-[400px] pr-2">
+            {venuePayments.map((entry: any, index: number) =>
+              renderPaymentItem(entry, index),
+            )}
+          </div>
+        </div>
       </div>
     );
   };
 
   return (
     <div className="w-full">
-      <div className="h-[640px] w-full flex items-center justify-center">
+      <div className="h-[720px] w-full flex items-center justify-center">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
@@ -167,8 +206,8 @@ const PaymentMethodChart = ({ data }: { data: PaymentMethodBreakdown[] }) => {
               cy="50%"
               labelLine={false}
               label={renderLabel}
-              outerRadius={140}
-              innerRadius={80}
+              outerRadius={150}
+              innerRadius={90}
               fill="#8884d8"
               dataKey="value"
               paddingAngle={2}
@@ -205,7 +244,7 @@ const PaymentMethodChart = ({ data }: { data: PaymentMethodBreakdown[] }) => {
             IDR{" "}
             {data
               .reduce((sum, item) => sum + item.amount, 0)
-              .toLocaleString("id-ID", { notation: "compact" })}
+              .toLocaleString("en-ID", { notation: "compact" })}
           </p>
           <p className="text-xs text-gray-600 mt-1">Total Amount</p>
         </div>
@@ -216,7 +255,7 @@ const PaymentMethodChart = ({ data }: { data: PaymentMethodBreakdown[] }) => {
       </div>
 
       {/* Explanation Section */}
-      <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+      {/* <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
         <div className="flex items-start gap-3">
           <div className="p-2 bg-blue-500 rounded-lg">
             <Info className="w-4 h-4 text-white" />
@@ -227,23 +266,23 @@ const PaymentMethodChart = ({ data }: { data: PaymentMethodBreakdown[] }) => {
             </h4>
             <div className="space-y-2 text-xs text-gray-700">
               <div className="flex items-start gap-2">
-                <div className="w-3 h-3 rounded-full bg-blue-500 mt-0.5 flex-shrink-0"></div>
+                <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-green-500 mt-0.5 flex-shrink-0"></div>
                 <p>
-                  <strong>Online Payments (Blue):</strong> Money collected
-                  during booking via Midtrans (deposits or full payments)
+                  <strong>Online Payments:</strong> Money collected during
+                  booking via Midtrans (deposits or full payments)
                 </p>
               </div>
               <div className="flex items-start gap-2">
-                <div className="w-3 h-3 rounded-full bg-amber-500 mt-0.5 flex-shrink-0"></div>
+                <div className="w-3 h-3 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 mt-0.5 flex-shrink-0"></div>
                 <p>
-                  <strong>Venue Payments (Amber):</strong> Remaining balance
-                  collected in cash at the venue (for deposit bookings only)
+                  <strong>Venue Payments:</strong> Remaining balance collected
+                  in cash at the venue (for deposit bookings only)
                 </p>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };

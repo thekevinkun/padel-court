@@ -47,6 +47,9 @@ interface FinancialSummary {
   netRevenue: number;
   totalFeesAbsorbed: number;
   totalBookings: number;
+  totalOngoingBookings: number;
+  totalCompletedBookings: number;
+  totalCancelledBookings: number;
   revenueContributingBookings: number;
   averageBookingValue: number;
   depositBookings: number;
@@ -59,9 +62,11 @@ interface FinancialSummary {
   equipmentRevenue: number;
   courtRevenue: number;
   bookingsWithEquipment: number;
+  completedWithEquipment: number;
   equipmentRentalRate: number;
   totalPlayers: number;
   averagePlayersPerBooking: number;
+  mostCommonPlayerCount: string;
 }
 
 export interface AnalyticsData {

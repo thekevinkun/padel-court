@@ -425,8 +425,7 @@ const ReportsPageClient = () => {
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   After {summary.totalFeesAbsorbed.toLocaleString("id-ID")} fees
-                  · {(summary.totalRefundAmount || 0).toLocaleString("id-ID")}{" "}
-                  refunds
+                  (refunds excluded from revenue)
                 </p>
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 mt-2">
                   {Math.round(
@@ -490,12 +489,21 @@ const ReportsPageClient = () => {
                   {summary.totalBookings}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Avg: IDR{" "}
-                  {Math.round(summary.averageBookingValue).toLocaleString(
-                    "id-ID",
-                  )}
-                  /booking
+                  {summary.totalOngoingBookings} ongoing ·{" "}
+                  {summary.totalCompletedBookings} completed ·{" "}
+                  {summary.totalCancelledBookings} cancelled
                 </p>
+                <div className="mt-2 space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-600">Avg revenue:</span>
+                    <span className="font-semibold">
+                      IDR{" "}
+                      {Math.round(summary.averageBookingValue).toLocaleString(
+                        "id-ID",
+                      )}
+                    </span>
+                  </div>
+                </div>
                 {analytics.comparison && (
                   <div className="flex items-center gap-1 mt-2">
                     {analytics.comparison.totalBookings >= 0 ? (
@@ -523,6 +531,7 @@ const ReportsPageClient = () => {
           </motion.div>
 
           {/* Refunds Processed */}
+          {/* Completion Rate */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -532,67 +541,91 @@ const ReportsPageClient = () => {
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <div className="flex items-center gap-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Refunds Processed
+                    Completion Rate
                   </CardTitle>
-                  <InfoTooltip text="Cancelled bookings where money was returned to customers. Lower is better." />
+                  <InfoTooltip text="Percentage of bookings where sessions actually happened. Higher is better." />
                 </div>
-                <div className="p-2 rounded-lg bg-purple-100">
-                  <TrendingDown className="h-4 w-4 text-purple-600" />
+                <div className="p-2 rounded-lg bg-green-100">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
-                  {summary.totalRefunds || 0}
+                <div className="text-2xl font-bold text-green-600">
+                  {summary.totalBookings > 0
+                    ? Math.round(
+                        (summary.totalCompletedBookings /
+                          summary.totalBookings) *
+                          100,
+                      )
+                    : 0}
+                  %
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  IDR {(summary.totalRefundAmount || 0).toLocaleString("id-ID")}{" "}
-                  refunded
+                  {summary.totalCompletedBookings} of {summary.totalBookings}{" "}
+                  sessions happened
                 </p>
-                {/* Show breakdown of full vs partial */}
-                {(summary.fullRefunds > 0 || summary.partialRefunds > 0) && (
-                  <div className="mt-2 text-xs text-gray-600 space-y-1">
-                    {summary.fullRefunds > 0 && (
-                      <div>
-                        • {summary.fullRefunds} full refund
-                        {summary.fullRefunds > 1 ? "s" : ""}
+
+                {/* Cancellation Breakdown */}
+                {summary.totalCancelledBookings > 0 && (
+                  <div className="mt-3 pt-3 border-t border-gray-100">
+                    <div className="space-y-1 text-xs">
+                      <div className="flex justify-between text-gray-600">
+                        <span>Cancelled:</span>
+                        <span className="font-medium text-red-600">
+                          {summary.totalCancelledBookings} (
+                          {Math.round(
+                            (summary.totalCancelledBookings /
+                              summary.totalBookings) *
+                              100,
+                          )}
+                          %)
+                        </span>
                       </div>
-                    )}
-                    {summary.partialRefunds > 0 && (
-                      <div>
-                        • {summary.partialRefunds} partial refund
-                        {summary.partialRefunds > 1 ? "s" : ""}
-                      </div>
-                    )}
+                      {summary.totalRefunds && summary.totalRefunds > 0 && (
+                        <>
+                          {summary.fullRefunds > 0.0 && (
+                            <div className="flex justify-between text-gray-500">
+                              <span className="pl-3">• Full refunds:</span>
+                              <span>{summary.fullRefunds}</span>
+                            </div>
+                          )}
+                          {summary.partialRefunds > 0.0 && (
+                            <div className="flex justify-between text-gray-500">
+                              <span className="pl-3">• Partial refunds:</span>
+                              <span>{summary.partialRefunds}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between text-gray-600 pt-1 border-t border-gray-50">
+                            <span>Refund amount:</span>
+                            <span className="font-medium text-red-600">
+                              IDR{" "}
+                              {(summary.totalRefundAmount || 0).toLocaleString(
+                                "id-ID",
+                              )}
+                            </span>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
                 )}
-                <span
-                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mt-2 ${
-                    (summary.totalRefunds || 0) / summary.totalBookings < 0.1
-                      ? "bg-green-100 text-green-700"
-                      : "bg-yellow-100 text-yellow-700"
-                  }`}
-                >
-                  {Math.round(
-                    ((summary.totalRefunds || 0) / summary.totalBookings) * 100,
-                  )}
-                  % cancellation rate
-                </span>
+
                 {analytics.comparison && (
                   <div className="flex items-center gap-1 mt-2">
-                    {analytics.comparison.totalRefunds <= 0 ? (
-                      <TrendingDown className="w-3 h-3 text-green-600" />
+                    {analytics.comparison.totalBookings >= 0 ? (
+                      <TrendingUp className="w-3 h-3 text-green-600" />
                     ) : (
-                      <TrendingUp className="w-3 h-3 text-red-600" />
+                      <TrendingDown className="w-3 h-3 text-red-600" />
                     )}
                     <span
                       className={`text-xs font-medium ${
-                        analytics.comparison.totalRefunds <= 0
+                        analytics.comparison.totalBookings >= 0
                           ? "text-green-600"
                           : "text-red-600"
                       }`}
                     >
-                      {analytics.comparison.totalRefunds >= 0 ? "+" : ""}
-                      {analytics.comparison.totalRefunds.toFixed(1)}%
+                      {analytics.comparison.totalBookings >= 0 ? "+" : ""}
+                      {analytics.comparison.totalBookings.toFixed(1)}%
                     </span>
                     <span className="text-xs text-muted-foreground">
                       vs previous period
@@ -625,7 +658,7 @@ const ReportsPageClient = () => {
         </Card>
       </div>
 
-      {/* 💰 REVENUE BREAKDOWN */}
+      {/* REVENUE BREAKDOWN */}
       <div>
         <SectionHeader
           icon={Receipt}
@@ -677,6 +710,9 @@ const ReportsPageClient = () => {
                       {summary.fullPaymentBookings}
                     </span>
                   </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    (includes {summary.totalCancelledBookings} cancelled)
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -856,6 +892,22 @@ const ReportsPageClient = () => {
             <p className="text-sm text-muted-foreground mt-1">
               See which payment methods your customers prefer
             </p>
+            <div className="w-fit ml-auto space-y-2 text-xs text-gray-700 mt-1">
+              <div className="flex items-start gap-2">
+                <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-green-500 mt-0.5 flex-shrink-0"></div>
+                <p>
+                  <strong>Online Payments:</strong> Money collected during
+                  booking via Midtrans (deposits or full payments)
+                </p>
+              </div>
+              <div className="flex items-start gap-2">
+                <div className="w-3 h-3 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 mt-0.5 flex-shrink-0"></div>
+                <p>
+                  <strong>Venue Payments:</strong> Remaining balance collected
+                  in cash at the venue (for deposit bookings only)
+                </p>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="pt-4">
             {chartsLoaded.paymentMethods ? (
@@ -867,7 +919,7 @@ const ReportsPageClient = () => {
         </Card>
       </div>
 
-      {/* 📈 PERFORMANCE INSIGHTS */}
+      {/* PERFORMANCE INSIGHTS */}
       <div>
         <SectionHeader
           icon={Trophy}
@@ -882,28 +934,26 @@ const ReportsPageClient = () => {
                 <div className="p-2 bg-green-500 rounded-lg">
                   <CheckCircle className="w-5 h-5 text-white" />
                 </div>
-                <h3 className="font-semibold text-gray-900">Success Rate</h3>
+                <h3 className="font-semibold text-gray-900">Completion Rate</h3>
               </div>
-
               <div className="space-y-2">
                 <p className="text-4xl font-bold text-green-600">
                   {Math.round(
-                    (summary.revenueContributingBookings /
-                      summary.totalBookings) *
+                    (summary.totalCompletedBookings / summary.totalBookings) *
                       100,
                   )}
                   %
                 </p>
                 <p className="text-sm text-gray-600">
-                  {summary.revenueContributingBookings} out of{" "}
-                  {summary.totalBookings} bookings completed
+                  {summary.totalCompletedBookings} out of{" "}
+                  {summary.totalBookings} sessions happened
                 </p>
                 <div className="w-full bg-green-200 rounded-full h-2 mt-3">
                   <div
                     className="bg-green-500 h-2 rounded-full transition-all"
                     style={{
                       width: `${
-                        (summary.revenueContributingBookings /
+                        (summary.totalCompletedBookings /
                           summary.totalBookings) *
                         100
                       }%`,
@@ -952,23 +1002,44 @@ const ReportsPageClient = () => {
                   Cancellation Impact
                 </h3>
               </div>
-
               <div className="space-y-2">
                 <p className="text-4xl font-bold text-purple-600">
-                  IDR {(summary.totalRefundAmount || 0).toLocaleString("id-ID")}
+                  {summary.totalCancelledBookings}
                 </p>
                 <p className="text-sm text-gray-600">
-                  Lost to {summary.totalRefunds || 0} cancellations
+                  {summary.totalBookings > 0
+                    ? Math.round(
+                        (summary.totalCancelledBookings /
+                          summary.totalBookings) *
+                          100,
+                      )
+                    : 0}
+                  % of all bookings
                 </p>
-                <div className="mt-3 pt-3 border-t border-purple-200">
-                  <p className="text-xs text-gray-500">
-                    {(
-                      ((summary.totalRefundAmount || 0) /
-                        summary.totalRevenue) *
-                      100
-                    ).toFixed(1)}
-                    % of total revenue
-                  </p>
+                <div className="mt-3 pt-3 border-t border-purple-200 space-y-2">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-600">Money refunded:</span>
+                    <span className="font-semibold text-purple-700">
+                      IDR{" "}
+                      {(summary.totalRefundAmount || 0).toLocaleString("id-ID")}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-600">
+                      Impact on potential revenue:
+                    </span>
+                    <span className="font-semibold text-purple-700">
+                      {summary.totalBookings > 0
+                        ? (
+                            ((summary.totalRefundAmount || 0) /
+                              ((summary.totalRevenue || 1) +
+                                (summary.totalRefundAmount || 0))) *
+                            100
+                          ).toFixed(1)
+                        : 0}
+                      %
+                    </span>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -1308,7 +1379,7 @@ const ReportsPageClient = () => {
         </div>
       </div>
 
-      {/* NEW: 🎾 EQUIPMENT & PLAYER ANALYTICS */}
+      {/* EQUIPMENT & PLAYER ANALYTICS */}
       <div>
         <SectionHeader
           icon={Trophy}
@@ -1335,8 +1406,12 @@ const ReportsPageClient = () => {
                 </p>
                 <p className="text-sm text-gray-600">
                   {summary.bookingsWithEquipment} out of {summary.totalBookings}{" "}
-                  bookings
+                  total bookings
                 </p>
+                <div className="mt-2 text-xs text-gray-500">
+                  ({summary.completedWithEquipment} of{" "}
+                  {summary.totalCompletedBookings} completed sessions)
+                </div>
                 <div className="w-full bg-purple-200 rounded-full h-3 mt-3">
                   <div
                     className="bg-purple-500 h-3 rounded-full transition-all"
@@ -1363,12 +1438,13 @@ const ReportsPageClient = () => {
                   {summary.averagePlayersPerBooking.toFixed(1)}
                 </p>
                 <p className="text-sm text-gray-600">
-                  {summary.totalPlayers} total players across all bookings
+                  {summary.totalPlayers} total players in{" "}
+                  {summary.totalCompletedBookings} sessions
                 </p>
                 <div className="mt-3 pt-3 border-t border-blue-200">
                   <p className="text-xs text-gray-500">
-                    💡 Most bookings are for{" "}
-                    {Math.round(summary.averagePlayersPerBooking)} players
+                    💡 Most common: {summary.mostCommonPlayerCount} players per
+                    session
                   </p>
                 </div>
               </div>
