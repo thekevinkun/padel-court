@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
+  AlertCircle,
   Calendar,
   DollarSign,
   TrendingUp,
@@ -11,17 +12,29 @@ import {
   Clock,
   TrendingDown,
   Info,
+  Lightbulb,
   CheckCircle,
   XCircle,
   Banknote,
   CreditCard,
   Wallet,
   Receipt,
+  Package,
   Trophy,
   Users,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -29,11 +42,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import RevenueChart from "@/components/dashboard/RevenueChart";
+import DayOfWeekChart from "@/components/dashboard/DayOfWeekChart";
 import TopCourtsChart from "@/components/dashboard/TopCourtsChart";
+import PeakHoursChart from "@/components/dashboard/PeakHoursChart";
+import PeriodComparison from "@/components/dashboard/PeriodComparison";
 import PaymentMethodChart from "@/components/dashboard/PaymentMethodChart";
+import BusinessRecommendations from "@/components/dashboard/BusinessRecommendations";
 
 import { useRealtimeFinancials } from "@/hooks/useRealtimeFinancials";
 import { AnalyticsData } from "@/types/reports";
@@ -104,6 +119,7 @@ const ReportsPageClient = () => {
     paymentMethods: false,
     topCourts: false,
     peakHours: false,
+    dayOfWeek: false,
   });
 
   // Date range state
@@ -175,6 +191,7 @@ const ReportsPageClient = () => {
         paymentMethods: false,
         topCourts: false,
         peakHours: false,
+        dayOfWeek: false,
       });
 
       // Fetch analytics data by date range
@@ -211,6 +228,10 @@ const ReportsPageClient = () => {
         () => setChartsLoaded((prev) => ({ ...prev, peakHours: true })),
         700,
       );
+      setTimeout(
+        () => setChartsLoaded((prev) => ({ ...prev, dayOfWeek: true })),
+        900,
+      );
     } catch (error) {
       console.error("Error fetching analytics:", error);
     } finally {
@@ -218,32 +239,123 @@ const ReportsPageClient = () => {
     }
   };
 
-  const exportToCSV = () => {
+  const exportToCSV = (
+    type: "timeline" | "bookings" | "courts" | "equipment" | "summary",
+  ) => {
     if (!analytics) return;
 
-    const headers = [
-      "Date",
-      "Online Revenue",
-      "Venue Revenue",
-      "Total Revenue",
-      "Net Revenue",
-      "Fees Absorbed",
-    ];
-    const rows = analytics.revenueTimeline.map((item) => [
-      item.date,
-      item.onlineRevenue,
-      item.venueRevenue,
-      item.totalRevenue,
-      item.netRevenue,
-      item.feesAbsorbed,
-    ]);
+    let headers: string[] = [];
+    let rows: any[][] = [];
+    let filename = "";
+
+    switch (type) {
+      case "timeline":
+        headers = [
+          "Date",
+          "Online Revenue",
+          "Venue Revenue",
+          "Total Revenue",
+          "Net Revenue",
+          "Fees Absorbed",
+          "Equipment Revenue",
+          "Court Revenue",
+        ];
+        rows = analytics.revenueTimeline.map((item) => [
+          item.date,
+          item.onlineRevenue,
+          item.venueRevenue,
+          item.totalRevenue,
+          item.netRevenue,
+          item.feesAbsorbed,
+          item.equipmentRevenue,
+          item.courtRevenue,
+        ]);
+        filename = `revenue-timeline-${analytics.startDate}-to-${analytics.endDate}.csv`;
+        break;
+
+      case "courts":
+        headers = [
+          "Court Name",
+          "Bookings",
+          "Revenue",
+          "Hours Booked",
+          "Utilization Rate (%)",
+          "Average Revenue per Booking",
+        ];
+        rows = analytics.topCourts.map((court) => [
+          court.courtName,
+          court.bookings,
+          court.revenue,
+          court.hoursBooked,
+          court.utilizationRate.toFixed(2),
+          (court.revenue / court.bookings).toFixed(0),
+        ]);
+        filename = `court-performance-${analytics.startDate}-to-${analytics.endDate}.csv`;
+        break;
+
+      case "equipment":
+        headers = [
+          "Equipment Name",
+          "Quantity Rented",
+          "Revenue",
+          "Number of Bookings",
+        ];
+        rows = analytics.equipmentBreakdown.map((item) => [
+          item.name,
+          item.quantity,
+          item.revenue,
+          item.bookings,
+        ]);
+        filename = `equipment-rentals-${analytics.startDate}-to-${analytics.endDate}.csv`;
+        break;
+
+      case "summary":
+        headers = ["Metric", "Value"];
+        rows = [
+          ["Period", `${analytics.startDate} to ${analytics.endDate}`],
+          ["Total Revenue", summary.totalRevenue],
+          ["Online Revenue", summary.onlineRevenue],
+          ["Venue Revenue", summary.venueRevenue],
+          ["Payment Fees", summary.totalFeesAbsorbed],
+          ["Net Revenue After Fees", summary.netRevenueAfterRefunds || 0],
+          ["Total Bookings", summary.totalBookings],
+          ["Completed Bookings", summary.totalCompletedBookings],
+          ["Cancelled Bookings", summary.totalCancelledBookings],
+          ["Ongoing Bookings", summary.totalOngoingBookings],
+          [
+            "Completion Rate (%)",
+            (
+              (summary.totalCompletedBookings / summary.totalBookings) *
+              100
+            ).toFixed(1),
+          ],
+          ["Average Booking Value", summary.averageBookingValue.toFixed(0)],
+          ["Total Refunds", summary.totalRefunds || 0],
+          ["Total Refund Amount", summary.totalRefundAmount || 0],
+          ["Court Revenue", summary.courtRevenue],
+          ["Equipment Revenue", summary.equipmentRevenue],
+          ["Equipment Rental Rate (%)", summary.equipmentRentalRate.toFixed(1)],
+          ["Total Players", summary.totalPlayers],
+          [
+            "Average Players per Booking",
+            summary.averagePlayersPerBooking.toFixed(1),
+          ],
+          ["Most Common Player Count", summary.mostCommonPlayerCount],
+        ];
+        filename = `executive-summary-${analytics.startDate}-to-${analytics.endDate}.csv`;
+        break;
+
+      default:
+        return;
+    }
 
     const csv = [headers, ...rows].map((row) => row.join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
+
     const link = document.createElement("a");
     link.href = url;
-    link.download = `financial-report-${analytics.startDate}-to-${analytics.endDate}.csv`;
+    link.download = filename;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -329,14 +441,67 @@ const ReportsPageClient = () => {
                 <BarChart3 className="w-4 h-4 mr-1" />
                 Refresh
               </Button>
-              <Button onClick={exportToCSV} className="">
-                <Download className="w-4 h-4 mr-2" />
-                Export CSV
-              </Button>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button className="">
+                    <Download className="w-4 h-4 mr-2" />
+                    Export Data
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>Export Options</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => exportToCSV("summary")}>
+                    <Receipt className="w-4 h-4 mr-2" />
+                    Executive Summary
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => exportToCSV("timeline")}>
+                    <BarChart3 className="w-4 h-4 mr-2" />
+                    Revenue Timeline
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => exportToCSV("courts")}>
+                    <Trophy className="w-4 h-4 mr-2" />
+                    Court Performance
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => exportToCSV("equipment")}>
+                    <Package className="w-4 h-4 mr-2" />
+                    Equipment Rentals
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Show Ongoing bookings */}
+      {summary.totalOngoingBookings > 0 && summary.ongoingRevenue > 0 && (
+        <Card className="bg-amber-50 border-amber-200">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-amber-500 rounded-lg mt-0.5">
+                <AlertCircle className="w-5 h-5 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-amber-900 mb-1">
+                  ⏳ Upcoming Sessions
+                </h3>
+                <p className="text-sm text-amber-800">
+                  You have{" "}
+                  <strong>{summary.totalOngoingBookings} paid bookings</strong>{" "}
+                  (IDR{" "}
+                  <strong>
+                    {summary.ongoingRevenue.toLocaleString("id-ID")}
+                  </strong>
+                  ) scheduled but not yet completed. This revenue will be
+                  finalized once the sessions are played.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* 📊 OVERVIEW SECTION */}
       <div>
@@ -374,20 +539,22 @@ const ReportsPageClient = () => {
                 </p>
                 {analytics.comparison && (
                   <div className="flex items-center gap-1 mt-2">
-                    {analytics.comparison.totalRevenue >= 0 ? (
+                    {analytics.comparison.changes.totalRevenue >= 0 ? (
                       <TrendingUp className="w-3 h-3 text-green-600" />
                     ) : (
                       <TrendingDown className="w-3 h-3 text-red-600" />
                     )}
                     <span
                       className={`text-xs font-medium ${
-                        analytics.comparison.totalRevenue >= 0
+                        analytics.comparison.changes.totalRevenue >= 0
                           ? "text-green-600"
                           : "text-red-600"
                       }`}
                     >
-                      {analytics.comparison.totalRevenue >= 0 ? "+" : ""}
-                      {analytics.comparison.totalRevenue.toFixed(1)}%
+                      {analytics.comparison.changes.totalRevenue >= 0
+                        ? "+"
+                        : ""}
+                      {analytics.comparison.changes.totalRevenue.toFixed(1)}%
                     </span>
                     <span className="text-xs text-muted-foreground">
                       vs previous period
@@ -440,22 +607,26 @@ const ReportsPageClient = () => {
 
                 {analytics.comparison && (
                   <div className="flex items-center gap-1 mt-2">
-                    {analytics.comparison.netRevenueAfterRefunds >= 0 ? (
+                    {analytics.comparison.changes.netRevenueAfterRefunds >=
+                    0 ? (
                       <TrendingUp className="w-3 h-3 text-green-600" />
                     ) : (
                       <TrendingDown className="w-3 h-3 text-red-600" />
                     )}
                     <span
                       className={`text-xs font-medium ${
-                        analytics.comparison.netRevenueAfterRefunds >= 0
+                        analytics.comparison.changes.netRevenueAfterRefunds >= 0
                           ? "text-green-600"
                           : "text-red-600"
                       }`}
                     >
-                      {analytics.comparison.netRevenueAfterRefunds >= 0
+                      {analytics.comparison.changes.netRevenueAfterRefunds >= 0
                         ? "+"
                         : ""}
-                      {analytics.comparison.netRevenueAfterRefunds.toFixed(1)}%
+                      {analytics.comparison.changes.netRevenueAfterRefunds.toFixed(
+                        1,
+                      )}
+                      %
                     </span>
                     <span className="text-xs text-muted-foreground">
                       vs previous period
@@ -506,20 +677,22 @@ const ReportsPageClient = () => {
                 </div>
                 {analytics.comparison && (
                   <div className="flex items-center gap-1 mt-2">
-                    {analytics.comparison.totalBookings >= 0 ? (
+                    {analytics.comparison.changes.totalBookings >= 0 ? (
                       <TrendingUp className="w-3 h-3 text-green-600" />
                     ) : (
                       <TrendingDown className="w-3 h-3 text-red-600" />
                     )}
                     <span
                       className={`text-xs font-medium ${
-                        analytics.comparison.totalBookings >= 0
+                        analytics.comparison.changes.totalBookings >= 0
                           ? "text-green-600"
                           : "text-red-600"
                       }`}
                     >
-                      {analytics.comparison.totalBookings >= 0 ? "+" : ""}
-                      {analytics.comparison.totalBookings.toFixed(1)}%
+                      {analytics.comparison.changes.totalBookings >= 0
+                        ? "+"
+                        : ""}
+                      {analytics.comparison.changes.totalBookings.toFixed(1)}%
                     </span>
                     <span className="text-xs text-muted-foreground">
                       vs previous period
@@ -612,20 +785,22 @@ const ReportsPageClient = () => {
 
                 {analytics.comparison && (
                   <div className="flex items-center gap-1 mt-2">
-                    {analytics.comparison.totalBookings >= 0 ? (
+                    {analytics.comparison.changes.totalBookings >= 0 ? (
                       <TrendingUp className="w-3 h-3 text-green-600" />
                     ) : (
                       <TrendingDown className="w-3 h-3 text-red-600" />
                     )}
                     <span
                       className={`text-xs font-medium ${
-                        analytics.comparison.totalBookings >= 0
+                        analytics.comparison.changes.totalBookings >= 0
                           ? "text-green-600"
                           : "text-red-600"
                       }`}
                     >
-                      {analytics.comparison.totalBookings >= 0 ? "+" : ""}
-                      {analytics.comparison.totalBookings.toFixed(1)}%
+                      {analytics.comparison.changes.totalBookings >= 0
+                        ? "+"
+                        : ""}
+                      {analytics.comparison.changes.totalBookings.toFixed(1)}%
                     </span>
                     <span className="text-xs text-muted-foreground">
                       vs previous period
@@ -657,6 +832,26 @@ const ReportsPageClient = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* PERIOD COMPARISON */}
+      {analytics.comparison && (
+        <PeriodComparison
+          current={{
+            totalRevenue: summary.totalRevenue,
+            netRevenueAfterRefunds: summary.netRevenueAfterRefunds || 0,
+            totalBookings: summary.totalBookings,
+            totalCompletedBookings: summary.totalCompletedBookings,
+            totalCancelledBookings: summary.totalCancelledBookings,
+            totalRefunds: summary.totalRefunds,
+            averageBookingValue: summary.averageBookingValue,
+            equipmentRentalRate: summary.equipmentRentalRate,
+          }}
+          previous={analytics.comparison.previous}
+          changes={analytics.comparison.changes}
+          startDate={analytics.startDate}
+          endDate={analytics.endDate}
+        />
+      )}
 
       {/* REVENUE BREAKDOWN */}
       <div>
@@ -1298,8 +1493,8 @@ const ReportsPageClient = () => {
         )}
 
         {/* Top Courts Chart */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <Card className="col-span-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Trophy className="w-5 h-5 text-forest" />
@@ -1311,7 +1506,49 @@ const ReportsPageClient = () => {
             </CardHeader>
             <CardContent className="pt-4">
               {chartsLoaded.topCourts ? (
-                <TopCourtsChart data={analytics.topCourts} />
+                <>
+                  <TopCourtsChart data={analytics.topCourts} />
+
+                  <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <h4 className="font-semibold text-sm text-blue-900 mb-3">
+                      📊 Court Utilization Rates
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {analytics.topCourts.map((court) => (
+                        <div
+                          key={court.courtName}
+                          className="flex items-center justify-between p-3 bg-white rounded-lg"
+                        >
+                          <div>
+                            <p className="font-medium text-gray-900 text-sm">
+                              {court.courtName}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {court.hoursBooked}h booked
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p
+                              className={`text-lg font-bold ${
+                                court.utilizationRate >= 70
+                                  ? "text-green-600"
+                                  : court.utilizationRate >= 40
+                                    ? "text-amber-600"
+                                    : "text-red-600"
+                              }`}
+                            >
+                              {court.utilizationRate.toFixed(1)}%
+                            </p>
+                            <p className="text-xs text-gray-500">utilized</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-blue-800 mt-3">
+                      💡 Based on 15 hours/day operation (6am-9pm)
+                    </p>
+                  </div>
+                </>
               ) : (
                 <ChartSkeleton />
               )}
@@ -1319,58 +1556,23 @@ const ReportsPageClient = () => {
           </Card>
 
           {/* Peak Hours Chart */}
-          <Card>
+          <Card className="h-fit">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Clock className="w-5 h-5 text-forest" />
                 Peak Hours Analysis
               </CardTitle>
               <p className="text-sm text-muted-foreground mt-1">
-                Most popular booking times
+                Hourly booking patterns and utilization
               </p>
             </CardHeader>
             <CardContent className="pt-4">
               {chartsLoaded.peakHours ? (
-                <div className="space-y-3">
-                  {analytics.peakHours.slice(0, 10).map((hour, index) => (
-                    <div
-                      key={hour.hour}
-                      className="flex justify-between items-center p-3 rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-forest/10 flex items-center justify-center">
-                          <span className="text-sm font-bold text-forest">
-                            #{index + 1}
-                          </span>
-                        </div>
-                        <span className="font-semibold text-gray-900">
-                          {hour.hour}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="w-32 bg-gray-200 rounded-full h-3">
-                          <div
-                            className="bg-forest h-3 rounded-full transition-all"
-                            style={{
-                              width: `${
-                                (hour.bookings /
-                                  analytics.peakHours[0].bookings) *
-                                100
-                              }%`,
-                            }}
-                          ></div>
-                        </div>
-                        <span className="text-lg font-bold text-forest w-12 text-right">
-                          {hour.bookings}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <PeakHoursChart data={analytics.peakHours} />
               ) : (
                 <div className="space-y-3 animate-pulse">
                   {[1, 2, 3, 4, 5].map((i) => (
-                    <div key={i} className="h-12 bg-gray-200 rounded-lg"></div>
+                    <div key={i} className="h-20 bg-gray-200 rounded-lg"></div>
                   ))}
                 </div>
               )}
@@ -1378,6 +1580,90 @@ const ReportsPageClient = () => {
           </Card>
         </div>
       </div>
+
+      {analytics.dayOfWeekBreakdown &&
+        analytics.dayOfWeekBreakdown.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-forest" />
+                Booking Patterns by Day
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Which days are most popular for bookings
+              </p>
+            </CardHeader>
+            <CardContent className="pt-4">
+              {chartsLoaded.dayOfWeek ? (
+                <>
+                  <DayOfWeekChart data={analytics.dayOfWeekBreakdown} />
+
+                  <div className="mt-6 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                    <h4 className="font-semibold text-sm text-purple-900 mb-3">
+                      💡 Weekly Insights
+                    </h4>
+                    <div className="space-y-2 text-sm text-purple-800">
+                      {(() => {
+                        const weekendRevenue = analytics.dayOfWeekBreakdown
+                          .filter(
+                            (d) => d.day === "Saturday" || d.day === "Sunday",
+                          )
+                          .reduce((sum, d) => sum + d.revenue, 0);
+
+                        const weekdayRevenue = analytics.dayOfWeekBreakdown
+                          .filter(
+                            (d) => d.day !== "Saturday" && d.day !== "Sunday",
+                          )
+                          .reduce((sum, d) => sum + d.revenue, 0);
+
+                        const bestDay = [...analytics.dayOfWeekBreakdown].sort(
+                          (a, b) => b.revenue - a.revenue,
+                        )[0];
+
+                        const worstDay = [...analytics.dayOfWeekBreakdown].sort(
+                          (a, b) => a.revenue - b.revenue,
+                        )[0];
+
+                        const weekendPct =
+                          weekendRevenue > 0
+                            ? (weekendRevenue /
+                                (weekendRevenue + weekdayRevenue)) *
+                              100
+                            : 0;
+
+                        return (
+                          <>
+                            <p>
+                              <strong>Best day:</strong> {bestDay.day} with IDR{" "}
+                              {bestDay.revenue.toLocaleString("id-ID")} (
+                              {bestDay.bookings} bookings)
+                            </p>
+                            <p>
+                              <strong>Slowest day:</strong> {worstDay.day} with
+                              IDR {worstDay.revenue.toLocaleString("id-ID")} (
+                              {worstDay.bookings} bookings)
+                            </p>
+                            {weekendRevenue > 0 && (
+                              <p>
+                                <strong>Weekend revenue:</strong>{" "}
+                                {weekendPct.toFixed(1)}% of total
+                                {weekendPct > 50
+                                  ? " - Heavy weekend reliance"
+                                  : " - Well balanced"}
+                              </p>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <ChartSkeleton />
+              )}
+            </CardContent>
+          </Card>
+        )}
 
       {/* EQUIPMENT & PLAYER ANALYTICS */}
       <div>
@@ -1533,6 +1819,16 @@ const ReportsPageClient = () => {
               </CardContent>
             </Card>
           )}
+      </div>
+
+      {/* BUSINESS RECOMMENDATIONS */}
+      <div>
+        <SectionHeader
+          icon={Lightbulb}
+          title="AI-Powered Insights"
+          description="Smart recommendations to improve your business performance"
+        />
+        <BusinessRecommendations analytics={analytics} />
       </div>
 
       {/* Revenue Formula Explainer */}

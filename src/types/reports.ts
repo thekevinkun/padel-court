@@ -24,6 +24,8 @@ export interface CourtData {
   courtName: string;
   bookings: number;
   revenue: number;
+  hoursBooked: number;
+  utilizationRate: number;
 }
 
 export interface PaymentMethodBreakdown {
@@ -45,6 +47,7 @@ interface FinancialSummary {
   onlineRevenue: number;
   venueRevenue: number;
   netRevenue: number;
+  ongoingRevenue: number;
   totalFeesAbsorbed: number;
   totalBookings: number;
   totalOngoingBookings: number;
@@ -69,17 +72,37 @@ interface FinancialSummary {
   mostCommonPlayerCount: string;
 }
 
+export interface DayOfWeekData {
+  day: string;
+  bookings: number;
+  revenue: number;
+  hours: number;
+}
+
 export interface AnalyticsData {
   period: string;
   startDate: string;
   endDate: string;
   summary: FinancialSummary;
   comparison?: {
-    // ADD THIS
-    totalRevenue: number;
-    netRevenueAfterRefunds: number;
-    totalBookings: number;
-    totalRefunds: number;
+    current: {
+      totalRevenue: number;
+      netRevenueAfterRefunds: number;
+      totalBookings: number;
+      totalRefunds: number;
+    };
+    previous: {
+      totalRevenue: number;
+      netRevenueAfterRefunds: number;
+      totalBookings: number;
+      totalRefunds: number;
+    };
+    changes: {
+      totalRevenue: number;
+      netRevenueAfterRefunds: number;
+      totalBookings: number;
+      totalRefunds: number;
+    };
   };
   revenueTimeline: RevenueData[];
   paymentMethods: PaymentMethodBreakdown[];
@@ -87,6 +110,7 @@ export interface AnalyticsData {
   bestCourt?: CourtData | null;
   worstCourt?: CourtData | null;
   peakHours: Array<{
+    revenue: number;
     hour: string;
     bookings: number;
   }>;
@@ -105,4 +129,5 @@ export interface AnalyticsData {
     };
   };
   equipmentBreakdown: EquipmentBreakdown[];
+  dayOfWeekBreakdown: DayOfWeekData[];
 }

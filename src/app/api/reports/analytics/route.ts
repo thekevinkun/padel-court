@@ -211,6 +211,12 @@ export async function GET(request: NextRequest) {
     // Revenue Contributing Bookings = Bookings that kept money (same as completed in most cases)
     const revenueContributingBookings = revenueBookings.length;
 
+    // Ongoing bookings revenue (sessions not yet happened but paid)
+    const ongoingRevenue = ongoingBookings.reduce(
+      (sum, b) => sum + b.totalKept,
+      0,
+    );
+
     // Gross Revenue = Total money kept (from ALL bookings, regardless of completion)
     const totalRevenue = processedBookings.reduce(
       (sum, b) => sum + b.totalKept,
@@ -376,9 +382,9 @@ export async function GET(request: NextRequest) {
       .select("*")
       .gte("date", previousStartDate)
       .lte("date", previousEndDate)
-      .in("status", ["PAID", "REFUNDED"]);
+      .in("status", ["PAID", "REFUNDED", "CANCELLED", "EXPIRED"]);
 
-    // Process previous period bookings the same way
+    // Process previous period bookings
     const prevProcessed = (previousBookings || []).map((b) => {
       // How much did customer pay online? (only if they actually paid)
       // If status is CANCELLED or EXPIRED without payment, onlinePaid stays 0
@@ -393,7 +399,6 @@ export async function GET(request: NextRequest) {
         : 0;
       const totalKept = onlineKept + venueKept;
       const fee = b.payment_fee || 0;
-
       return {
         ...b,
         onlineKept,
@@ -421,13 +426,30 @@ export async function GET(request: NextRequest) {
     };
 
     const comparison = {
-      totalRevenue: calculateChange(totalRevenue, prevTotalRevenue),
-      netRevenueAfterRefunds: calculateChange(
+      // Current values
+      current: {
+        totalRevenue,
         netRevenueAfterRefunds,
-        prevNetRevenueAfterRefunds,
-      ),
-      totalBookings: calculateChange(totalBookings, prevTotalBookings),
-      totalRefunds: calculateChange(totalRefunds, prevTotalRefunds),
+        totalBookings,
+        totalRefunds,
+      },
+      // Previous values
+      previous: {
+        totalRevenue: prevTotalRevenue,
+        netRevenueAfterRefunds: prevNetRevenueAfterRefunds,
+        totalBookings: prevTotalBookings,
+        totalRefunds: prevTotalRefunds,
+      },
+      // Percentage changes
+      changes: {
+        totalRevenue: calculateChange(totalRevenue, prevTotalRevenue),
+        netRevenueAfterRefunds: calculateChange(
+          netRevenueAfterRefunds,
+          prevNetRevenueAfterRefunds,
+        ),
+        totalBookings: calculateChange(totalBookings, prevTotalBookings),
+        totalRefunds: calculateChange(totalRefunds, prevTotalRefunds),
+      },
     };
 
     console.log("📊 Comparison:", comparison);
@@ -522,14 +544,46 @@ export async function GET(request: NextRequest) {
         },
         {},
       );
+
+    // Calculate utilization rate for each court
+    const HOURS_PER_DAY = 15;
+    const totalDaysInPeriod =
+      Math.ceil(
+        (new Date(endDate).getTime() - new Date(startDate).getTime()) /
+          (1000 * 60 * 60 * 24),
+      ) + 1;
+
+    const totalAvailableSlots = HOURS_PER_DAY * totalDaysInPeriod;
+
     const topCourts = Object.entries(courtStats)
-      .map(([courtName, stats]) => ({
-        courtName,
-        bookings: stats.bookings,
-        revenue: stats.revenue,
-      }))
+      .map(([courtName, stats]) => {
+        const courtBookingsWithRevenue = processedBookings.filter(
+          (b) =>
+            b.hasRevenue && (b.courts?.name || "Unknown Court") === courtName,
+        );
+
+        const totalHoursBooked = courtBookingsWithRevenue.reduce((sum, b) => {
+          const [startTime] = b.time.split(" - ");
+          const [endTime] = b.time.split(" - ")[1]?.split(" ") || [""];
+          const start = parseInt(startTime.split(":")[0]);
+          const end = parseInt(endTime.split(":")[0]);
+          const duration = end - start;
+          return sum + duration;
+        }, 0);
+
+        const utilizationRate = (totalHoursBooked / totalAvailableSlots) * 100;
+
+        return {
+          courtName,
+          bookings: stats.bookings,
+          revenue: stats.revenue,
+          hoursBooked: totalHoursBooked,
+          utilizationRate: Math.min(utilizationRate, 100),
+        };
+      })
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 5);
+
     const bestCourt = topCourts.length > 0 ? topCourts[0] : null;
     const worstCourt =
       topCourts.length > 1 ? topCourts[topCourts.length - 1] : null;
@@ -643,13 +697,67 @@ export async function GET(request: NextRequest) {
 
     console.log("📊 Peak vs Off-Peak:", peakVsOffPeak);
 
+    // DAY OF WEEK ANALYSIS
+    const dayOfWeekStats = completedBookings.reduce(
+      (
+        acc: Record<
+          string,
+          { bookings: number; revenue: number; hours: number }
+        >,
+        b,
+      ) => {
+        const dayOfWeek = new Date(b.date).toLocaleDateString("en-US", {
+          weekday: "long",
+        });
+
+        if (!acc[dayOfWeek]) {
+          acc[dayOfWeek] = { bookings: 0, revenue: 0, hours: 0 };
+        }
+
+        acc[dayOfWeek].bookings += 1;
+        acc[dayOfWeek].revenue += b.totalKept;
+
+        const [startTime] = b.time.split(" - ");
+        const [endTime] = b.time.split(" - ")[1]?.split(" ") || [""];
+        const start = parseInt(startTime.split(":")[0]);
+        const end = parseInt(endTime.split(":")[0]);
+        const duration = end - start;
+
+        acc[dayOfWeek].hours += duration;
+
+        return acc;
+      },
+      {},
+    );
+
+    const dayOrder = [
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+      "Sunday",
+    ];
+    const dayOfWeekBreakdown = dayOrder
+      .map((day) => ({
+        day,
+        bookings: dayOfWeekStats[day]?.bookings || 0,
+        revenue: dayOfWeekStats[day]?.revenue || 0,
+        hours: dayOfWeekStats[day]?.hours || 0,
+      }))
+      .filter((day) => day.bookings > 0);
+
     // PREPARE RESPONSE
     const responseData = {
       success: true,
       period,
       startDate,
       endDate,
-      summary,
+      summary: {
+        ...summary,
+        ongoingRevenue,
+      },
       comparison,
       revenueTimeline,
       paymentMethods,
@@ -659,6 +767,7 @@ export async function GET(request: NextRequest) {
       peakHours,
       peakVsOffPeak,
       equipmentBreakdown,
+      dayOfWeekBreakdown,
     };
 
     // CACHE THE RESPONSE
