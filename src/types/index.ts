@@ -454,11 +454,11 @@ export interface ShopWelcomeContent {
 }
 
 export interface ShopSectionCMS {
-  shop: Shop | null;
+  shop: Shop;
   setShop: (shop: Shop) => void;
-  tempShop: Shop | null;
-  setTempShop: (shop: Shop | null) => void;
-  
+  tempShop: Shop;
+  setTempShop: (shop: Shop) => void;
+
   // Welcome dialog
   shopWelcomeDialogOpen: boolean;
   setShopWelcomeDialogOpen: (open: boolean) => void;

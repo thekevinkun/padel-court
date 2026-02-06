@@ -21,6 +21,7 @@ import {
   testimonialsInitial,
   pricingInitial,
   galleryInitial,
+  shopInitial,
   ctaInitial,
 } from "@/lib/constants";
 import {
@@ -1277,8 +1278,12 @@ const ContentPageClient = () => {
   };
 
   /* SHOP HANDLERS */
-  const [shop, setShop] = useState<Shop | null>(null);
-  const [tempShop, setTempShop] = useState<Shop | null>(null);
+  const [shop, setShop] = useState<Shop>({
+    ...shopInitial,
+  });
+  const [tempShop, setTempShop] = useState<Shop>({
+    ...shopInitial,
+  });
 
   // Welcome dialog
   const [shopWelcomeDialogOpen, setShopWelcomeDialogOpen] = useState(false);

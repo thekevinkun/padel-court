@@ -59,10 +59,10 @@ const ShopSection = ({
   saveShopProduct,
   savingShopProduct,
 }: ShopSectionCMS) => {
-  if (!tempShop || !shop) {
+  if (!shop) {
     return (
       <Card>
-        <CardContent className="p-12 text-center">
+        <CardContent className="p-12 flex justify-center text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-forest" />
         </CardContent>
       </Card>
@@ -374,7 +374,7 @@ const ShopSection = ({
                   <div>
                     <Label>Heading *</Label>
                     <Input
-                      value={tempShop.welcome_heading}
+                      value={tempShop?.welcome_heading}
                       onChange={(e) =>
                         setTempShop({
                           ...tempShop,
