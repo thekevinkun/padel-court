@@ -1,3 +1,19 @@
+// Handling suppress hydration errors caused by browser extensions
+if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
+  const originalError = console.error;
+  console.error = (...args) => {
+    if (
+      typeof args[0] === "string" &&
+      (args[0].includes("Extra attributes from the server") ||
+        args[0].includes("hydrated but some attributes"))
+    ) {
+      // Suppress hydration errors
+      return;
+    }
+    originalError(...args);
+  };
+}
+
 import type { Metadata } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
 import StructuredData from "@/components/StructuredData";
@@ -45,7 +61,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable}`}>
+    <html
+      lang="en"
+      className={`${inter.variable} ${spaceGrotesk.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         <StructuredData />
         {/* Favicon */}
