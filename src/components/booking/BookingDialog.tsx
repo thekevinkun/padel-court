@@ -457,17 +457,20 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
   const maxHours = settings?.max_booking_hours || 3;
   const reachedMaxHours = (formData.slotIds?.length || 0) >= maxHours;
 
+  const scrollIntoView = (el: HTMLInputElement | HTMLTextAreaElement) => {
+    el.scrollIntoView({ block: "center", behavior: "smooth" });
+  };
+
   return (
     <Dialog open={open} onOpenChange={resetAndClose}>
       <DialogContent
-        onOpenAutoFocus={(e) => {
-          e.preventDefault();
-        }}
-        className="max-w-4xl h-[100dvh] sm:h-[90dvh] overflow-hidden p-0"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        className="max-w-4xl h-[100dvh] sm:h-[90dvh] overflow-hidden p-0
+        "
       >
         <div
           ref={scrollRef}
-          className="custom-scrollbar"
+          className="custom-scrollbar h-full overflow-y-auto overscroll-contain"
           tabIndex={-1}
           style={{ outline: "none" }}
         >
@@ -824,7 +827,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                           ...formData,
                           numberOfPlayers: numPlayers,
                         });
-                        
+
                         // Reset additional players when number changes
                         setAdditionalPlayers([
                           { name: "", email: "", whatsapp: "" },
@@ -1019,6 +1022,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                         onChange={(e) =>
                           setFormData({ ...formData, name: e.target.value })
                         }
+                        onFocus={(e) => scrollIntoView(e.target)}
                         placeholder="John Doe"
                         className="mt-2"
                       />
@@ -1032,6 +1036,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                         onChange={(e) =>
                           setFormData({ ...formData, email: e.target.value })
                         }
+                        onFocus={(e) => scrollIntoView(e.target)}
                         placeholder="john@example.com"
                         className="mt-2"
                       />
@@ -1044,6 +1049,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                         onChange={(e) =>
                           setFormData({ ...formData, phone: e.target.value })
                         }
+                        onFocus={(e) => scrollIntoView(e.target)}
                         placeholder="+62 812 3456 7890"
                         className="mt-2"
                       />
@@ -1056,6 +1062,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                         onChange={(e) =>
                           setFormData({ ...formData, whatsapp: e.target.value })
                         }
+                        onFocus={(e) => scrollIntoView(e.target)}
                         placeholder="+62 812 3456 7890"
                         className="mt-2"
                       />
@@ -1069,6 +1076,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                       onChange={(e) =>
                         setFormData({ ...formData, notes: e.target.value })
                       }
+                      onFocus={(e) => scrollIntoView(e.target)}
                       placeholder="Any special requests..."
                       className="mt-2"
                       rows={3}
@@ -1085,13 +1093,12 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                           <div className="flex items-center gap-1.5 mt-1">
                             <Info className="h-4 w-4 text-muted-foreground" />
                             <p className="text-xs text-muted-foreground">
-                              You're booking for {formData.numberOfPlayers} players. Add your
-                              friends' information if available.
+                              You're booking for {formData.numberOfPlayers}{" "}
+                              players. Add your friends' information if
+                              available.
                             </p>
                           </div>
-                          
                         </div>
-                        
                       </div>
 
                       <div className="space-y-4">
@@ -1122,6 +1129,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                                       };
                                       setAdditionalPlayers(updated);
                                     }}
+                                    onFocus={(e) => scrollIntoView(e.target)}
                                     placeholder="Friend's name"
                                     className="mt-1"
                                   />
@@ -1136,7 +1144,9 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                                   <Input
                                     id={`player-${index}-email`}
                                     type="email"
-                                    value={additionalPlayers[index]?.email || ""}
+                                    value={
+                                      additionalPlayers[index]?.email || ""
+                                    }
                                     onChange={(e) => {
                                       const updated = [...additionalPlayers];
                                       updated[index] = {
@@ -1145,6 +1155,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                                       };
                                       setAdditionalPlayers(updated);
                                     }}
+                                    onFocus={(e) => scrollIntoView(e.target)}
                                     placeholder="friend@example.com"
                                     className="mt-1"
                                   />
@@ -1158,7 +1169,9 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                                   </Label>
                                   <Input
                                     id={`player-${index}-whatsapp`}
-                                    value={additionalPlayers[index]?.whatsapp || ""}
+                                    value={
+                                      additionalPlayers[index]?.whatsapp || ""
+                                    }
                                     onChange={(e) => {
                                       const updated = [...additionalPlayers];
                                       updated[index] = {
@@ -1167,6 +1180,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                                       };
                                       setAdditionalPlayers(updated);
                                     }}
+                                    onFocus={(e) => scrollIntoView(e.target)}
                                     placeholder="+62 812..."
                                     className="mt-1"
                                   />
@@ -1531,9 +1545,11 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                       <Info className="h-4 w-4 text-yellow-600" />
                       <AlertDescription className="text-sm text-yellow-800">
                         <strong>Cancellation Policy:</strong>
-                        Full refund (100%) for cancellations made at least 24 hours before the session. 
-                        Cancellations made 12–24 hours prior are eligible for a 50% refund. 
-                        No refunds are available for cancellations within 12 hours of the session start time.
+                        Full refund (100%) for cancellations made at least 24
+                        hours before the session. Cancellations made 12–24 hours
+                        prior are eligible for a 50% refund. No refunds are
+                        available for cancellations within 12 hours of the
+                        session start time.
                       </AlertDescription>
                     </Alert>
                   )}
@@ -1565,11 +1581,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                       . Payment will be processed securely by{" "}
                       <strong className="text-forest">Midtrans</strong>.
                       {settings && settings.cancellation_window > 0 && (
-                        <>
-                          {" "}
-                          I understand the
-                          cancellation policy.
-                        </>
+                        <> I understand the cancellation policy.</>
                       )}
                     </label>
                   </div>
