@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { differenceInHours, addDays } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -57,6 +57,8 @@ const steps = [
 
 const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
   const { settings } = useSettings();
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+
   const [currentStep, setCurrentStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -117,6 +119,12 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
       fetchTimeSlots();
     }
   }, [formData.courtId, formData.date]);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [currentStep, open]);
 
   const fetchCourts = async () => {
     const { data, error } = await supabase
@@ -458,6 +466,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
         className="max-w-4xl h-[100dvh] sm:h-[90dvh] overflow-hidden p-0"
       >
         <div
+          ref={scrollRef}
           className="custom-scrollbar"
           tabIndex={-1}
           style={{ outline: "none" }}
