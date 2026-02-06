@@ -150,7 +150,8 @@ export async function POST(request: NextRequest) {
         midtransFee = Math.round(booking.total_amount * 0.007); // 0.7%
       } else if (
         paymentType.includes("va") ||
-        paymentType.includes("bank_transfer")
+        paymentType.includes("bank_transfer") ||
+        paymentType.includes("echannel")
       ) {
         midtransFee = 4000; // Flat fee
       }
@@ -247,9 +248,13 @@ export async function POST(request: NextRequest) {
           remainingBalance: booking.remaining_balance,
           paymentMethod: paymentType,
           equipmentRentals:
-            equipmentRentals.length > 0 ? equipmentRentals : undefined,
+            equipmentRentals && equipmentRentals.length > 0
+              ? equipmentRentals
+              : undefined,
           additionalPlayers:
-            additionalPlayers.length > 0 ? additionalPlayers : undefined,
+            additionalPlayers && additionalPlayers.length > 0
+              ? additionalPlayers
+              : undefined,
         });
         console.log("✅ Confirmation email sent");
       } catch (emailError) {
@@ -270,7 +275,7 @@ export async function POST(request: NextRequest) {
           (bookingDateTime.getTime() - new Date().getTime()) / (1000 * 60 * 60),
         );
 
-        if (hoursUntilBooking < 3 && hoursUntilBooking > 0) {
+        if (hoursUntilBooking >= 0 && hoursUntilBooking < 3) {
           console.log(
             `⚡ Booking is in ${hoursUntilBooking} hours - sending immediate reminder`,
           );
@@ -292,11 +297,11 @@ export async function POST(request: NextRequest) {
             remainingBalance: booking.remaining_balance,
             venuePaymentReceived: booking.venue_payment_received,
             equipmentRentals:
-              booking.equipmentRentals.length > 0
+              booking.equipmentRentals && booking.equipmentRentals.length > 0
                 ? booking.equipmentRentals
                 : undefined,
             additionalPlayers:
-              booking.additionalPlayers.length > 0
+              booking.additionalPlayers && booking.additionalPlayers.length > 0
                 ? booking.additionalPlayers
                 : undefined,
           });
