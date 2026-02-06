@@ -37,14 +37,14 @@ const CTASection = ({
     <>
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <div>
               <CardTitle className="text-xl">CTA Section</CardTitle>
               <p className="text-sm text-muted-foreground mt-1">
                 Call-to-action section with parallax background before footer
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-end gap-2">
               <VersionHistoryDialog
                 sectionType="cta"
                 currentVersion={cta.version || 1}
@@ -134,7 +134,10 @@ const CTASection = ({
 
       {/* Edit Dialog */}
       <Dialog open={ctaDialogOpen} onOpenChange={setCtaDialogOpen}>
-        <DialogContent className="max-w-2xl h-[100dvh] sm:h-[90dvh] overflow-hidden p-0">
+        <DialogContent 
+          onOpenAutoFocus={(e) => e.preventDefault()} 
+          className="max-w-2xl h-[100dvh] sm:h-[90dvh] overflow-hidden p-0"
+        >
           <div className="custom-scrollbar">
             <div className="p-6">
               <DialogHeader>

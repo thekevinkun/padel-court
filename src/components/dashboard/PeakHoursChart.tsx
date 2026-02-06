@@ -50,9 +50,9 @@ const PeakHoursChart = ({ data }: PeakHoursChartProps) => {
             }`}
           >
             {/* Hour and Badge */}
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex flex-wrap items-center justify-between mb-2">
               <div className="flex items-center gap-3">
-                <span className="text-lg font-bold text-gray-900 w-20">
+                <span className="text-base md:text-lg font-bold text-gray-900 w-16 md:w-20">
                   {hour.hour}
                 </span>
                 {isPeak && (
@@ -63,7 +63,7 @@ const PeakHoursChart = ({ data }: PeakHoursChartProps) => {
               </div>
               <div className="text-right">
                 <span
-                  className={`text-2xl font-bold ${getTextColor(hour.revenue)}`}
+                  className={`text-xl md:text-2xl font-bold ${getTextColor(hour.revenue)}`}
                 >
                   {hour.bookings}
                 </span>
@@ -93,7 +93,7 @@ const PeakHoursChart = ({ data }: PeakHoursChartProps) => {
             </div>
 
             {/* Revenue Info */}
-            <div className="mt-2 flex items-center justify-between text-xs">
+            <div className="mt-2 flex flex-wrap items-center justify-between text-xs">
               <span className="font-semibold text-gray-900">
                 IDR {hour.revenue.toLocaleString("id-ID")}
               </span>

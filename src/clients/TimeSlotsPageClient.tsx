@@ -249,7 +249,7 @@ const TimeSlotsPageClient = () => {
       {/* Filters */}
       <Card>
         <CardContent className="p-6">
-          <div className="flex flex-col lg:flex-row gap-4">
+          <div className="flex flex-col lg:flex-row flex-wrap gap-4">
             {/* Court Selection */}
             <div className="flex-1">
               <Label htmlFor="court">Court</Label>
@@ -412,7 +412,7 @@ const TimeSlotsPageClient = () => {
                   </div>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Button
                     size="sm"
                     variant="outline"
@@ -449,7 +449,10 @@ const TimeSlotsPageClient = () => {
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent 
+          onOpenAutoFocus={(e) => e.preventDefault()} 
+          className="max-w-sm"
+        >
           <DialogHeader>
             <DialogTitle>Edit Time Slot</DialogTitle>
             <DialogDescription className="sr-only">
@@ -521,7 +524,10 @@ const TimeSlotsPageClient = () => {
 
       {/* Generate Slots Dialog */}
       <Dialog open={generateDialogOpen} onOpenChange={setGenerateDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent 
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          className="max-w-sm"
+        >
           <DialogHeader>
             <DialogTitle>Generate Time Slots</DialogTitle>
             <DialogDescription className="sr-only">

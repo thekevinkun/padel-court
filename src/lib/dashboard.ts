@@ -23,13 +23,14 @@ export const navigation = [
 ];
 
 export const pageTitles: Record<string, string> = {
-  "/admin": "Dashboard",
+  "/admin/bookings/": "Customer Booking",
   "/admin/bookings": "Bookings Management",
   "/admin/reports": "Financial Reports",
   "/admin/courts": "Courts Management",
   "/admin/time-slots": "Time Slots Management",
   "/admin/content": "Content Management",
   "/admin/settings": "Settings",
+  "/admin": "Dashboard",
 };
 
 // Initial settings data

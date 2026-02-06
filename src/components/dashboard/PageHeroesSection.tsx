@@ -110,7 +110,10 @@ const PageHeroesSection = ({
 
       {/* Edit Dialog */}
       <Dialog open={pageHeroDialogOpen} onOpenChange={setPageHeroDialogOpen}>
-        <DialogContent className="max-w-2xl h-[100dvh] sm:h-[90dvh] overflow-hidden p-0">
+        <DialogContent 
+          onOpenAutoFocus={(e) => e.preventDefault()} 
+          className="max-w-2xl h-[100dvh] sm:h-[90dvh] overflow-hidden p-0"
+        >
           <div className="custom-scrollbar">
             <div className="p-6">
               <DialogHeader>

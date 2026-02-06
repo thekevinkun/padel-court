@@ -862,7 +862,7 @@ const MyBookingClient = () => {
                   )}
 
                   {/* Actions */}
-                  <div className="flex flex-col sm:flex-row justify-end gap-3">
+                  <div className="hidden lg:flex flex-col sm:flex-row justify-end gap-3">
                     {canCancelBooking(booking) && (
                       <Button
                         onClick={() => setCancelDialogOpen(true)}
@@ -881,7 +881,7 @@ const MyBookingClient = () => {
                 </div>
 
                 {/* Right Column - Payment Summary */}
-                <div className="space-y-6">
+                <div className="-mt-6 lg:mt-0 space-y-6">
                   {/* Payment Summary */}
                   <Card>
                     <CardHeader>
@@ -1157,6 +1157,24 @@ const MyBookingClient = () => {
                     </CardContent>
                   </Card>
 
+                  {/* Actions on Mobile */}
+                  <div className="flex lg:hidden flex-col sm:flex-row justify-end gap-3">
+                    {canCancelBooking(booking) && (
+                      <Button
+                        onClick={() => setCancelDialogOpen(true)}
+                        variant="destructive"
+                        size="lg"
+                      >
+                        <XCircle className="w-4 h-4 mr-2" />
+                        Request Cancellation
+                      </Button>
+                    )}
+                    <Button onClick={handleReset} variant="outline" size="lg">
+                      <Search className="w-4 h-4 mr-2" />
+                      Look Up Another Booking
+                    </Button>
+                  </div>
+
                   {/* Need Help */}
                   <Card className="bg-blue-50 border-blue-200">
                     <CardContent className="p-4">
@@ -1181,7 +1199,10 @@ const MyBookingClient = () => {
           {/* Cancellation Dialog */}
           {booking && (
             <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
-              <DialogContent className="max-w-md">
+              <DialogContent
+                onOpenAutoFocus={(e) => e.preventDefault()}
+                className="max-w-sm"
+              >
                 <DialogHeader>
                   <DialogTitle>Cancel Booking</DialogTitle>
                   <DialogDescription>

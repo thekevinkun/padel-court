@@ -1,6 +1,5 @@
 "use client";
 
-import { Info } from "lucide-react";
 import {
   PieChart,
   Pie,
@@ -167,10 +166,11 @@ const PaymentMethodChart = ({ data }: { data: PaymentMethodBreakdown[] }) => {
     };
 
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6">
         {/* Online Payments - Left */}
         <div className="flex flex-col">
-          <h4 className="sr-only">
+          <h4 className="sm:sr-only font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-green-500"></div>
             Online Payments
           </h4>
           <div className="space-y-2 overflow-y-auto max-h-[400px] pr-2">
@@ -182,7 +182,8 @@ const PaymentMethodChart = ({ data }: { data: PaymentMethodBreakdown[] }) => {
 
         {/* Venue Payments - Right */}
         <div className="flex flex-col">
-          <h4 className="sr-only">
+          <h4 className="sm:sr-only font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-gradient-to-r from-amber-500 to-orange-500"></div>
             Venue Payments
           </h4>
           <div className="space-y-2 overflow-y-auto max-h-[400px] pr-2">
@@ -195,19 +196,22 @@ const PaymentMethodChart = ({ data }: { data: PaymentMethodBreakdown[] }) => {
     );
   };
 
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+
   return (
     <div className="w-full">
-      <div className="h-[720px] w-full flex items-center justify-center">
+      <div className="h-[1045px] sm:h-[720px] w-full flex items-center justify-center">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
               data={chartData}
               cx="50%"
               cy="50%"
+              fontSize={isMobile ? 12 : 16}
               labelLine={false}
               label={renderLabel}
-              outerRadius={150}
-              innerRadius={90}
+              outerRadius={isMobile ? 115 : 150}
+              innerRadius={isMobile ? 65 : 90}
               fill="#8884d8"
               dataKey="value"
               paddingAngle={2}
@@ -234,13 +238,13 @@ const PaymentMethodChart = ({ data }: { data: PaymentMethodBreakdown[] }) => {
       {/* Summary Stats */}
       <div className="mt-4 grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
         <div className="text-center">
-          <p className="text-2xl font-bold text-gray-900">
+          <p className="text-xl sm:text-2xl font-bold text-gray-900">
             {data.reduce((sum, item) => sum + item.count, 0)}
           </p>
           <p className="text-xs text-gray-600 mt-1">Total Transactions</p>
         </div>
         <div className="text-center">
-          <p className="text-2xl font-bold text-green-600">
+          <p className="text-xl sm:text-2xl font-bold text-green-600">
             IDR{" "}
             {data
               .reduce((sum, item) => sum + item.amount, 0)
@@ -249,7 +253,7 @@ const PaymentMethodChart = ({ data }: { data: PaymentMethodBreakdown[] }) => {
           <p className="text-xs text-gray-600 mt-1">Total Amount</p>
         </div>
         <div className="text-center">
-          <p className="text-2xl font-bold text-blue-600">{data.length}</p>
+          <p className="text-xl sm:text-2xl font-bold text-blue-600">{data.length}</p>
           <p className="text-xs text-gray-600 mt-1">Payment Methods</p>
         </div>
       </div>

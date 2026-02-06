@@ -22,7 +22,10 @@ import { pageTitles } from "@/lib/dashboard";
 
 const DashboardHeader = () => {
   const pathname = usePathname();
-  const pageTitle = pageTitles[pathname] || "Admin Panel";
+  const pageTitle =
+    Object.entries(pageTitles).find(([path]) =>
+      pathname.startsWith(path)
+    )?.[1] || "Admin Panel";
 
   const { unreadCount } = useNotifications();
   const { soundEnabled } = useSoundSettings();
@@ -60,16 +63,16 @@ const DashboardHeader = () => {
   return (
     <>
       <header className="bg-white px-4 lg:px-8 py-4 sticky top-0 shadow-md z-40">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2 sm:gap-0">
           {/* Page Title */}
-          <div>
+          <div className="pl-12 lg:pl-0">
             <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
               {pageTitle}
             </h1>
-            <div className="flex items-center gap-3 mt-1">
-              <p className="text-sm text-accent-foreground">{today}</p>
+            <div className="flex items-center gap-2 sm:gap-3 mt-1">
+              <p className="text-xs sm:text-sm text-accent-foreground">{today}</p>
               <div className="h-4 w-px bg-gray-300"></div>
-              <div className="flex items-center gap-1.5 text-sm font-mono text-forest">
+              <div className="flex items-center gap-1.5 text-xs sm:text-sm font-mono text-forest">
                 <Clock className="h-4 w-4" />
                 <span className="font-semibold tabular-nums">
                   {formatTime(currentTime)}
@@ -79,7 +82,7 @@ const DashboardHeader = () => {
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 sm:gap-3">
             {/* Sound Settings Button */}
             <Popover open={soundOpen} onOpenChange={setSoundOpen}>
               <PopoverTrigger asChild>

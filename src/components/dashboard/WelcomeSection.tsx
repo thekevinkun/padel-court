@@ -38,14 +38,14 @@ const WelcomeSection = ({
     <>
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <div>
               <CardTitle className="text-xl">Welcome Section</CardTitle>
               <p className="text-sm text-muted-foreground mt-1">
                 Image collage with welcome message and features
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-end gap-2">
               <VersionHistoryDialog
                 sectionType="welcome"
                 currentVersion={welcome.version || 1}
@@ -95,7 +95,10 @@ const WelcomeSection = ({
       </Card>
 
       <Dialog open={welcomeDialogOpen} onOpenChange={setWelcomeDialogOpen}>
-        <DialogContent className="max-w-3xl h-[100dvh] sm:h-[90dvh] overflow-hidden p-0">
+        <DialogContent 
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          className="max-w-3xl h-[100dvh] sm:h-[90dvh] overflow-hidden p-0"
+        >
           <div className="custom-scrollbar">
             <div className="p-6">
               <DialogHeader>

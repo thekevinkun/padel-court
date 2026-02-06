@@ -56,7 +56,7 @@ const GallerySection = ({
     <>
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <div>
               <CardTitle className="text-xl">Gallery Section</CardTitle>
               <p className="text-sm text-muted-foreground mt-1">
@@ -64,7 +64,7 @@ const GallerySection = ({
                 note
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-end gap-2">
               <VersionHistoryDialog
                 sectionType="gallery"
                 currentVersion={gallery.version || 1}
@@ -194,7 +194,7 @@ const GallerySection = ({
 
       {/* Edit Section Dialog */}
       <Dialog open={galleryDialogOpen} onOpenChange={setGalleryDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent onOpenAutoFocus={(e) => e.preventDefault()} className="max-w-sm">
           <DialogHeader>
             <DialogTitle>Edit Gallery Section</DialogTitle>
             <DialogDescription className="sr-only">
@@ -272,7 +272,7 @@ const GallerySection = ({
 
       {/* Edit Note Card Dialog */}
       <Dialog open={noteDialogOpen} onOpenChange={setNoteDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent onOpenAutoFocus={(e) => e.preventDefault()} className="max-w-sm">
           <DialogHeader>
             <DialogTitle>Edit Note Card</DialogTitle>
             <DialogDescription>
@@ -358,7 +358,10 @@ const GallerySection = ({
 
       {/* Add/Edit Image Dialog */}
       <Dialog open={imageDialogOpen} onOpenChange={setImageDialogOpen}>
-        <DialogContent className="max-w-2xl h-[100dvh] sm:h-[90dvh] overflow-hidden p-0">
+        <DialogContent 
+          onOpenAutoFocus={(e) => e.preventDefault()} 
+          className="max-w-2xl h-[100dvh] sm:h-[90dvh] overflow-hidden p-0"
+        >
           <div className="custom-scrollbar">
             <div className="p-6">
               <DialogHeader>
@@ -372,7 +375,7 @@ const GallerySection = ({
                 </DialogDescription>
               </DialogHeader>
               {editingImage && (
-                <div className="space-y-4">
+                <div className="mt-4 space-y-4">
                   {/* Image Upload */}
                   <div>
                     <Label>Gallery Image *</Label>

@@ -43,11 +43,11 @@ const Gallery = ({ content }: GalleryProps) => {
       index: 0,
       priority: true,
     },
-    { type: "note", span: "col-span-1", aspect: "aspect-[4/3]" },
+    { type: "note", span: "col-span-2 sm:col-span-1", aspect: "aspect-[4/3]" },
     // Row 2: 3 images
     {
       type: "image",
-      span: "col-span-1",
+      span: "col-span-2 sm:col-span-1",
       aspect: "aspect-square",
       index: 1,
       priority: true,

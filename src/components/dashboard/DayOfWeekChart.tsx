@@ -22,6 +22,7 @@ const DayOfWeekChart = ({ data }: { data: DayOfWeekData[] }) => {
 
   const maxRevenue = Math.max(...data.map((d) => d.revenue));
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const day = payload[0].payload;
@@ -61,7 +62,7 @@ const DayOfWeekChart = ({ data }: { data: DayOfWeekData[] }) => {
 
   return (
     <div className="w-full">
-      <div className="h-[400px] w-full">
+      <div className="h-[300px] md:h-[400px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={data}

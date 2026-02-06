@@ -61,14 +61,14 @@ const TestimonialsSection = ({
     <>
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <div>
               <CardTitle className="text-xl">Testimonials Section</CardTitle>
               <p className="text-sm text-muted-foreground mt-1">
                 Video showcase and customer testimonials slider
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-end gap-2">
               <VersionHistoryDialog
                 sectionType="testimonials"
                 currentVersion={testimonials.version || 1}
@@ -265,7 +265,10 @@ const TestimonialsSection = ({
         open={testimonialsDialogOpen}
         onOpenChange={setTestimonialsDialogOpen}
       >
-        <DialogContent className="max-w-2xl h-[100dvh] sm:h-[90dvh] overflow-hidden p-0">
+        <DialogContent 
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          className="max-w-2xl h-[100dvh] sm:h-[90dvh] overflow-hidden p-0"
+        >
           <div className="custom-scrollbar">
             <div className="p-6">
               <DialogHeader>
@@ -459,7 +462,7 @@ const TestimonialsSection = ({
         open={testimonialDialogOpen}
         onOpenChange={setTestimonialDialogOpen}
       >
-        <DialogContent className="max-w-md">
+        <DialogContent onOpenAutoFocus={(e) => e.preventDefault()} className="max-w-sm">
           <DialogHeader>
             <DialogTitle>
               {editingTestimonial?.id.startsWith("new-")

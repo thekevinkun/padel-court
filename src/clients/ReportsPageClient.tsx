@@ -64,7 +64,10 @@ const InfoTooltip = ({ text }: { text: string }) => {
         onMouseLeave={() => setShow(false)}
       />
       {show && (
-        <div className="absolute z-50 w-64 p-3 text-xs bg-gray-900 text-white rounded-lg shadow-xl -top-2 left-6 pointer-events-none">
+        <div
+          className="absolute z-50 w-48 sm:w-64 p-2 sm:p-3 text-xs bg-gray-900 
+          text-white rounded-lg shadow-xl -top-2 left-6 sm:left-8 pointer-events-none"
+        >
           {text}
           <div className="absolute w-2 h-2 bg-gray-900 transform rotate-45 -left-1 top-3"></div>
         </div>
@@ -382,10 +385,10 @@ const ReportsPageClient = () => {
     <div className="space-y-8">
       {/* Date Range Picker */}
       <Card>
-        <CardContent className="p-6">
-          <div className="flex justify-between gap-2">
-            <div className="flex flex-col gap-4">
-              <div className="flex-1">
+        <CardContent className="p-4 md:p-6">
+          <div className="flex flex-col lg:flex-row lg:justify-between gap-4">
+            <div className="flex flex-col gap-4 flex-1">
+              <div>
                 <Label>📅 Date Range</Label>
                 <Select value={dateRange} onValueChange={setDateRange}>
                   <SelectTrigger className="mt-2">
@@ -403,7 +406,7 @@ const ReportsPageClient = () => {
 
               {dateRange === "custom" && (
                 <>
-                  <div className="flex-1">
+                  <div className="flex flex-col sm:flex-row gap-3 sm:self-start">
                     <Label>Start Date</Label>
                     <Input
                       type="date"
@@ -485,7 +488,7 @@ const ReportsPageClient = () => {
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold text-amber-900 mb-1">
-                  ⏳ Upcoming Sessions
+                  ⏳ Ongoing Bookings
                 </h3>
                 <p className="text-sm text-amber-800">
                   You have{" "}
@@ -511,7 +514,7 @@ const ReportsPageClient = () => {
           description="Your key performance metrics at a glance"
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
           {/* Total Revenue */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -660,7 +663,7 @@ const ReportsPageClient = () => {
                   {summary.totalBookings}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {summary.totalOngoingBookings} ongoing ·{" "}
+                  {summary.totalOngoingBookings > 0 ? `${summary.totalOngoingBookings} ongoing · ` : ""}
                   {summary.totalCompletedBookings} completed ·{" "}
                   {summary.totalCancelledBookings} cancelled
                 </p>
@@ -860,7 +863,7 @@ const ReportsPageClient = () => {
           title="Revenue Breakdown"
           description="How your revenue is collected and processed"
         />
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
           {/* Online Payments */}
           <Card className="hover:shadow-lg transition-shadow">
             <CardContent className="p-6">
@@ -1122,7 +1125,7 @@ const ReportsPageClient = () => {
           description="Key metrics showing how well your business is doing"
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
           <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
             <CardContent className="p-6">
               <div className="flex items-center gap-3 mb-4">
@@ -1356,7 +1359,7 @@ const ReportsPageClient = () => {
               </p>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
                 {/* Peak Hours */}
                 <div className="p-6 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl border border-purple-200">
                   <div className="flex items-center gap-3 mb-4">
@@ -1494,7 +1497,7 @@ const ReportsPageClient = () => {
 
         {/* Top Courts Chart */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="col-span-2">
+          <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Trophy className="w-5 h-5 text-forest" />
@@ -1674,7 +1677,7 @@ const ReportsPageClient = () => {
         />
 
         {/* Equipment Stats Row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
           {/* Rental Rate */}
           <Card className="bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-200">
             <CardContent className="p-6">
@@ -1849,7 +1852,7 @@ const ReportsPageClient = () => {
           </div>
 
           <div className="space-y-4">
-            <div className="flex items-center justify-between bg-white rounded-lg p-4">
+            <div className="flex gap-2 items-center justify-between bg-white rounded-lg p-4">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-bold">
                   1
@@ -1863,7 +1866,7 @@ const ReportsPageClient = () => {
               </span>
             </div>
 
-            <div className="flex items-center justify-between bg-white rounded-lg p-4">
+            <div className="flex items-center gap-2 justify-between bg-white rounded-lg p-4">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-600 font-bold">
                   -
@@ -1877,7 +1880,7 @@ const ReportsPageClient = () => {
               </span>
             </div>
 
-            <div className="flex items-center justify-between bg-white rounded-lg p-4">
+            <div className="flex items-center gap-2 justify-between bg-white rounded-lg p-4">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold">
                   -
@@ -1893,7 +1896,7 @@ const ReportsPageClient = () => {
 
             <div className="h-px bg-gray-300 my-2"></div>
 
-            <div className="flex items-center justify-between bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-lg p-5">
+            <div className="flex items-center gap-2 justify-between bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-lg p-5">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-bold">
                   =

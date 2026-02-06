@@ -173,7 +173,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
           return;
         }
 
-        throw new Error(errorData.error || "Failed to record payment");
+        throw new Error(errorData.error || "Failed to record venue payment");
       }
 
       await fetchBooking();
@@ -181,14 +181,14 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
       setNotes("");
       setPaymentMethod("CASH");
 
-      toast.success("Payment recorded successfully!", {
+      toast.success("Venue payment recorded successfully!", {
         description: `IDR ${booking.remaining_balance.toLocaleString("id-ID")} received via ${paymentMethod}`,
         duration: Infinity,
       });
     } catch (error: unknown) {
       const err = error as Error;
       console.error("Error recording payment:", err);
-      toast.error("Failed to record customer payment", {
+      toast.error("Failed to record customer venue payment", {
         description: err.message,
         duration: 5000,
       });
@@ -843,49 +843,53 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
           </Card>
 
           {/* Equipment Rental Section */}
-          {booking.booking_equipment && booking.booking_equipment.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Trophy className="w-5 h-5" />
-                  Equipment Rental
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {booking.booking_equipment.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between p-3 bg-muted/30 rounded-lg"
-                  >
-                    <div className="flex-1">
-                      <p className="font-medium text-sm">
-                        {item.equipment?.name || "Equipment"}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {item.equipment?.description || item.equipment?.category}
-                      </p>
+          {booking.booking_equipment &&
+            booking.booking_equipment.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Trophy className="w-5 h-5" />
+                    Equipment Rental
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {booking.booking_equipment.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between p-3 bg-muted/30 rounded-lg"
+                    >
+                      <div className="flex-1">
+                        <p className="font-medium text-sm">
+                          {item.equipment?.name || "Equipment"}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {item.equipment?.description ||
+                            item.equipment?.category}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-semibold">
+                          {item.quantity}x @ IDR{" "}
+                          {item.price_per_unit.toLocaleString("id-ID")}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Subtotal: IDR {item.subtotal.toLocaleString("id-ID")}
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-semibold">
-                        {item.quantity}x @ IDR{" "}
-                        {item.price_per_unit.toLocaleString("id-ID")}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Subtotal: IDR {item.subtotal.toLocaleString("id-ID")}
-                      </p>
-                    </div>
+                  ))}
+                  <Separator />
+                  <div className="flex justify-between items-center bg-green-50 p-3 rounded-lg">
+                    <span className="font-semibold text-sm">
+                      Equipment Total:
+                    </span>
+                    <span className="font-bold text-green-700">
+                      IDR {booking.equipment_subtotal.toLocaleString("id-ID")}
+                    </span>
                   </div>
-                ))}
-                <Separator />
-                <div className="flex justify-between items-center bg-green-50 p-3 rounded-lg">
-                  <span className="font-semibold text-sm">Equipment Total:</span>
-                  <span className="font-bold text-green-700">
-                    IDR {booking.equipment_subtotal.toLocaleString("id-ID")}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                </CardContent>
+              </Card>
+            )}
 
           {/* Players Section */}
           {booking.booking_players && booking.booking_players.length > 0 && (
@@ -953,13 +957,15 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
           {/* Refund Section */}
           {canProcessRefund(booking) && (
             <Card
-              className={
-                getRefundType(booking) === "FULL"
-                  ? "border-green-200 bg-green-50"
-                  : getRefundType(booking) === "PARTIAL"
-                    ? "border-blue-200 bg-blue-50"
-                    : "border-gray-200 bg-gray-50"
-              }
+              className={`hidden lg:flex
+                ${
+                  getRefundType(booking) === "FULL"
+                    ? "border-green-200 bg-green-50"
+                    : getRefundType(booking) === "PARTIAL"
+                      ? "border-blue-200 bg-blue-50"
+                      : "border-gray-200 bg-gray-50"
+                }
+              `}
             >
               <CardContent className="p-4">
                 <div className="space-y-3">
@@ -1135,7 +1141,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
           {/* Cancel Booking Button */}
           {booking.session_status === "UPCOMING" &&
             booking.status !== "CANCELLED" && (
-              <Card className="border-red-200 bg-red-50">
+              <Card className="hidden lg:flex border-red-200 bg-red-50">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between gap-4">
                     <div>
@@ -1162,7 +1168,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
         </div>
 
         {/* Right Column - Payment Summary */}
-        <div className="space-y-6">
+        <div className="-mt-6 lg:mt-0 space-y-6">
           {/* Payment Summary */}
           <Card>
             <CardHeader>
@@ -1217,22 +1223,28 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Court Booking</span>
                   <span className="font-medium">
-                    IDR {(booking.subtotal - booking.equipment_subtotal).toLocaleString("id-ID")}
+                    IDR{" "}
+                    {(
+                      booking.subtotal - booking.equipment_subtotal
+                    ).toLocaleString("id-ID")}
                   </span>
                 </div>
               </div>
 
               {/* Equipment Rental (if any) */}
-              {booking.has_equipment_rental && booking.equipment_subtotal > 0 && (
-                <div className="bg-gray-50 p-3 rounded-lg">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Equipment Rental</span>
-                    <span className="font-medium">
-                      IDR {booking.equipment_subtotal.toLocaleString("id-ID")}
-                    </span>
+              {booking.has_equipment_rental &&
+                booking.equipment_subtotal > 0 && (
+                  <div className="bg-gray-50 p-3 rounded-lg">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        Equipment Rental
+                      </span>
+                      <span className="font-medium">
+                        IDR {booking.equipment_subtotal.toLocaleString("id-ID")}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
               <Separator />
 
@@ -1425,6 +1437,12 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                     {booking.payment_method || "N/A"}
                   </span>
                 </div>
+                <div className="flex justify-between mb-1">
+                  <span>Payment Fees:</span>
+                  <span className="font-medium uppercase">
+                    IDR {booking.payment_fee?.toLocaleString("id-ID") || "N/A"}
+                  </span>
+                </div>
                 {booking.paid_at && (
                   <div className="flex justify-between">
                     <span>Paid At:</span>
@@ -1468,11 +1486,226 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Refund Section */}
+        {canProcessRefund(booking) && (
+          <Card
+            className={`flex lg:hidden
+                ${
+                  getRefundType(booking) === "FULL"
+                    ? "border-green-200 bg-green-50"
+                    : getRefundType(booking) === "PARTIAL"
+                      ? "border-blue-200 bg-blue-50"
+                      : "border-gray-200 bg-gray-50"
+                }
+              `}
+          >
+            <CardContent className="p-4">
+              <div className="space-y-3">
+                {/* Refund Policy Header */}
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex-1">
+                    <p
+                      className={`font-semibold text-sm ${
+                        getRefundType(booking) === "FULL"
+                          ? "text-green-900"
+                          : getRefundType(booking) === "PARTIAL"
+                            ? "text-blue-900"
+                            : "text-gray-900"
+                      }`}
+                    >
+                      {getRefundType(booking) === "FULL" &&
+                        "Full Refund Available"}
+                      {getRefundType(booking) === "PARTIAL" &&
+                        "Partial Refund Available (50%)"}
+                      {getRefundType(booking) === "NONE" &&
+                        "⚠️ No Refund Available"}
+                    </p>
+                    <p
+                      className={`text-xs mt-1 ${
+                        getRefundType(booking) === "FULL"
+                          ? "text-green-700"
+                          : getRefundType(booking) === "PARTIAL"
+                            ? "text-blue-700"
+                            : "text-gray-600"
+                      }`}
+                    >
+                      Session starts in {getHoursUntilSession(booking)} hours
+                    </p>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      setRefundDialogOpen(true);
+                      const eligibleAmount = calculateEligibleRefund(booking);
+                      setRefundAmount(
+                        eligibleAmount > 0 ? eligibleAmount.toString() : "",
+                      );
+                    }}
+                    variant="outline"
+                    size="sm"
+                    className={
+                      getRefundType(booking) === "NONE"
+                        ? "border-gray-300 text-gray-500 opacity-50 cursor-not-allowed"
+                        : getRefundType(booking) === "FULL"
+                          ? "border-green-300 text-green-700 hover:bg-green-700 hover:text-white"
+                          : "border-blue-300 text-blue-700 hover:bg-blue-700 hover:text-white"
+                    }
+                    disabled={getRefundType(booking) === "NONE"}
+                  >
+                    <DollarSign className="w-4 h-4 mr-2" />
+                    Process Refund
+                  </Button>
+                </div>
+
+                {/* Policy Explanation */}
+                <div
+                  className={`text-xs p-3 rounded border ${
+                    getRefundType(booking) === "FULL"
+                      ? "bg-green-100 border-green-300 text-green-800"
+                      : getRefundType(booking) === "PARTIAL"
+                        ? "bg-blue-100 border-blue-300 text-blue-800"
+                        : "bg-gray-100 border-gray-300 text-gray-700"
+                  }`}
+                >
+                  {getRefundType(booking) === "FULL" && (
+                    <>
+                      <strong>100% Refund Policy:</strong> Cancelled ≥24 hours
+                      before session.
+                      <br />
+                      <span className="font-semibold">
+                        Refund Amount: IDR{" "}
+                        {calculateEligibleRefund(booking).toLocaleString(
+                          "id-ID",
+                        )}
+                      </span>
+                    </>
+                  )}
+                  {getRefundType(booking) === "PARTIAL" && (
+                    <>
+                      <strong>50% Refund Policy:</strong> Cancelled 12-24 hours
+                      before session.
+                      <br />
+                      <span className="font-semibold">
+                        Refund Amount: IDR{" "}
+                        {calculateEligibleRefund(booking).toLocaleString(
+                          "id-ID",
+                        )}
+                      </span>
+                      <br />
+                      <span className="text-xs opacity-80">
+                        (50% of IDR{" "}
+                        {booking.total_amount.toLocaleString("id-ID")})
+                      </span>
+                    </>
+                  )}
+                  {getRefundType(booking) === "NONE" && (
+                    <>
+                      <strong>No Refund Policy:</strong> Cancelled &lt;12 hours
+                      before session.
+                      <br />
+                      Our policy requires at least 12 hours advance notice for
+                      refunds. The time slot can still be released if you cancel
+                      the booking.
+                    </>
+                  )}
+                </div>
+
+                {/* Refund Policy Reference */}
+                <div className="text-xs text-muted-foreground bg-white/50 p-2 rounded border border-gray-200">
+                  <strong>Refund Policy:</strong>
+                  <ul className="mt-1 space-y-0.5 ml-4 list-disc">
+                    <li>
+                      ≥24 hours before session → <strong>100% refund</strong>
+                    </li>
+                    <li>
+                      12-24 hours before session → <strong>50% refund</strong>
+                    </li>
+                    <li>
+                      &lt;12 hours before session → <strong>No refund</strong>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Refund Completed Badge */}
+        {booking.refund_status === "COMPLETED" && (
+          <Card className="border-green-200 bg-green-50">
+            <CardContent className="p-4">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                  <p className="font-semibold text-green-900 text-sm">
+                    Refund Completed
+                  </p>
+                </div>
+                <div className="text-xs text-green-800 space-y-1">
+                  <p>
+                    <strong>Amount:</strong> IDR{" "}
+                    {booking.refund_amount?.toLocaleString("en-ID")}
+                  </p>
+                  <p>
+                    <strong>Method:</strong> {booking.refund_method}
+                  </p>
+                  <p>
+                    <strong>Date:</strong>{" "}
+                    {booking.refund_date
+                      ? new Date(booking.refund_date).toLocaleString("en-ID")
+                      : "-"}
+                  </p>
+                  {booking.refund_reason && (
+                    <p>
+                      <strong>Reason:</strong> {booking.refund_reason}
+                    </p>
+                  )}
+                  {booking.refund_notes && (
+                    <p>
+                      <strong>Notes:</strong> {booking.refund_notes}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Cancel Booking Button on MOBILE */}
+        {booking.session_status === "UPCOMING" &&
+          booking.status !== "CANCELLED" && (
+            <Card className="flex lg:hidden border-red-200 bg-red-50">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="font-semibold text-red-900 text-sm">
+                      Cancel This Booking
+                    </p>
+                    <p className="text-xs text-red-700 mt-1">
+                      Customer can't make it or didn't show up
+                    </p>
+                  </div>
+                  <Button
+                    onClick={() => setCancelDialogOpen(true)}
+                    variant="outline"
+                    size="sm"
+                    className="border-red-300 text-red-700 hover:bg-red-700 hover:text-white"
+                  >
+                    <XCircle className="w-4 h-4 mr-2" />
+                    Cancel Booking
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
       </div>
 
       {/* Record Venue Payment Dialog */}
       <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          className="max-w-sm"
+        >
           <DialogHeader>
             <DialogTitle>Record Venue Payment</DialogTitle>
             <DialogDescription>
@@ -1563,7 +1796,10 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
 
       {/* Check-In Dialog */}
       <Dialog open={checkInDialogOpen} onOpenChange={setCheckInDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          className="max-w-sm"
+        >
           <DialogHeader>
             <DialogTitle>Check In Customer</DialogTitle>
             <DialogDescription>
@@ -1630,7 +1866,10 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
 
       {/* Check-Out Dialog */}
       <Dialog open={checkOutDialogOpen} onOpenChange={setCheckOutDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          className="max-w-sm"
+        >
           <DialogHeader>
             <DialogTitle>Check Out Customer</DialogTitle>
             <DialogDescription>
@@ -1698,7 +1937,10 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
 
       {/* Cancel Booking Dialog */}
       <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          className="max-w-sm"
+        >
           <DialogHeader>
             <DialogTitle>Cancel Booking</DialogTitle>
             <DialogDescription>
@@ -1763,7 +2005,10 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
 
       {/* Refund Dialog */}
       <Dialog open={refundDialogOpen} onOpenChange={setRefundDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          className="max-w-sm"
+        >
           <DialogHeader>
             <DialogTitle>Process Refund</DialogTitle>
             <DialogDescription>

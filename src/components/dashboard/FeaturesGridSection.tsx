@@ -89,14 +89,14 @@ const FeaturesGridSection = ({
     <>
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <div>
               <CardTitle className="text-xl">Features Grid</CardTitle>
               <p className="text-sm text-muted-foreground mt-1">
                 Alternating grid of 3 images and 3 text cards (6 total)
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap items-center justify-end gap-2">
               <Badge variant="outline" className="text-xs">
                 {features.items.filter((f) => f.type === "image").length} Images
               </Badge>
@@ -107,6 +107,7 @@ const FeaturesGridSection = ({
             </div>
           </div>
         </CardHeader>
+
         <CardContent>
           <div className="space-y-4">
             {/* Feature Items */}
@@ -168,8 +169,8 @@ const FeaturesGridSection = ({
                           </p>
                         )}
 
-                        <div className="flex gap-2">
-                          <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
                             <VersionHistoryDialog
                               sectionType="features"
                               currentVersion={features.version || 1}
@@ -177,7 +178,7 @@ const FeaturesGridSection = ({
                             <Button
                               variant="outline"
                               size="sm"
-                              className="flex-1"
+                              className="lg:flex-1"
                               onClick={() => openEditFeature(f)}
                             >
                               <Edit className="w-3 h-3 mr-1" />
@@ -224,7 +225,10 @@ const FeaturesGridSection = ({
       </Card>
 
       <Dialog open={featuresDialogOpen} onOpenChange={setFeaturesDialogOpen}>
-        <DialogContent className="max-w-2xl h-[100dvh] sm:h-[90dvh] overflow-hidden p-0">
+        <DialogContent 
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          className="max-w-2xl h-[100dvh] sm:h-[90dvh] overflow-hidden p-0"
+        >
           <div className="custom-scrollbar">
             <div className="p-6">
               <DialogHeader>

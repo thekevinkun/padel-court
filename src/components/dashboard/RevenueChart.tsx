@@ -14,6 +14,8 @@ import {
 import { RevenueData } from "@/types/reports";
 
 const RevenueChart = ({ data }: { data: RevenueData[] }) => {
+  const isTablet = typeof window !== "undefined" && window.innerWidth < 1024;
+
   // Format data for chart
   const chartData = data.map((item) => ({
     date: new Date(item.date).toLocaleDateString("id-ID", {
@@ -61,10 +63,10 @@ const RevenueChart = ({ data }: { data: RevenueData[] }) => {
 
   return (
     <div className="w-full">
-      <ResponsiveContainer width="100%" height={400}>
+      <ResponsiveContainer width="100%" height={isTablet ? 428 : 400}>
         <AreaChart
           data={chartData}
-          margin={{ top: 20, right: 30, left: 0, bottom: 20 }}
+          margin={{ top: 20, right: isTablet ? 15 : 30, left: isTablet ? -35 : 0, bottom: isTablet ? 15 : 20 }}
         >
           <defs>
             <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
@@ -157,7 +159,7 @@ const RevenueChart = ({ data }: { data: RevenueData[] }) => {
       </ResponsiveContainer>
 
       {/* Legend Info */}
-      <div className="mt-4 grid grid-cols-2 md:grid-cols-5 gap-4 text-sm justify-items-center">
+      <div className="mt-2 sm:mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4 text-sm sm:justify-items-center">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-green-500"></div>
           <div>

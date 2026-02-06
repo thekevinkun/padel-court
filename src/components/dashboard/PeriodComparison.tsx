@@ -133,8 +133,8 @@ const PeriodComparison = ({
         </p>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto">
-          <table className="w-full">
+        <div className="custom-scrollbar !overflow-x-auto -mx-4 md:mx-0">
+          <table className="w-full min-w-[600px]">
             <thead>
               <tr className="border-b-2 border-gray-200">
                 <th className="text-left py-3 px-4 font-semibold text-gray-700">

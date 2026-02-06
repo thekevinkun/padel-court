@@ -58,13 +58,15 @@ const TopCourtsChart = ({ data }: { data: CourtData[] }) => {
     return null;
   };
 
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+
   return (
     <div className="w-full">
       <div className="h-[500px] w-full">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={chartData}
-          margin={{ top: 20, right: 30, left: 20, bottom: 100 }}
+          margin={{ top: 20, right: isMobile ? 0 : 30, left: isMobile ? 0 : 20, bottom: isMobile ? 30 : 100 }}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
           <XAxis

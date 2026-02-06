@@ -87,7 +87,7 @@ const ShopSection = ({
         <CardContent className="space-y-6">
           {/* WELCOME SECTION */}
           <div>
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-4 gap-2">
               <h3 className="font-semibold text-lg">Welcome Section</h3>
               <Button
                 onClick={openShopWelcomeDialog}
@@ -173,7 +173,7 @@ const ShopSection = ({
 
           {/* PRODUCTS SECTION */}
           <div>
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-4 gap-2">
               <div>
                 <h3 className="font-semibold text-lg">Products</h3>
                 <p className="text-xs text-muted-foreground">
@@ -284,7 +284,10 @@ const ShopSection = ({
         open={shopWelcomeDialogOpen}
         onOpenChange={setShopWelcomeDialogOpen}
       >
-        <DialogContent className="max-w-4xl h-[100dvh] sm:h-[90dvh] overflow-hidden p-0">
+        <DialogContent
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          className="max-w-4xl h-[100dvh] sm:h-[90dvh] overflow-hidden p-0"
+        >
           <div className="custom-scrollbar">
             <div className="p-6">
               <DialogHeader>
@@ -535,7 +538,10 @@ const ShopSection = ({
         open={shopProductDialogOpen}
         onOpenChange={setShopProductDialogOpen}
       >
-        <DialogContent className="max-w-2xl h-[100dvh] sm:h-[90dvh] overflow-hidden p-0">
+        <DialogContent
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          className="max-w-2xl h-[100dvh] sm:h-[90dvh] overflow-hidden p-0"
+        >
           <div className="custom-scrollbar">
             <div className="p-6">
               <DialogHeader>

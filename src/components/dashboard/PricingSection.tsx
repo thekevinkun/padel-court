@@ -47,7 +47,7 @@ const PricingSection = ({
     <>
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <div>
               <CardTitle className="text-xl">Pricing Section</CardTitle>
               <p className="text-sm text-muted-foreground mt-1">
@@ -55,7 +55,7 @@ const PricingSection = ({
               </p>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-end gap-2">
               <VersionHistoryDialog
                 sectionType="pricing"
                 currentVersion={pricing.version || 1}
@@ -212,7 +212,10 @@ const PricingSection = ({
       </Card>
 
       <Dialog open={pricingDialogOpen} onOpenChange={setPricingDialogOpen}>
-        <DialogContent className="max-w-4xl h-[100dvh] sm:h-[90dvh] overflow-hidden p-0">
+        <DialogContent 
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          className="max-w-4xl h-[100dvh] sm:h-[90dvh] overflow-hidden p-0"
+        >
           <div className="custom-scrollbar">
             <div className="p-6">
               <DialogHeader>

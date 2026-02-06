@@ -21,7 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 // import RealtimeDiagnostic from "@/components/dashboard/RealTimeDiagnostics";
 
-import { useRealtimeDashboardStats } from "@/hooks/userRealtimeDashboardStats";
+import { useRealtimeDashboardStats } from "@/hooks/useRealtimeDashboardStats";
 
 import { DashboardStats } from "@/types";
 import { Booking } from "@/types/booking";
@@ -80,7 +80,15 @@ export default function DashboardPage() {
           let bookingRevenue = 0;
 
           if (b.refund_status === "COMPLETED") {
-            bookingRevenue = b.refund_amount;
+            const refundAmount = parseFloat(b.refund_amount || "0");
+            const onlinePaid = b.require_deposit
+              ? b.deposit_amount
+              : b.total_amount;
+            if (refundAmount >= onlinePaid) {
+              bookingRevenue = 0;
+            } else {
+              bookingRevenue = b.refund_amount;
+            }
           } else if (b.status === "PAID") {
             if (b.require_deposit && b.remaining_balance > 0) {
               bookingRevenue = b.deposit_amount;
@@ -256,25 +264,25 @@ export default function DashboardPage() {
         animate={{ opacity: 1, y: 0 }}
         className="bg-gradient-to-r from-forest to-forest-dark text-white rounded-lg p-6"
       >
-        <div className="flex items-center justify-between">
+        <div className="flex md:items-center justify-between">
           <div>
             <h2 className="heading-3 font-bold mb-2">Welcome back!</h2>
-            <p className="text-white/80">
-              Real-time overview of what's happening at your courts right now
+            <p className="text-sm sm:text-base text-white/80">
+              Real-time overview of what's happening at your courts today
             </p>
             <div className="flex items-center gap-4 mt-3">
               <div className="flex items-center gap-2">
                 {isSubscribed ? (
                   <>
                     <Wifi className="w-4 h-4 text-green-300" />
-                    <span className="text-xs text-green-300">
+                    <span className="hidden sm:inline-block text-xs text-green-300">
                       Live updates active
                     </span>
                   </>
                 ) : (
                   <>
                     <WifiOff className="w-4 h-4 text-yellow-300" />
-                    <span className="text-xs text-yellow-300">
+                    <span className="hidden sm:inline-block  text-xs text-yellow-300">
                       Connecting...
                     </span>
                   </>
@@ -302,7 +310,7 @@ export default function DashboardPage() {
             className="text-accent-foreground hover:bg-gray-300"
             disabled={loadingRefresh}
           >
-            <BarChart3 className="w-4 h-4 mr-1" />
+            <BarChart3 className="w-4 h-4 sm:mr-1" />
             Refresh
           </Button>
         </div>
@@ -455,7 +463,10 @@ export default function DashboardPage() {
                     href={`/admin/bookings/${booking.id}`}
                     className="block"
                   >
-                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div
+                      className="flex flex-wrap items-center justify-end sm:justify-between 
+                      p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                    >
                       <div className="flex items-center gap-4">
                         <div
                           className={`p-2 rounded-full ${

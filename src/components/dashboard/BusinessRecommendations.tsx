@@ -7,13 +7,14 @@ import {
   Lightbulb,
   CheckCircle,
   Clock,
+  LucideIcon,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AnalyticsData } from "@/types/reports";
 
 interface Recommendation {
   type: "warning" | "opportunity" | "success" | "info";
-  icon: any;
+  icon: LucideIcon;
   title: string;
   description: string;
   action: string;
@@ -266,7 +267,7 @@ const BusinessRecommendations = ({
           return (
             <div
               key={index}
-              className={`p-4 rounded-lg border-l-4 ${style.bg} ${style.border}`}
+              className={`p-3 md:p-4 rounded-lg border-l-4 ${style.bg} ${style.border}`}
             >
               <div className="flex items-start gap-3">
                 <div className={`p-2 bg-white rounded-lg ${style.icon}`}>

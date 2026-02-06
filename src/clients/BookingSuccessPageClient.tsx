@@ -292,7 +292,7 @@ const BookingSuccessPageClient = () => {
             </motion.div>
             <h1 className="heading-2 mb-2">Payment Successful!</h1>
             <p className="text-body mb-4">
-              Your booking has been confirmed. See you on the court!
+              Your booking has been confirmed.<br />See you on the court!
             </p>
 
             {/* Email Confirmation Message */}

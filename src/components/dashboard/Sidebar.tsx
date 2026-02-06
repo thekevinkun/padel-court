@@ -22,7 +22,7 @@ const Sidebar = () => {
       <Button
         variant="ghost"
         size="icon"
-        className="lg:hidden fixed top-4 left-4 z-50 bg-white shadow-md"
+        className="lg:hidden fixed top-6 left-4 z-60 bg-forest text-accent shadow-md"
         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
       >
         {mobileMenuOpen ? <X /> : <Menu />}
@@ -35,7 +35,7 @@ const Sidebar = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="lg:hidden fixed inset-0 z-40 bg-black/50"
+            className="lg:hidden fixed inset-0 z-50 bg-black/50"
             onClick={() => setMobileMenuOpen(false)}
           />
         )}
@@ -44,7 +44,7 @@ const Sidebar = () => {
       {/* Sidebar */}
       <aside
         className={`
-          fixed top-0 left-0 bottom-0 z-40 w-64 bg-white
+          fixed top-0 left-0 bottom-0 z-60 w-64 bg-white
           flex flex-col shadow-md
           transition-transform duration-300 ease-in-out
           ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"}
@@ -53,7 +53,7 @@ const Sidebar = () => {
       >
         {/* Logo */}
         <div className="p-6">
-          <div className="flex items-start justify-center">
+          <div className="flex items-start justify-between lg:justify-center gap-1 lg:gap-0">
             <Link href="/admin" className="w-fit">
               <div className="relative z-30">
                 <Image
@@ -62,11 +62,20 @@ const Sidebar = () => {
                   width={800}
                   height={254}
                   priority
-                  className="w-32 md:w-42"
+                  className="w-34 lg:w-42"
                   quality={100}
                 />
               </div>
             </Link>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setMobileMenuOpen(false)}
+              className="lg:hidden"
+            >
+              <X />
+            </Button>
           </div>
         </div>
 

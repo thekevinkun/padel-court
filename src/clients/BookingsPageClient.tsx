@@ -385,7 +385,7 @@ const BookingsPageClient = () => {
       {/* Bookings Table */}
       <Card className="!pb-1">
         <CardContent className="p-0">
-          <div className="rounded-md overflow-x-auto">
+          <div className="rounded-md !overflow-x-auto custom-scrollbar">
             <Table>
               <TableHeader>
                 <TableRow>

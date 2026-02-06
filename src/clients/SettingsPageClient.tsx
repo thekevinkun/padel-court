@@ -23,14 +23,14 @@ import {
   CheckCircle2,
   AlertCircle,
 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { SiteSettings } from "@/types/settings";
@@ -248,7 +248,7 @@ const SettingsPageClient = () => {
       {/* Header with Save Button */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Settings</h1>
+          <h1 className="text-3xl font-bold sr-only">Settings</h1>
           <p className="text-muted-foreground mt-1">
             Manage your business settings and configurations
           </p>
@@ -257,7 +257,7 @@ const SettingsPageClient = () => {
           onClick={handleSave}
           disabled={saving}
           size="lg"
-          className="gap-2"
+          className="gap-2 hidden lg:inline-flex"
         >
           {saving ? (
             <>
@@ -300,7 +300,7 @@ const SettingsPageClient = () => {
 
       {/* Settings Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-6">
+        <TabsList className="w-full !bg-transparent md:!bg-muted grid gap-3 grid-cols-2 md:grid-cols-6 mb-24 md:mb-2 lg-mb-0">
           <TabsTrigger value="business">Business</TabsTrigger>
           <TabsTrigger value="contact">Contact</TabsTrigger>
           <TabsTrigger value="booking">Booking</TabsTrigger>
@@ -1289,7 +1289,7 @@ const SettingsPageClient = () => {
       </Tabs>
 
       {/* Save Button - Fixed at bottom on mobile */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 p-4 bg-background border-t z-40">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 p-4 bg-background border-y border-forest z-30">
         <Button
           onClick={handleSave}
           disabled={saving}
