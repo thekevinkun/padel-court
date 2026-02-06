@@ -386,6 +386,21 @@ export const shopInitial = {
   updated_at: "",
 };
 
+export const shopWelcomeInitial = {
+  badge: "Welcome to Padel Batu Alam Permai",
+  heading: "Gear Up in Our Padel Shop",
+  description:
+    "From top-rated rackets to accessories, we've got everything you need to succeed and enhance your game.",
+  images: ["", ""] as [string, string],
+  subheading: "Discover Your Perfect Padel Racket",
+  subdescription:
+    "Browse our extensive range of premium padel rackets. Finding the perfect Racket can be a challenge! Not sure which one's for you or need help deciding? Don't worry – Our friendly and knowledgeable staff is ready to guide you in finding your perfect fit!",
+  cta: {
+    primary: { text: "WhatsApp", href: "#contact" },
+    secondary: { text: "Book Now", href: "#booking" },
+  },
+};
+
 // export const courts: Court[] = [
 //   {
 //     id: "court-1",
