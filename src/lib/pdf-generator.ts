@@ -1,14 +1,30 @@
 import jsPDF from "jspdf";
 import { ReceiptData } from "@/types/booking";
 
+const checkPageBreak = (
+  doc: jsPDF,
+  yPos: number,
+  requiredSpace: number = 40,
+): number => {
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const bottomMargin = 20;
+
+  if (yPos + requiredSpace > pageHeight - bottomMargin) {
+    doc.addPage();
+    return 20; // Reset yPos to top of new page with margin
+  }
+  return yPos;
+};
+
 export const generateBookingReceipt = async (
   data: ReceiptData,
 ): Promise<Blob> => {
   const doc = new jsPDF();
-
+  console.log("data: ", data);
   // Load logo image
-  const logoUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/logos/logo.png`;
+  const logoUrl = "/logos/logo.png";
   let logoBase64 = "";
+  
 
   try {
     // Fetch logo and convert to base64
@@ -23,20 +39,22 @@ export const generateBookingReceipt = async (
     console.error("Failed to load logo:", error);
     // Continue without logo
   }
-
+  console.log("logo: ", logoBase64);
   // Header - Club Name with Logo
   doc.setFillColor(255, 204, 0); // yellow
   doc.rect(0, 0, 210, 50, "F");
 
   const pageWidth = doc.internal.pageSize.getWidth();
-  const logoWidth = 55;
+  const logoWidth = 50;
   const logoHeight = 25;
   const logoY = 8;
 
   // Add logo if loaded
-  if (logoBase64) {
+  if (logoBase64.startsWith("data:image/png")) {
     const logoX = (pageWidth - logoWidth) / 2;
     doc.addImage(logoBase64, "png", logoX, logoY, logoWidth, logoHeight);
+  } else {
+    console.warn("Skipping logo: not a valid PNG");
   }
 
   doc.setTextColor(0, 0, 0);
@@ -58,11 +76,24 @@ export const generateBookingReceipt = async (
   doc.text("BOOKING REF:", 20, 67);
   doc.text(data.bookingRef, 55, 67);
 
-  // Payment Status Badge
-  doc.setFillColor(34, 197, 94); // green
+  const getStatusInfo = () => {
+    // Check if this is from My Booking (receiptData might have status info)
+    const isPaid = data.paymentMethod && data.paymentMethod !== "N/A";
+
+    // Default to CONFIRMED for backward compatibility
+    return {
+      color: [34, 197, 94] as [number, number, number], // green
+      text: "CONFIRMED",
+      textColor: [255, 255, 255] as [number, number, number],
+    };
+  };
+
+  // Payment status badge based on status info
+  const statusInfo = getStatusInfo();
+  doc.setFillColor(...statusInfo.color);
   doc.roundedRect(115, 60, 80, 12, 3, 3, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.text("CONFIRMED", 155, 67, { align: "center" });
+  doc.setTextColor(...statusInfo.textColor);
+  doc.text(statusInfo.text, 155, 67, { align: "center" });
 
   // Reset text color
   doc.setTextColor(31, 41, 55);
@@ -122,6 +153,7 @@ export const generateBookingReceipt = async (
 
   // Equipment Rental Section
   if (data.equipmentRentals && data.equipmentRentals.length > 0) {
+    yPos = checkPageBreak(doc, yPos, 30); // Check if we need new page
     yPos += 8;
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
@@ -142,6 +174,7 @@ export const generateBookingReceipt = async (
 
   // Additional Players Section
   if (data.additionalPlayers && data.additionalPlayers.length > 0) {
+    yPos = checkPageBreak(doc, yPos, 30); // Check if we need new page
     yPos += 8;
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
@@ -163,9 +196,10 @@ export const generateBookingReceipt = async (
   }
 
   // Payment Summary Box
+  yPos = checkPageBreak(doc, yPos, 60); // Check if we need new page
   yPos += 8;
   doc.setFillColor(243, 244, 246); // light gray
-  doc.roundedRect(15, yPos, 180, 45, 3, 3, "F");
+  doc.roundedRect(15, yPos, 180, 55, 3, 3, "F");
 
   yPos += 8;
   doc.setFontSize(14);
@@ -231,6 +265,7 @@ export const generateBookingReceipt = async (
   doc.setTextColor(31, 41, 55);
 
   // Important Notes Section
+  yPos = checkPageBreak(doc, yPos, 40); // CRITICAL: Check if we need new page
   yPos += 15;
   doc.setFillColor(255, 251, 235); // light yellow
   doc.roundedRect(15, yPos, 180, 30, 3, 3, "F");
@@ -250,6 +285,7 @@ export const generateBookingReceipt = async (
   doc.text("• Cancellation must be made 24 hours in advance", 20, yPos);
 
   // Footer
+  yPos = checkPageBreak(doc, yPos, 20); // Check if we need new page
   yPos += 15;
   doc.setFontSize(8);
   doc.setTextColor(107, 114, 128);

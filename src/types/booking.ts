@@ -215,5 +215,4 @@ export interface ReceiptData {
     email?: string;
     whatsapp?: string;
   }>;
-  logoUrl: string | "";
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   CheckCircle2,
@@ -18,7 +19,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
-import { useSettings } from "@/hooks/useSettings";
 import { Booking, BookingEquipment, BookingPlayer } from "@/types/booking";
 import { supabase } from "@/lib/supabase/client";
 import { generateBookingReceipt } from "@/lib/pdf-generator";
@@ -27,7 +27,6 @@ import { sendWhatsAppReceipt } from "@/lib/whatsapp";
 const BookingSuccessPageClient = () => {
   const params = useParams();
   const router = useRouter();
-  const { settings } = useSettings();
   const bookingRef = params.bookingRef as string;
 
   const [booking, setBooking] = useState<Booking | null>(null);
@@ -96,29 +95,29 @@ const BookingSuccessPageClient = () => {
         .from("bookings")
         .select(
           `
-    *,
-    courts (name, description),
-    booking_time_slots (
-      id,
-      time_slots (time_start, time_end, period, price_per_person)
-    ),
-    booking_equipment (
-      id,
-      equipment_id,
-      quantity,
-      price_per_unit,
-      subtotal,
-      equipment (id, name, category, description)
-    ),
-    booking_players (
-      id,
-      player_order,
-      player_name,
-      player_email,
-      player_whatsapp,
-      is_primary_booker
-    )
-  `,
+        *,
+        courts (name, description),
+        booking_time_slots (
+          id,
+          time_slots (time_start, time_end, period, price_per_person)
+        ),
+        booking_equipment (
+          id,
+          equipment_id,
+          quantity,
+          price_per_unit,
+          subtotal,
+          equipment (id, name, category, description)
+        ),
+        booking_players (
+          id,
+          player_order,
+          player_name,
+          player_email,
+          player_whatsapp,
+          is_primary_booker
+        )
+      `,
         )
         .eq("booking_ref", bookingRef)
         .single();
@@ -127,7 +126,20 @@ const BookingSuccessPageClient = () => {
         console.error("Error fetching booking:", error);
         return;
       }
-      // console.log("booking data: ", data);
+
+      // Check if access is still valid
+      const { isSuccessPageAccessValid, getMyBookingRedirectUrl } =
+        await import("@/lib/booking-security");
+
+      if (!isSuccessPageAccessValid(data)) {
+        console.log(
+          "⏰ Success page access expired or invalid, redirecting to My Booking",
+        );
+        // Redirect to My Booking with pre-filled params
+        const redirectUrl = getMyBookingRedirectUrl(data);
+        router.push(redirectUrl);
+        return;
+      }
 
       setBooking(data);
 
@@ -168,7 +180,6 @@ const BookingSuccessPageClient = () => {
             email: p.player_email,
             whatsapp: p.player_whatsapp,
           })),
-        logoUrl: settings?.logo_url || "",
       };
 
       const blob = await generateBookingReceipt(receiptData);
@@ -229,7 +240,6 @@ const BookingSuccessPageClient = () => {
           email: p.player_email || "",
           whatsapp: p.player_whatsapp || "",
         })),
-      logoUrl: settings?.logo_url || "",
     };
 
     const whatsappNumber =
@@ -292,7 +302,9 @@ const BookingSuccessPageClient = () => {
             </motion.div>
             <h1 className="heading-2 mb-2">Payment Successful!</h1>
             <p className="text-body mb-4">
-              Your booking has been confirmed.<br />See you on the court!
+              Your booking has been confirmed.
+              <br />
+              See you on the court!
             </p>
 
             {/* Email Confirmation Message */}
@@ -310,6 +322,31 @@ const BookingSuccessPageClient = () => {
                     {booking.customer_email}
                   </strong>
                 </span>
+              </motion.div>
+            )}
+
+            {/* Access expiry notice */}
+            {booking && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                className="mt-4"
+              >
+                <Alert className="bg-yellow-50 border-yellow-200">
+                  <Info className="h-4 w-4 text-yellow-600" />
+                  <AlertDescription className="!block text-start text-sm text-yellow-800">
+                    This success page expires in <strong>24
+                    hours.</strong> To view your booking details later, use{" "}
+                    <Link
+                      href={`/my-booking?email=${encodeURIComponent(booking.customer_email)}&booking_ref=${booking.booking_ref}`}
+                      className="underline font-semibold hover:text-yellow-900"
+                    >
+                      My Booking
+                    </Link>
+                    {" "}or check your email confirmation.
+                  </AlertDescription>
+                </Alert>
               </motion.div>
             )}
           </div>

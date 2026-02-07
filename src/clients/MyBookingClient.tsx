@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
+  Download,
+  MessageCircle,
   Search,
   Loader2,
   Mail,
@@ -48,6 +50,8 @@ import {
   getHoursUntilBooking,
   isBookingExpired,
 } from "@/lib/booking";
+import { sendWhatsAppReceipt } from "@/lib/whatsapp";
+import { generateBookingReceipt } from "@/lib/pdf-generator";
 
 const MyBookingClient = () => {
   const router = useRouter();
@@ -70,6 +74,13 @@ const MyBookingClient = () => {
 
   // Booking data state
   const [booking, setBooking] = useState<Booking | null>(null);
+
+  // PDF state
+  const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
+
+  // Resend email state
+  const [resendingEmail, setResendingEmail] = useState(false);
 
   // Cancellation dialog state
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
@@ -133,6 +144,9 @@ const MyBookingClient = () => {
 
       setBooking(data.booking);
 
+      // Generate PDF receipt
+      await generatePdfReceipt(data.booking);
+
       // Update URL with query params (if not from URL already)
       if (!urlEmail || !urlBookingRef) {
         const newUrl = `/my-booking?email=${encodeURIComponent(
@@ -149,6 +163,169 @@ const MyBookingClient = () => {
     } finally {
       setLoading(false);
       setIsAlreadyLookup(true);
+    }
+  };
+
+  // Function to generate PDF receipt
+  const generatePdfReceipt = async (bookingData: Booking) => {
+    setGeneratingPdf(true);
+    try {
+      // Calculate court subtotal
+      const equipmentTotal =
+        bookingData.booking_equipment?.reduce(
+          (sum, item) => sum + item.subtotal,
+          0,
+        ) || 0;
+      const courtSubtotal = bookingData.subtotal - equipmentTotal;
+
+      const receiptData = {
+        bookingRef: bookingData.booking_ref,
+        customerName: bookingData.customer_name,
+        email: bookingData.customer_email,
+        phone: bookingData.customer_phone,
+        courtName: bookingData.courts?.name || "Padel Court",
+        date: new Date(bookingData.date).toLocaleDateString("en-ID", {
+          timeZone: "Asia/Makassar",
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        }),
+        time: bookingData.time,
+        numberOfPlayers: bookingData.number_of_players,
+        pricePerPerson: courtSubtotal / bookingData.number_of_players,
+        subtotal: bookingData.subtotal,
+        paymentMethod: bookingData.payment_method || "Online Payment",
+        paymentFee: bookingData.payment_fee,
+        total: bookingData.total_amount,
+        notes: bookingData.notes || "-",
+        timestamp: new Date(bookingData.created_at).toLocaleString("en-ID"),
+        equipmentRentals: bookingData.booking_equipment?.map((item) => ({
+          name: item.equipment?.name || "Equipment",
+          quantity: item.quantity,
+          subtotal: item.subtotal,
+        })),
+        additionalPlayers: bookingData.booking_players
+          ?.filter((p) => !p.is_primary_booker)
+          .map((p) => ({
+            name: p.player_name,
+            email: p.player_email || "",
+            whatsapp: p.player_whatsapp || "",
+          })),
+      };
+
+      const blob = await generateBookingReceipt(receiptData);
+      setPdfBlob(blob);
+    } catch (error) {
+      console.error("Failed to generate PDF:", error);
+      toast.error("Failed to generate PDF receipt");
+    } finally {
+      setGeneratingPdf(false);
+    }
+  };
+
+  // Function to download PDF
+  const handleDownloadPDF = () => {
+    if (!pdfBlob || !booking) return;
+
+    const pdfUrl = URL.createObjectURL(pdfBlob);
+    const link = document.createElement("a");
+    link.href = pdfUrl;
+    link.download = `Padel-Receipt-${booking.booking_ref}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(pdfUrl);
+
+    toast.success("Receipt downloaded successfully!");
+  };
+
+  // Function to share via WhatsApp
+  const handleShareWhatsApp = () => {
+    if (!booking) return;
+
+    // Calculate court subtotal
+    const equipmentTotal =
+      booking.booking_equipment?.reduce(
+        (sum, item) => sum + item.subtotal,
+        0,
+      ) || 0;
+    const courtSubtotal = booking.subtotal - equipmentTotal;
+
+    const receiptData = {
+      bookingRef: booking.booking_ref,
+      customerName: booking.customer_name,
+      email: booking.customer_email,
+      phone: booking.customer_phone,
+      courtName: booking.courts?.name || "Padel Court",
+      date: new Date(booking.date).toLocaleDateString("en-ID", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
+      time: booking.time,
+      numberOfPlayers: booking.number_of_players,
+      pricePerPerson: courtSubtotal / booking.number_of_players,
+      subtotal: booking.subtotal,
+      paymentMethod: booking.payment_method || "Online Payment",
+      paymentFee: booking.payment_fee,
+      total: booking.total_amount,
+      notes: booking.notes || "-",
+      timestamp: new Date(booking.created_at).toLocaleString("en-ID"),
+      equipmentRentals: booking.booking_equipment?.map((item) => ({
+        name: item.equipment?.name || "Equipment",
+        quantity: item.quantity,
+        subtotal: item.subtotal,
+      })),
+      additionalPlayers: booking.booking_players
+        ?.filter((p) => !p.is_primary_booker)
+        .map((p) => ({
+          name: p.player_name,
+          email: p.player_email || "",
+          whatsapp: p.player_whatsapp || "",
+        })),
+    };
+
+    const whatsappNumber =
+      booking.customer_whatsapp?.replace(/\D/g, "") ||
+      booking.customer_phone?.replace(/\D/g, "");
+
+    if (whatsappNumber) {
+      sendWhatsAppReceipt(whatsappNumber, receiptData, pdfBlob || undefined);
+    } else {
+      toast.error("No WhatsApp number found for this booking");
+    }
+  };
+
+  // Function to resend confirmation email
+  const handleResendEmail = async () => {
+    if (!booking) return;
+
+    setResendingEmail(true);
+    try {
+      const response = await fetch("/api/emails/resend-confirmation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bookingId: booking.id,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to resend email");
+      }
+
+      toast.success("Confirmation email sent!", {
+        description: `Check ${booking.customer_email}`,
+      });
+    } catch (error) {
+      console.error("Error resending email:", error);
+      toast.error("Failed to resend email", {
+        description: "Please try again later",
+      });
+    } finally {
+      setResendingEmail(false);
     }
   };
 
@@ -499,7 +676,7 @@ const MyBookingClient = () => {
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
                     <strong className="text-red-900">
-                      ⏰ Booking Cancelled
+                      ❌ Booking Cancelled
                     </strong>
                     <p className="text-sm text-red-800 mt-1">
                       This booking has been cancelled without refund.
@@ -1156,6 +1333,64 @@ const MyBookingClient = () => {
                       </div>
                     </CardContent>
                   </Card>
+
+                  {/* Actions on pdf, wa, resend only for PAID and REFUNDED */}
+                  <div className="space-y-3">
+                    {booking.status === "PAID" ||
+                    booking.status === "REFUNDED" ? (
+                      <>
+                        <Button
+                          onClick={handleResendEmail}
+                          disabled={resendingEmail}
+                          variant="ghost"
+                          size="lg"
+                          className="w-full bg-blue-50 border-blue-200 hover:bg-blue-100 rounded-full"
+                        >
+                          {resendingEmail ? (
+                            <>
+                              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                              Sending...
+                            </>
+                          ) : (
+                            <>
+                              <Mail className="mr-2 h-5 w-5" />
+                              Resend Confirmation Email
+                            </>
+                          )}
+                        </Button>
+
+                        <Button
+                          onClick={handleDownloadPDF}
+                          disabled={!pdfBlob || generatingPdf}
+                          size="lg"
+                          className="w-full rounded-full hover:text-accent-foreground"
+                        >
+                          {generatingPdf ? (
+                            <>
+                              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                              Generating PDF...
+                            </>
+                          ) : (
+                            <>
+                              <Download className="mr-2 h-5 w-5" />
+                              Download PDF Receipt
+                            </>
+                          )}
+                        </Button>
+
+                        <Button
+                          onClick={handleShareWhatsApp}
+                          disabled={!pdfBlob || generatingPdf}
+                          variant="outline"
+                          size="lg"
+                          className="w-full rounded-full"
+                        >
+                          <MessageCircle className="mr-2 h-5 w-5" />
+                          Share via WhatsApp
+                        </Button>
+                      </>
+                    ) : null}
+                  </div>
 
                   {/* Actions on Mobile */}
                   <div className="flex lg:hidden flex-col sm:flex-row justify-end gap-3">
