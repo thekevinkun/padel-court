@@ -24,7 +24,7 @@ export default function CancellationConfirmationEmail({
   refundEligible,
   cancellationReason,
   hoursBeforeBooking,
-  logoUrl,
+  logoEmailUrl,
 }: CancellationConfirmationEmailProps) {
   return (
     <Html>
@@ -37,7 +37,7 @@ export default function CancellationConfirmationEmail({
             <tr>
               <td align="center" style={{ padding: "32px 24px" }}>
                 <Img
-                  src={logoUrl}
+                  src={logoEmailUrl}
                   alt="Padel Batu Alam Permai"
                   width="180"
                   height="auto"
@@ -163,8 +163,7 @@ export default function CancellationConfirmationEmail({
               >
                 <tr>
                   <td>
-                    {refundAmount >= originalAmount ? "💰" : "⚖️"} Refund
-                    Information
+                    Refund Information
                     <table
                       width="100%"
                       cellPadding="0"
@@ -221,8 +220,8 @@ export default function CancellationConfirmationEmail({
                 <tr>
                   <td style={listItem}>
                     {refundAmount >= originalAmount
-                      ? "• Full refund: 100% of your payment will be returned"
-                      : "• Partial refund: 50% of your payment will be returned"}
+                      ? "Full refund: 100% of your payment will be returned"
+                      : "Partial refund: 50% of your payment will be returned"}
                   </td>
                 </tr>
                 <tr>
@@ -334,7 +333,7 @@ export default function CancellationConfirmationEmail({
                     <td align="center">
                       <Text style={footerText}>
                         {refundEligible
-                          ? "We hope to see you again soon! 🎾"
+                          ? "We hope to see you again soon!"
                           : "Thank you for your understanding 🙏"}
                       </Text>
                       <Text style={footerTextSmall}>
@@ -369,12 +368,12 @@ const container = {
 };
 
 const header = {
-  backgroundColor: "#e9ff00",
+  backgroundColor: "#e9ff00 !important",
   width: "100%",
 };
 
 const h1 = {
-  color: "#000000",
+  color: "#000000 !important",
   fontSize: "32px",
   fontWeight: "bold",
   margin: "0 0 8px",
@@ -383,7 +382,7 @@ const h1 = {
 };
 
 const headerText = {
-  color: "#2d6a4f",
+  color: "#2d6a4f !important",
   fontSize: "14px",
   fontWeight: "600",
   margin: "0",

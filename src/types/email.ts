@@ -21,7 +21,7 @@ export interface BookingConfirmationEmailProps {
     email?: string;
     whatsapp?: string;
   }>;
-  logoUrl: string;
+  logoEmailUrl: string;
 }
 
 export interface BookingReminderEmailProps {
@@ -44,7 +44,7 @@ export interface BookingReminderEmailProps {
     email?: string;
     whatsapp?: string;
   }>;
-  logoUrl: string;
+  logoEmailUrl: string;
 }
 
 export interface BookingEmailData {
@@ -105,7 +105,7 @@ export interface RefundConfirmationEmailProps {
   refundAmount: number;
   refundMethod: string;
   refundReason: string;
-  logoUrl: string;
+  logoEmailUrl: string;
 }
 
 export interface RefundEmailData {
@@ -133,7 +133,7 @@ export interface CancellationConfirmationEmailProps {
   refundEligible: boolean;
   cancellationReason: string;
   hoursBeforeBooking: number;
-  logoUrl: string;
+  logoEmailUrl: string;
 }
 
 export interface CancellationEmailData {

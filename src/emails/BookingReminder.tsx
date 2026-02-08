@@ -24,7 +24,7 @@ export default function BookingReminderEmail({
   venuePaymentReceived,
   equipmentRentals,
   additionalPlayers,
-  logoUrl,
+  logoEmailUrl,
 }: BookingReminderEmailProps) {
   const needsPayment =
     requireDeposit &&
@@ -43,7 +43,7 @@ export default function BookingReminderEmail({
             <tr>
               <td align="center" style={{ padding: "32px 24px" }}>
                 <Img
-                  src={logoUrl}
+                  src={logoEmailUrl}
                   alt="Padel Batu Alam Permai"
                   width="180"
                   height="auto"
@@ -153,7 +153,7 @@ export default function BookingReminderEmail({
 
           {/* Checklist */}
           <Section style={section}>
-            <Heading style={h2}>✅ Before You Come</Heading>
+            <Heading style={h2}>Before You Come</Heading>
             <table
               width="100%"
               cellPadding="0"
@@ -288,12 +288,12 @@ const container = {
 };
 
 const header = {
-  backgroundColor: "#e9ff00", // Primary yellow
+  backgroundColor: "#e9ff00 !important", // Primary yellow
   width: "100%",
 };
 
 const h1 = {
-  color: "#000000", // Black text
+  color: "#000000 !important", // Black text
   fontSize: "32px",
   fontWeight: "bold",
   margin: "0 0 8px",
@@ -302,7 +302,7 @@ const h1 = {
 };
 
 const headerText = {
-  color: "#2d6a4f", // Forest green
+  color: "#2d6a4f !important", // Forest green
   fontSize: "14px",
   fontWeight: "600",
   margin: "0",

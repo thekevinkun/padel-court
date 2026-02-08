@@ -5,6 +5,7 @@ export interface SiteSettings {
   business_name: string;
   business_description: string;
   logo_url: string | null;
+  logo_email_url?: string | null;
   
   // Contact Information
   email: string;

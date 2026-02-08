@@ -24,12 +24,12 @@ export async function sendBookingConfirmation(data: BookingEmailData) {
     const supabase = createServerClient();
     const { data: settings } = await supabase
       .from("site_settings")
-      .select("logo_url")
+      .select("logo_email_url")
       .single();
 
-    const logoUrl =
-      settings?.logo_url ||
-      `${process.env.NEXT_PUBLIC_SITE_URL}/logos/logo-black.webp`;
+    const logoEmailUrl =
+      settings?.logo_email_url ||
+      `${process.env.NEXT_PUBLIC_SITE_URL}/logos/logo-email.png`;
 
     const emailHtml = await render(
       BookingConfirmationEmail({
@@ -47,7 +47,7 @@ export async function sendBookingConfirmation(data: BookingEmailData) {
         paymentMethod: data.paymentMethod,
         equipmentRentals: data.equipmentRentals,
         additionalPlayers: data.additionalPlayers,
-        logoUrl,
+        logoEmailUrl,
       }),
     );
 
@@ -88,12 +88,12 @@ export async function sendBookingReminder(data: ReminderEmailData) {
     const supabase = createServerClient();
     const { data: settings } = await supabase
       .from("site_settings")
-      .select("logo_url")
+      .select("logo_email_url")
       .single();
 
-    const logoUrl =
-      settings?.logo_url ||
-      `${process.env.NEXT_PUBLIC_SITE_URL}/logos/logo-black.webp`;
+    const logoEmailUrl =
+      settings?.logo_email_url ||
+      `${process.env.NEXT_PUBLIC_SITE_URL}/logos/logo-email.png`;
 
     const emailHtml = await render(
       BookingReminderEmail({
@@ -108,7 +108,7 @@ export async function sendBookingReminder(data: ReminderEmailData) {
         venuePaymentReceived: data.venuePaymentReceived,
         equipmentRentals: data.equipmentRentals,
         additionalPlayers: data.additionalPlayers,
-        logoUrl,
+        logoEmailUrl,
       }),
     );
 
@@ -148,12 +148,12 @@ export async function sendRefundConfirmation(data: RefundEmailData) {
     const supabase = createServerClient();
     const { data: settings } = await supabase
       .from("site_settings")
-      .select("logo_url")
+      .select("logo_email_url")
       .single();
 
-    const logoUrl =
-      settings?.logo_url ||
-      `${process.env.NEXT_PUBLIC_SITE_URL}/logos/logo-black.webp`;
+    const logoEmailUrl =
+      settings?.logo_email_url ||
+      `${process.env.NEXT_PUBLIC_SITE_URL}/logos/logo-email.png`;
 
     const emailHtml = await render(
       RefundConfirmationEmail({
@@ -167,7 +167,7 @@ export async function sendRefundConfirmation(data: RefundEmailData) {
         refundAmount: data.refundAmount,
         refundMethod: data.refundMethod,
         refundReason: data.refundReason,
-        logoUrl,
+        logoEmailUrl,
       }),
     );
 
@@ -212,12 +212,12 @@ export async function sendCancellationConfirmation(
 
     const { data: settings } = await supabase
       .from("site_settings")
-      .select("logo_url")
+      .select("logo_email_url")
       .single();
 
-    const logoUrl =
-      settings?.logo_url ||
-      `${process.env.NEXT_PUBLIC_SITE_URL}/logos/logo-black.webp`;
+    const logoEmailUrl =
+      settings?.logo_email_url ||
+      `${process.env.NEXT_PUBLIC_SITE_URL}/logos/logo-email.png`;
 
     const emailHtml = await render(
       CancellationConfirmationEmail({
@@ -232,7 +232,7 @@ export async function sendCancellationConfirmation(
         refundEligible: data.refundEligible,
         cancellationReason: data.cancellationReason,
         hoursBeforeBooking: data.hoursBeforeBooking,
-        logoUrl,
+        logoEmailUrl,
       }),
     );
 

@@ -57,6 +57,10 @@ const SettingsPageClient = () => {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
+  // Logo Email mode upload states
+  const [logoEmailFile, setLogoEmailFile] = useState<File | null>(null);
+  const [logoEmailPreview, setLogoEmailPreview] = useState<string | null>(null);
+
   // Active tab
   const [activeTab, setActiveTab] = useState("business");
 
@@ -111,6 +115,57 @@ const SettingsPageClient = () => {
     }
   };
 
+  // Handle logo Email file selection
+  const handleLogoEmailSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file
+    const validation = validateImageFile(file, 5); // Max 5MB
+    if (!validation.isValid) {
+      setErrorMessage(validation.error || "Invalid file");
+      setSaveStatus("error");
+      return;
+    }
+
+    setLogoEmailFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => setLogoEmailPreview(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  // Upload logo Email to Supabase Storage
+  const uploadLogoEmail = async (file: File): Promise<string | null> => {
+    try {
+      console.log("📤 Uploading logo Email...");
+
+      // Delete old logo if exists
+      if (settings?.logo_email_url) {
+        const oldFilePath = extractFilePathFromUrl(
+          settings.logo_email_url,
+          "settings",
+        );
+        if (oldFilePath) {
+          await deleteImage("settings", oldFilePath);
+          console.log("🗑️ Old logo deleted");
+        }
+      }
+
+      // Upload new logo to 'settings' bucket, 'logos' folder
+      const publicUrl = await uploadImage("settings", file, "logos");
+
+      if (!publicUrl) {
+        throw new Error("Failed to upload logo");
+      }
+
+      console.log("✅ Logo uploaded successfully:", publicUrl);
+      return publicUrl;
+    } catch (error) {
+      console.error("Error uploading logo:", error);
+      return null;
+    }
+  };
+
   // Save all settings
   const handleSave = async () => {
     if (!settings) return;
@@ -121,6 +176,7 @@ const SettingsPageClient = () => {
 
     try {
       let logoUrl = settings.logo_url;
+      let logoEmailUrl = settings.logo_email_url;
 
       // Upload logo if new file selected
       if (logoFile) {
@@ -132,10 +188,21 @@ const SettingsPageClient = () => {
         }
       }
 
+      // Upload logo Email if new file selected
+      if (logoEmailFile) {
+        const uploaded = await uploadLogoEmail(logoEmailFile);
+        if (uploaded) {
+          logoEmailUrl = uploaded;
+        } else {
+          throw new Error("Failed to upload logo. Please try again.");
+        }
+      }
+
       // Prepare settings payload
       const payload = {
         ...settings,
         logo_url: logoUrl,
+        logo_email_url: logoEmailUrl,
       };
 
       // Send PUT request
@@ -159,7 +226,9 @@ const SettingsPageClient = () => {
         // Update local state with saved data
         setSettings(data.settings);
         setLogoPreview(data.settings.logo_url);
+        setLogoEmailPreview(data.settings.logo_email_url);
         setLogoFile(null);
+        setLogoEmailFile(null);
 
         // Show success message
         setSaveStatus("success");
@@ -203,6 +272,7 @@ const SettingsPageClient = () => {
       if (data.success && data.settings) {
         setSettings(data.settings);
         setLogoPreview(data.settings.logo_url);
+        setLogoEmailPreview(data.settings.logo_email_url);
         console.log("✅ Settings loaded:", data.settings);
       }
     } catch (error) {
@@ -344,60 +414,116 @@ const SettingsPageClient = () => {
                 />
               </div>
 
-              <div>
-                <Label>Business Logo</Label>
-                <p className="text-xs text-muted-foreground mb-2">
-                  Recommended: Square image (500x500px), max 5MB
-                </p>
-                <div className="mt-2">
-                  {logoPreview ? (
-                    <div className="relative inline-block">
-                      <div
-                        className="relative w-34 h-32 rounded-lg p-2 border
-                        bg-gradient-to-br from-white/55 via-gray-200 to-white"
-                      >
-                        <Image
-                          src={logoPreview}
-                          alt="Logo"
-                          quality={75}
-                          fill
-                          className="object-contain px-1"
-                          sizes="128px"
-                          loading="lazy"
-                        />
-                      </div>
+              {/* BUSINESS LOGO */}
+              <div className="flex flex-wrap items-center gap-7">
+                <div>
+                  <Label>Business Logo</Label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Recommended: Square (500x500px), max 5MB
+                  </p>
+                  <div className="mt-2">
+                    {logoPreview ? (
+                      <div className="relative inline-block">
+                        <div
+                          className="relative w-34 h-32 rounded-lg p-2 border
+                            bg-gradient-to-br from-white/55 via-gray-200 to-white"
+                        >
+                          <Image
+                            src={logoPreview}
+                            alt="Logo"
+                            quality={75}
+                            fill
+                            className="object-contain px-1"
+                            sizes="128px"
+                            loading="lazy"
+                          />
+                        </div>
 
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setLogoPreview(null);
-                          setLogoFile(null);
-                        }}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition-colors"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <label className="inline-block border-2 border-dashed rounded-lg p-6 cursor-pointer hover:border-forest transition-colors">
-                      <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                      <p className="text-sm font-medium text-center">
-                        Upload Logo
-                      </p>
-                      <p className="text-xs text-muted-foreground text-center mt-1">
-                        JPG, PNG, GIF, WebP
-                      </p>
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
-                        onChange={handleLogoSelect}
-                        className="hidden"
-                      />
-                    </label>
-                  )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setLogoPreview(null);
+                            setLogoFile(null);
+                          }}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="inline-block border-2 border-dashed rounded-lg p-6 cursor-pointer hover:border-forest transition-colors">
+                        <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                        <p className="text-sm font-medium text-center">
+                          Upload Logo
+                        </p>
+                        <p className="text-xs text-muted-foreground text-center mt-1">
+                          JPG, PNG, GIF, WebP
+                        </p>
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                          onChange={handleLogoSelect}
+                          className="hidden"
+                        />
+                      </label>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <Label>Business Logo (for Email)</Label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Recommended: Square (500x500px), max 5MB
+                  </p>
+                  <div className="mt-2">
+                    {logoEmailPreview ? (
+                      <div className="relative inline-block">
+                        <div
+                          className="relative w-34 h-32 rounded-lg p-2 border
+                            bg-gradient-to-br from-white/55 via-gray-200 to-white"
+                        >
+                          <Image
+                            src={logoEmailPreview}
+                            alt="Logo"
+                            quality={75}
+                            fill
+                            className="object-contain px-1"
+                            sizes="128px"
+                            loading="lazy"
+                          />
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setLogoEmailPreview(null);
+                            setLogoEmailFile(null);
+                          }}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="inline-block border-2 border-dashed rounded-lg p-6 cursor-pointer hover:border-forest transition-colors">
+                        <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                        <p className="text-sm font-medium text-center">
+                          Upload Logo
+                        </p>
+                        <p className="text-xs text-muted-foreground text-center mt-1">
+                          JPG, PNG, GIF, WebP
+                        </p>
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                          onChange={handleLogoEmailSelect}
+                          className="hidden"
+                        />
+                      </label>
+                    )}
+                  </div>
                 </div>
               </div>
-
               <Separator />
 
               <div>
