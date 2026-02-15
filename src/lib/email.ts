@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 import { render } from "@react-email/components";
 import BookingConfirmationEmail from "@/emails/BookingConfirmation";
+import PaymentRequiredEmail from "@/emails/PaymentRequired";
 import BookingReminderEmail from "@/emails/BookingReminder";
 import RefundConfirmationEmail from "@/emails/RefundConfirmation";
 import CancellationConfirmationEmail from "@/emails/CancellationConfirmation";
@@ -72,10 +73,74 @@ export async function sendBookingConfirmation(data: BookingEmailData) {
       return { success: false, error };
     }
 
-    console.log("Booking confirmation email sent:", result?.id);
+    console.log("✅ Booking confirmation email sent:", result?.id);
     return { success: true, emailId: result?.id };
   } catch (error) {
-    console.error("Error sending booking confirmation:", error);
+    console.error("❌ Error sending booking confirmation:", error);
+    return { success: false, error };
+  }
+}
+
+/**
+ * Send payment required email immediately after booking creation
+ */
+export async function sendPaymentRequired(
+  data: BookingEmailData & { paymentUrl: string },
+) {
+  try {
+    const supabase = createServerClient();
+    const { data: settings } = await supabase
+      .from("site_settings")
+      .select("logo_email_url")
+      .single();
+
+    const logoEmailUrl =
+      settings?.logo_email_url ||
+      `${process.env.NEXT_PUBLIC_SITE_URL}/logos/logo-email.png`;
+
+    const emailHtml = await render(
+      PaymentRequiredEmail({
+        customerName: data.customerName,
+        customerEmail: data.customerEmail,
+        bookingRef: data.bookingRef,
+        courtName: data.courtName,
+        date: data.date,
+        time: data.time,
+        numberOfPlayers: data.numberOfPlayers,
+        totalAmount: data.totalAmount,
+        requireDeposit: data.requireDeposit,
+        depositAmount: data.depositAmount,
+        paymentUrl: data.paymentUrl,
+        equipmentRentals: data.equipmentRentals,
+        additionalPlayers: data.additionalPlayers,
+        logoEmailUrl: logoEmailUrl,
+      }),
+    );
+
+    const recipientEmail =
+      process.env.NODE_ENV === "production" ? data.customerEmail : emailUser;
+
+    if (!recipientEmail) {
+      console.error("Error. No recipient email provided.");
+      return { success: false };
+    }
+
+    const { data: result, error } = await resend.emails.send({
+      from: "Padel Batu Alam Permai <onboarding@resend.dev>",
+      to: [recipientEmail],
+      subject: `Complete Payment - ${data.bookingRef}`,
+      html: emailHtml,
+    });
+
+    if (error) {
+      console.error("Email send failed:", error);
+      return { success: false, error };
+    }
+
+    console.log("✅ Payment required email sent:", result?.id);
+    return { success: true, emailId: result?.id };
+  } catch (error) {
+    console.error("❌ Error sending payment required email:", error);
     return { success: false, error };
   }
 }
@@ -132,10 +197,10 @@ export async function sendBookingReminder(data: ReminderEmailData) {
       return { success: false, error };
     }
 
-    console.log("Booking reminder email sent:", result?.id);
+    console.log("✅ Booking reminder email sent:", result?.id);
     return { success: true, emailId: result?.id };
   } catch (error) {
-    console.error("Error sending booking reminder:", error);
+    console.error("❌ Error sending booking reminder:", error);
     return { success: false, error };
   }
 }

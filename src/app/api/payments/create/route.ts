@@ -151,6 +151,62 @@ export async function POST(request: NextRequest) {
       payment_response: transaction,
     });
 
+    // Store payment URL in booking record
+    await supabase
+      .from("bookings")
+      .update({
+        payment_url: transaction.redirect_url,
+        payment_token: transaction.token,
+        payment_created_at: new Date().toISOString(),
+      })
+      .eq("id", bookingId);
+
+    console.log(`💳 Payment URL stored for booking ${bookingId}`);
+
+    // Send payment required email
+    try {
+      const { sendPaymentRequired } = await import("@/lib/email");
+
+      await sendPaymentRequired({
+        customerName: booking.customer_name,
+        customerEmail: booking.customer_email,
+        bookingRef: booking.booking_ref,
+        courtName: booking.courts?.name || "Padel Court",
+        date: new Date(booking.date).toLocaleDateString("en-ID", {
+          timeZone: "Asia/Makassar",
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        }),
+        time: booking.time,
+        numberOfPlayers: booking.number_of_players,
+        totalAmount: booking.total_amount,
+        requireDeposit: booking.require_deposit,
+        depositAmount: booking.deposit_amount,
+        remainingBalance: booking.remaining_balance,
+        paymentMethod: "Online Payment",
+        paymentUrl: transaction.redirect_url,
+        equipmentRentals: booking.booking_equipment?.map((item: any) => ({
+          name: item.equipment?.name || "Equipment",
+          quantity: item.quantity,
+          subtotal: item.subtotal,
+        })),
+        additionalPlayers: booking.booking_players
+          ?.filter((p: any) => !p.is_primary_booker)
+          .map((p: any) => ({
+            name: p.player_name,
+            email: p.player_email,
+            whatsapp: p.player_whatsapp,
+          })),
+      });
+
+      console.log("✅ Payment required email sent");
+    } catch (emailError) {
+      console.error("❌ Failed to send payment email:", emailError);
+      // Don't fail the payment creation if email fails
+    }
+
     return NextResponse.json({
       success: true,
       paymentUrl: transaction.redirect_url,

@@ -52,10 +52,13 @@ export async function POST(
       );
     }
 
-    // If it's not paid yet, can't be cancelled
-    if (booking.status !== "PAID") {
+    // Handle PENDING bookings separately (no refund logic needed)
+    const isPendingBooking = booking.status === "PENDING";
+
+    // If not PENDING and not PAID, reject
+    if (!isPendingBooking && booking.status !== "PAID") {
       return NextResponse.json(
-        { error: "Only paid bookings can be cancelled" },
+        { error: "Only paid or pending bookings can be cancelled" },
         { status: 400 },
       );
     }
@@ -71,75 +74,93 @@ export async function POST(
       );
     }
 
-    // Calculate hours until SESSION STARTS (not booking time!)
-    const bookingDateTime = new Date(booking.date);
-    const [hours, minutes] = booking.time
-      .split(" - ")[0]
-      .split(":")
-      .map(Number);
-    bookingDateTime.setHours(hours, minutes, 0, 0);
-
-    const hoursUntilSession = Math.round(
-      (bookingDateTime.getTime() - new Date().getTime()) / (1000 * 60 * 60),
-    );
-
-    console.log(`⏰ Session starts in ${hoursUntilSession} hours`);
-
-    // Fetch refund policy from settings
-    const { data: settingsData } = await supabase
-      .from("site_settings")
-      .select(
-        "refund_full_hours, refund_partial_hours, refund_partial_percentage",
-      )
-      .single();
-
-    // Refund policy (with fallback defaults)
-    const REFUND_FULL_HOURS = settingsData?.refund_full_hours ?? 24;
-    const REFUND_PARTIAL_HOURS = settingsData?.refund_partial_hours ?? 12;
-    const REFUND_PARTIAL_PERCENTAGE =
-      settingsData?.refund_partial_percentage ?? 50;
-
-    console.log(
-      `📋 Refund policy: Full=${REFUND_FULL_HOURS}hrs, Partial=${REFUND_PARTIAL_HOURS}hrs (${REFUND_PARTIAL_PERCENTAGE}%)`,
-    );
-
     let refundAmount = 0;
     let refundType = "NONE";
+    let hoursUntilSession = 0;
 
-    if (hoursUntilSession >= REFUND_FULL_HOURS) {
-      // Full refund: ≥24 hours before session
-      refundAmount = booking.total_amount;
-      refundType = "FULL";
-    } else if (hoursUntilSession >= REFUND_PARTIAL_HOURS) {
-      // Partial refund: 12-24 hours before session
-      refundAmount = Math.round(
-        booking.total_amount * (REFUND_PARTIAL_PERCENTAGE / 100),
+    // Only calculate refund for PAID bookings
+    if (!isPendingBooking) {
+      // Calculate hours until SESSION STARTS (not booking time!)
+      const bookingDateTime = new Date(booking.date);
+      const [hours, minutes] = booking.time
+        .split(" - ")[0]
+        .split(":")
+        .map(Number);
+      bookingDateTime.setHours(hours, minutes, 0, 0);
+      hoursUntilSession = Math.round(
+        (bookingDateTime.getTime() - new Date().getTime()) / (1000 * 60 * 60),
       );
-      refundType = "PARTIAL";
-    } else {
-      // No refund: <12 hours before session
-      refundAmount = 0;
-      refundType = "NONE";
+
+      console.log(`⏰ Session starts in ${hoursUntilSession} hours`);
+
+      // Fetch refund policy from settings
+      const { data: settingsData } = await supabase
+        .from("site_settings")
+        .select(
+          "refund_full_hours, refund_partial_hours, refund_partial_percentage",
+        )
+        .single();
+
+      // Refund policy (with fallback defaults)
+      const REFUND_FULL_HOURS = settingsData?.refund_full_hours ?? 24;
+      const REFUND_PARTIAL_HOURS = settingsData?.refund_partial_hours ?? 12;
+      const REFUND_PARTIAL_PERCENTAGE =
+        settingsData?.refund_partial_percentage ?? 50;
+
+      console.log(
+        `📋 Refund policy: Full=${REFUND_FULL_HOURS}hrs, Partial=${REFUND_PARTIAL_HOURS}hrs (${REFUND_PARTIAL_PERCENTAGE}%)`,
+      );
+
+      if (hoursUntilSession >= REFUND_FULL_HOURS) {
+        // Full refund: ≥24 hours before session
+        refundAmount = booking.total_amount;
+        refundType = "FULL";
+      } else if (hoursUntilSession >= REFUND_PARTIAL_HOURS) {
+        // Partial refund: 12-24 hours before session
+        refundAmount = Math.round(
+          booking.total_amount * (REFUND_PARTIAL_PERCENTAGE / 100),
+        );
+        refundType = "PARTIAL";
+      } else {
+        // No refund: <12 hours before session
+        refundAmount = 0;
+        refundType = "NONE";
+      }
+
+      console.log(
+        `💰 Refund type: ${refundType}, Amount: IDR ${refundAmount.toLocaleString("id-ID")}`,
+      );
     }
 
-    console.log(
-      `💰 Refund type: ${refundType}, Amount: IDR ${refundAmount.toLocaleString("id-ID")}`,
-    );
-
     // Update booking
-    const { data: updatedBooking, error: updateError } = await supabase
-      .from("bookings")
-      .update({
-        status: refundAmount > 0 ? "REFUNDED" : "CANCELLED",
-        session_status: "CANCELLED",
+    const updateData = {
+      status: isPendingBooking
+        ? "CANCELLED"
+        : refundAmount > 0
+          ? "REFUNDED"
+          : "CANCELLED",
+      session_status: "CANCELLED",
+      cancelled_by: "CUSTOMER",
+      cancelled_reason: reason || "Customer cancellation",
+      cancelled_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    // Add refund fields only for PAID bookings
+    if (!isPendingBooking) {
+      Object.assign(updateData, {
         refund_status: refundAmount > 0 ? "COMPLETED" : null,
         refund_amount: refundAmount,
         refund_date: refundAmount > 0 ? new Date().toISOString() : null,
         refund_reason: reason || "Customer cancellation",
         refund_method: refundAmount > 0 ? "MIDTRANS" : null,
         refund_notes: `${refundType} refund: Cancelled ${hoursUntilSession} hours before session (Policy: ≥24hrs=full, 12-24hrs=50%, <12hrs=none)`,
-        updated_at: new Date().toISOString(),
-      })
+      });
+    }
+
+    const { data: updatedBooking, error: updateError } = await supabase
+      .from("bookings")
+      .update(updateData)
       .eq("id", bookingId)
       .select()
       .single();
@@ -169,15 +190,17 @@ export async function POST(
     }
 
     // Create admin notification
-    const notificationTitle =
-      refundType === "FULL"
+    const notificationTitle = isPendingBooking
+      ? "🚫 Customer Cancelled Unpaid Booking"
+      : refundType === "FULL"
         ? "💲 Customer Cancellation (Full Refund)"
         : refundType === "PARTIAL"
           ? "⚖️ Customer Cancellation (Partial Refund)"
           : "🚫 Customer Cancellation (No Refund)";
 
-    const notificationMessage =
-      refundType === "FULL"
+    const notificationMessage = isPendingBooking
+      ? `${booking.customer_name} cancelled unpaid booking ${booking.booking_ref}. Payment was never completed. Time slot released.`
+      : refundType === "FULL"
         ? `${booking.customer_name} cancelled ${booking.booking_ref}. Full refund: IDR ${refundAmount.toLocaleString("id-ID")} (cancelled ${hoursUntilSession}hrs before session)`
         : refundType === "PARTIAL"
           ? `${booking.customer_name} cancelled ${booking.booking_ref}. Partial refund (50%): IDR ${refundAmount.toLocaleString("id-ID")} (cancelled ${hoursUntilSession}hrs before session)`
@@ -225,8 +248,10 @@ export async function POST(
       refundType: refundType,
       refundAmount: refundAmount,
       hoursUntilSession: hoursUntilSession,
-      message:
-        refundType === "FULL"
+      isPending: isPendingBooking,
+      message: isPendingBooking
+        ? `Booking cancelled successfully. The time slot has been released. No payment was made, so no refund is needed.`
+        : refundType === "FULL"
           ? `Booking cancelled. Full refund of IDR ${refundAmount.toLocaleString("id-ID")} will be processed (cancelled ${hoursUntilSession} hours before session).`
           : refundType === "PARTIAL"
             ? `Booking cancelled. Partial refund of IDR ${refundAmount.toLocaleString("id-ID")} (50%) will be processed (cancelled ${hoursUntilSession} hours before session).`

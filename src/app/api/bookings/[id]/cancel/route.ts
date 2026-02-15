@@ -70,8 +70,11 @@ export async function POST(
       .from("bookings")
       .update({
         session_status: "CANCELLED",
-        status: booking.status === "PAID" ? "PAID" : "CANCELLED", // Keep payment status as PAID if already paid
+        status: booking.status === "PAID" ? "PAID" : "CANCELLED",
         session_notes: reason || booking.session_notes,
+        cancelled_by: "ADMIN",
+        cancelled_reason: reason || "Admin cancellation",
+        cancelled_at: new Date().toISOString(),
       })
       .eq("id", bookingId)
       .select()

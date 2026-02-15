@@ -100,6 +100,16 @@ export interface Booking {
   refunded_by: string | null;
   refund_notes: string | null;
 
+  // Payment URL fields
+  payment_url: string | null;
+  payment_token: string | null;
+  payment_created_at: string | null;
+
+  // Cancellation tracking fields
+  cancelled_by: string | null;
+  cancelled_reason: string | null;
+  cancelled_at: string | null;
+
   // Equipment rental fields
   equipment_subtotal: number;
   has_equipment_rental: boolean;

@@ -1667,6 +1667,34 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                 <span className="text-muted-foreground">Booking ID:</span>
                 <span className="font-mono text-xs">{booking.id}</span>
               </div>
+              {booking.cancelled_by && (
+                <>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Cancelled By:</span>
+                    <span className="font-medium text-red-600">
+                      {booking.cancelled_by}
+                    </span>
+                  </div>
+                  {booking.cancelled_at && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">
+                        Cancelled At:
+                      </span>
+                      <span className="font-medium">
+                        {new Date(booking.cancelled_at).toLocaleString("en-ID")}
+                      </span>
+                    </div>
+                  )}
+                  {booking.cancelled_reason && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Reason:</span>
+                      <span className="font-medium text-xs">
+                        {booking.cancelled_reason}
+                      </span>
+                    </div>
+                  )}
+                </>
+              )}
             </CardContent>
           </Card>
 

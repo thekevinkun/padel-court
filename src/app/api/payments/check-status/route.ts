@@ -117,6 +117,16 @@ export async function POST(request: NextRequest) {
         transactionStatus === "expire" ||
         transactionStatus === "failure"
       ) {
+        // Check if already cancelled
+        if (booking.status === "CANCELLED") {
+          console.log("ℹ️ Booking already cancelled - skipping failure handling");
+          return NextResponse.json({
+            success: true,
+            status: "CANCELLED",
+            message: "Booking already cancelled",
+          });
+        }
+
         // Payment failed
         bookingStatus = "CANCELLED";
         message = "Payment failed";

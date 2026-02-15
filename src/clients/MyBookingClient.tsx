@@ -49,6 +49,8 @@ import {
   getDisplayStatusIcon,
   getHoursUntilBooking,
   isBookingExpired,
+  isPaymentUrlValid,
+  formatPaymentExpiry,
 } from "@/lib/booking";
 import { sendWhatsAppReceipt } from "@/lib/whatsapp";
 import { generateBookingReceipt } from "@/lib/pdf-generator";
@@ -409,6 +411,11 @@ const MyBookingClient = () => {
       return false;
     }
 
+    // CAN cancel if PENDING (unpaid bookings)
+    if (booking.status === "PENDING") {
+      return true; // Allow cancelling pending bookings
+    }
+
     // Cannot cancel if not paid
     if (booking.status !== "PAID") {
       return false;
@@ -625,7 +632,58 @@ const MyBookingClient = () => {
                 </div>
               </div>
 
-              {/* Alerts */}
+              {/* ALERTS */}
+
+              {/* Payment Required Alert for PENDING bookings */}
+              {booking.status === "PENDING" && booking.payment_url && (
+                <>
+                  {isPaymentUrlValid(booking) ? (
+                    <Alert className="bg-orange-50 border-orange-300">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <strong className="text-orange-900">
+                              ⏰ Payment Required
+                            </strong>
+                            <p className="text-sm text-orange-800 mt-1">
+                              Your booking is reserved but not yet paid.
+                              Complete payment to confirm your booking.
+                            </p>
+                            <p className="text-xs text-orange-700 mt-1 font-semibold">
+                              {formatPaymentExpiry(booking)} • Time slot will be
+                              released if unpaid
+                            </p>
+                          </div>
+                          <Button
+                            onClick={() =>
+                              window.open(booking.payment_url!, "_blank")
+                            }
+                            className="bg-orange-600 hover:border-orange-700"
+                          >
+                            Resume Payment
+                          </Button>
+                        </div>
+                      </AlertDescription>
+                    </Alert>
+                  ) : (
+                    <Alert className="bg-gray-50 border-gray-300">
+                      <AlertCircle className="h-4 w-4 text-gray-600" />
+                      <AlertDescription>
+                        <strong className="text-gray-900">
+                          ⏰ Payment Link Expired
+                        </strong>
+                        <p className="text-sm text-gray-800 mt-1">
+                          The payment window (24 hours) has passed. This booking
+                          will be automatically cancelled.
+                        </p>
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </>
+              )}
+
+              {/* Alerts for all booking status */}
               {booking.status === "REFUNDED" ? (
                 <Alert
                   variant="destructive"
@@ -724,8 +782,8 @@ const MyBookingClient = () => {
                   </Alert>
                 )}
 
-              {/* Cancellation Policy Info */}
-              {canCancelBooking(booking) && (
+              {/* Cancellation Policy Info - Only show for PAID bookings */}
+              {canCancelBooking(booking) && booking.status === "PAID" && (
                 <Alert
                   className={
                     getRefundType(booking) === "FULL"
@@ -781,6 +839,21 @@ const MyBookingClient = () => {
                           policy)
                         </>
                       )}
+                    </p>
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {/* Info for PENDING bookings */}
+              {canCancelBooking(booking) && booking.status === "PENDING" && (
+                <Alert className="bg-red-50 border-red-200">
+                  <Info className="h-4 w-4 !text-red-600" />
+                  <AlertDescription className="text-red-800">
+                    <strong>Cancel Unpaid Booking</strong>
+                    <p className="text-sm mt-1">
+                      This booking has not been paid yet. Cancelling will
+                      immediately release the time slot for others to book. No
+                      refund is involved since no payment was made.
                     </p>
                   </AlertDescription>
                 </Alert>

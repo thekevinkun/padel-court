@@ -24,6 +24,31 @@ export interface BookingConfirmationEmailProps {
   logoEmailUrl: string;
 }
 
+export interface PaymentRequiredEmailProps {
+  customerName: string;
+  customerEmail: string;
+  bookingRef: string;
+  courtName: string;
+  date: string;
+  time: string;
+  numberOfPlayers: number;
+  totalAmount: number;
+  requireDeposit: boolean;
+  depositAmount?: number;
+  paymentUrl: string;
+  equipmentRentals?: Array<{
+    name: string;
+    quantity: number;
+    subtotal: number;
+  }>;
+  additionalPlayers?: Array<{
+    name: string;
+    email?: string;
+    whatsapp?: string;
+  }>;
+  logoEmailUrl: string;
+}
+
 export interface BookingReminderEmailProps {
   customerName: string;
   customerEmail: string;

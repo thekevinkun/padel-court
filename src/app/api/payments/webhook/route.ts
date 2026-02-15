@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
   try {
     // Parse notification payload
     const notification = await request.json();
-    console.log("📩 Webhook received:", notification);
+    console.log("📩 Webhook received: ", notification);
 
     // Initialize Midtrans API client
     const apiClient = new midtransClient.Snap({
@@ -43,25 +43,25 @@ export async function POST(request: NextRequest) {
       .from("bookings")
       .select(
         `
-    *,
-    courts (name, description),
-    booking_equipment (
-      id,
-      equipment_id,
-      quantity,
-      price_per_unit,
-      subtotal,
-      equipment (id, name, category, description)
-    ),
-    booking_players (
-      id,
-      player_order,
-      player_name,
-      player_email,
-      player_whatsapp,
-      is_primary_booker
-    )
-  `,
+        *,
+        courts (name, description),
+        booking_equipment (
+          id,
+          equipment_id,
+          quantity,
+          price_per_unit,
+          subtotal,
+          equipment (id, name, category, description)
+        ),
+        booking_players (
+          id,
+          player_order,
+          player_name,
+          player_email,
+          player_whatsapp,
+          is_primary_booker
+        )
+      `,
       )
       .eq("booking_ref", bookingRef)
       .single();
@@ -136,7 +136,27 @@ export async function POST(request: NextRequest) {
     if (paymentStatus === "SUCCESS" && newBookingStatus === "PAID") {
       console.log("✅ Payment SUCCESS for booking:", bookingRef);
 
-      // Calculate actual fee (for records only)
+      // Check if booking was manually cancelled by customer
+      if (booking.status === "CANCELLED") {
+        console.log("⚠️ Payment received for cancelled booking - ignoring");
+
+        // Create notification for admin to investigate
+        await supabase.from("admin_notifications").insert({
+          booking_id: booking.id,
+          type: "PAYMENT_RECEIVED",
+          title: "⚠️ Payment on Cancelled Booking",
+          message: `Booking ${bookingRef} received payment but was already cancelled. May need manual refund. Amount: IDR ${booking.total_amount.toLocaleString("id-ID")}`,
+          read: false,
+        });
+
+        // Don't process payment, admin will handle refund manually
+        return NextResponse.json({
+          success: true,
+          note: "Payment received but booking was cancelled - admin notified",
+        });
+      }
+
+      // Calculate actual fee by MIDTRANS
       let midtransFee = 0;
       if (paymentType === "credit_card") {
         midtransFee = Math.round(booking.total_amount * 0.029 + 2000); // 2.9% + 2000
@@ -340,12 +360,26 @@ export async function POST(request: NextRequest) {
     else if (paymentStatus === "FAILED" && newBookingStatus === "CANCELLED") {
       console.log("❌ Payment FAILED for booking:", bookingRef);
 
+      // Check if booking was already cancelled by customer
+      if (booking.status === "CANCELLED") {
+        console.log(
+          "ℹ️ Booking already cancelled by customer - ignoring payment failure webhook",
+        );
+        return NextResponse.json({
+          success: true,
+          note: "Booking already cancelled - webhook ignored",
+        });
+      }
+
       // Update booking to CANCELLED
       await supabase
         .from("bookings")
         .update({
           status: "CANCELLED",
-          session_status: "CANCELLED", // ← ADD THIS LINE
+          session_status: "CANCELLED",
+          cancelled_by: "SYSTEM_PAYMENT_EXPIRED",
+          cancelled_reason: `Payment ${transactionStatus} - Midtrans webhook`,
+          cancelled_at: new Date().toISOString(),
         })
         .eq("id", booking.id);
 
