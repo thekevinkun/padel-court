@@ -464,7 +464,7 @@ export default function DashboardPage() {
                     className="block"
                   >
                     <div
-                      className="flex flex-wrap items-center justify-end sm:justify-between 
+                      className="flex flex-wrap items-center sm:justify-between gap-2
                       p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                     >
                       <div className="flex items-center gap-4">
@@ -515,7 +515,7 @@ export default function DashboardPage() {
                           </p>
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="ml-auto text-right">
                         <p className="font-medium">
                           IDR{" "}
                           {(booking.require_deposit

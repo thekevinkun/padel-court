@@ -839,7 +839,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                       <SelectTrigger className="mt-2">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="z-80">
                         {[1, 2, 3, 4].map((num) => (
                           <SelectItem key={num} value={num.toString()}>
                             {num} {num === 1 ? "Player" : "Players"}

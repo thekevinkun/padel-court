@@ -386,7 +386,7 @@ const ReportsPageClient = () => {
       {/* Date Range Picker */}
       <Card>
         <CardContent className="p-4 md:p-6">
-          <div className="flex flex-col lg:flex-row lg:justify-between gap-4">
+          <div className="flex flex-col-reverse lg:flex-row lg:justify-between gap-4">
             <div className="flex flex-col gap-4 flex-1">
               <div>
                 <Label>📅 Date Range</Label>
@@ -406,7 +406,7 @@ const ReportsPageClient = () => {
 
               {dateRange === "custom" && (
                 <>
-                  <div className="flex flex-col sm:flex-row gap-3 sm:self-start">
+                  <div className="flex flex-col md:self-start">
                     <Label>Start Date</Label>
                     <Input
                       type="date"
@@ -415,7 +415,7 @@ const ReportsPageClient = () => {
                       className="mt-2"
                     />
                   </div>
-                  <div className="flex-1">
+                  <div className="flex flex-col md:self-start">
                     <Label>End Date</Label>
                     <Input
                       type="date"
@@ -439,7 +439,7 @@ const ReportsPageClient = () => {
               </div>
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex ml-auto gap-3">
               <Button onClick={fetchAnalytics} variant="outline" className="">
                 <BarChart3 className="w-4 h-4 mr-1" />
                 Refresh
@@ -663,7 +663,9 @@ const ReportsPageClient = () => {
                   {summary.totalBookings}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {summary.totalOngoingBookings > 0 ? `${summary.totalOngoingBookings} ongoing · ` : ""}
+                  {summary.totalOngoingBookings > 0
+                    ? `${summary.totalOngoingBookings} ongoing · `
+                    : ""}
                   {summary.totalCompletedBookings} completed ·{" "}
                   {summary.totalCancelledBookings} cancelled
                 </p>
@@ -757,7 +759,7 @@ const ReportsPageClient = () => {
                           %)
                         </span>
                       </div>
-                      {summary.totalRefunds && summary.totalRefunds > 0 && (
+                      {summary.totalRefunds && summary.totalRefunds > 0 ? (
                         <>
                           {summary.fullRefunds > 0.0 && (
                             <div className="flex justify-between text-gray-500">
@@ -781,6 +783,8 @@ const ReportsPageClient = () => {
                             </span>
                           </div>
                         </>
+                      ) : (
+                        ""
                       )}
                     </div>
                   </div>
@@ -1090,22 +1094,24 @@ const ReportsPageClient = () => {
             <p className="text-sm text-muted-foreground mt-1">
               See which payment methods your customers prefer
             </p>
-            <div className="w-fit ml-auto space-y-2 text-xs text-gray-700 mt-1">
-              <div className="flex items-start gap-2">
-                <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-green-500 mt-0.5 flex-shrink-0"></div>
-                <p>
-                  <strong>Online Payments:</strong> Money collected during
-                  booking via Midtrans (deposits or full payments)
-                </p>
+            {chartsLoaded.paymentMethods && analytics.paymentMethods.length > 0 && (
+              <div className="w-fit ml-auto space-y-2 text-xs text-gray-700 mt-1">
+                <div className="flex items-start gap-2">
+                  <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-green-500 mt-0.5 flex-shrink-0"></div>
+                  <p>
+                    <strong>Online Payments:</strong> Money collected during
+                    booking via Midtrans (deposits or full payments)
+                  </p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-3 h-3 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 mt-0.5 flex-shrink-0"></div>
+                  <p>
+                    <strong>Venue Payments:</strong> Remaining balance collected
+                    in cash at the venue (for deposit bookings only)
+                  </p>
+                </div>
               </div>
-              <div className="flex items-start gap-2">
-                <div className="w-3 h-3 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 mt-0.5 flex-shrink-0"></div>
-                <p>
-                  <strong>Venue Payments:</strong> Remaining balance collected
-                  in cash at the venue (for deposit bookings only)
-                </p>
-              </div>
-            </div>
+            )}
           </CardHeader>
           <CardContent className="pt-4">
             {chartsLoaded.paymentMethods ? (

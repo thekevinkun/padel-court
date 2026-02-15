@@ -773,7 +773,7 @@ export async function GET(request: NextRequest) {
     // CACHE THE RESPONSE
     try {
       await redis.set(cacheKey, responseData, { ex: CACHE_TTL });
-      console.log("📊 Cached analytics data for 1 minute:", cacheKey);
+      console.log("📊 Cached analytics data for 5 minute:", cacheKey);
     } catch (cacheError) {
       console.error("📊 Cache write error:", cacheError);
     }

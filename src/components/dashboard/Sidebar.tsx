@@ -20,9 +20,9 @@ const Sidebar = () => {
     <>
       {/* Mobile menu button */}
       <Button
-        variant="ghost"
+        variant="outline"
         size="icon"
-        className="lg:hidden fixed top-6 left-4 z-60 bg-forest text-accent shadow-md"
+        className="lg:hidden fixed top-6 left-4 z-60 bg-forest hover:bg-transparent hover:border-forest text-accent shadow-md"
         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
       >
         {mobileMenuOpen ? <X /> : <Menu />}

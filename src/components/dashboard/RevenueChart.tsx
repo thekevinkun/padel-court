@@ -66,7 +66,7 @@ const RevenueChart = ({ data }: { data: RevenueData[] }) => {
       <ResponsiveContainer width="100%" height={isTablet ? 428 : 400}>
         <AreaChart
           data={chartData}
-          margin={{ top: 20, right: isTablet ? 15 : 30, left: isTablet ? -35 : 0, bottom: isTablet ? 15 : 20 }}
+          margin={{ top: 20, right: isTablet ? 15 : 25, left: isTablet ? -35 : 0, bottom: isTablet ? 15 : 20 }}
         >
           <defs>
             <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">

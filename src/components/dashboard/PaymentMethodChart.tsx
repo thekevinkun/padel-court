@@ -200,66 +200,74 @@ const PaymentMethodChart = ({ data }: { data: PaymentMethodBreakdown[] }) => {
 
   return (
     <div className="w-full">
-      <div className="h-[1045px] sm:h-[720px] w-full flex items-center justify-center">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={chartData}
-              cx="50%"
-              cy="50%"
-              fontSize={isMobile ? 12 : 16}
-              labelLine={false}
-              label={renderLabel}
-              outerRadius={isMobile ? 115 : 150}
-              innerRadius={isMobile ? 65 : 90}
-              fill="#8884d8"
-              dataKey="value"
-              paddingAngle={2}
-            >
-              {data.map((entry, index) => (
-                <Cell
-                  key={`cell-${index}`}
-                  fill={getColorForMethod(entry.method)}
-                  stroke="#fff"
-                  strokeWidth={2}
+      {!chartData || chartData.length <= 0 ? (
+        <div className="h-[225px] w-full flex items-center justify-center italic">
+          No payment yet.
+        </div>
+      ) : (
+        <>
+          <div className="h-[1045px] sm:h-[720px] w-full flex items-center justify-center">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={chartData}
+                  cx="50%"
+                  cy="50%"
+                  fontSize={isMobile ? 12 : 16}
+                  labelLine={false}
+                  label={renderLabel}
+                  outerRadius={isMobile ? 115 : 150}
+                  innerRadius={isMobile ? 65 : 90}
+                  fill="#8884d8"
+                  dataKey="value"
+                  paddingAngle={2}
+                >
+                  {data.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={getColorForMethod(entry.method)}
+                      stroke="#fff"
+                      strokeWidth={2}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip content={<CustomTooltip />} />
+                <Legend
+                  content={renderLegend}
+                  verticalAlign="bottom"
+                  wrapperStyle={{ paddingBottom: "10px" }}
                 />
-              ))}
-            </Pie>
-            <Tooltip content={<CustomTooltip />} />
-            <Legend
-              content={renderLegend}
-              verticalAlign="bottom"
-              wrapperStyle={{ paddingBottom: "10px" }}
-            />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
 
-      {/* Summary Stats */}
-      <div className="mt-4 grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
-        <div className="text-center">
-          <p className="text-xl sm:text-2xl font-bold text-gray-900">
-            {data.reduce((sum, item) => sum + item.count, 0)}
-          </p>
-          <p className="text-xs text-gray-600 mt-1">Total Transactions</p>
-        </div>
-        <div className="text-center">
-          <p className="text-xl sm:text-2xl font-bold text-green-600">
-            IDR{" "}
-            {data
-              .reduce((sum, item) => sum + item.amount, 0)
-              .toLocaleString("en-ID", { notation: "compact" })}
-          </p>
-          <p className="text-xs text-gray-600 mt-1">Total Amount</p>
-        </div>
-        <div className="text-center">
-          <p className="text-xl sm:text-2xl font-bold text-blue-600">{data.length}</p>
-          <p className="text-xs text-gray-600 mt-1">Payment Methods</p>
-        </div>
-      </div>
+          {/* Summary Stats */}
+          <div className="mt-4 grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
+            <div className="text-center">
+              <p className="text-xl sm:text-2xl font-bold text-gray-900">
+                {data.reduce((sum, item) => sum + item.count, 0)}
+              </p>
+              <p className="text-xs text-gray-600 mt-1">Total Transactions</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xl sm:text-2xl font-bold text-green-600">
+                IDR{" "}
+                {data
+                  .reduce((sum, item) => sum + item.amount, 0)
+                  .toLocaleString("en-ID", { notation: "compact" })}
+              </p>
+              <p className="text-xs text-gray-600 mt-1">Total Amount</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xl sm:text-2xl font-bold text-blue-600">
+                {data.length}
+              </p>
+              <p className="text-xs text-gray-600 mt-1">Payment Methods</p>
+            </div>
+          </div>
 
-      {/* Explanation Section */}
-      {/* <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          {/* Explanation Section */}
+          {/* <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
         <div className="flex items-start gap-3">
           <div className="p-2 bg-blue-500 rounded-lg">
             <Info className="w-4 h-4 text-white" />
@@ -287,6 +295,8 @@ const PaymentMethodChart = ({ data }: { data: PaymentMethodBreakdown[] }) => {
           </div>
         </div>
       </div> */}
+        </>
+      )}
     </div>
   );
 };
