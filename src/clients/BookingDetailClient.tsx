@@ -96,6 +96,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
 
   // Resend email state
   const [resendingEmail, setResendingEmail] = useState(false);
+  const [resendingVenueEmail, setResendingVenueEmail] = useState(false);
 
   // Get bookings on initial and on set bookingId
   useEffect(() => {
@@ -607,6 +608,37 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
       });
     } finally {
       setResendingEmail(false);
+    }
+  };
+
+  // Function to resend venue payment confirmation email
+  const handleResendVenuePaymentEmail = async () => {
+    if (!booking) return;
+
+    setResendingVenueEmail(true);
+    try {
+      const response = await fetch("/api/emails/resend-venue-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bookingId: booking.id,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to resend venue payment email");
+      }
+
+      toast.success("Venue payment receipt sent!", {
+        description: `Check ${booking.customer_email}`,
+      });
+    } catch (error) {
+      console.error("Error resending venue payment email:", error);
+      toast.error("Failed to resend venue payment receipt", {
+        description: "Please try again later",
+      });
+    } finally {
+      setResendingVenueEmail(false);
     }
   };
 
@@ -1275,7 +1307,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
 
           {/* Refund Completed Badge */}
           {booking.refund_status === "COMPLETED" && (
-            <Card className="border-green-200 bg-green-50">
+            <Card className="hidden lg:flex border-green-200 bg-green-50">
               <CardContent className="p-4">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
@@ -1344,15 +1376,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
         </div>
 
         {/* Right Column - Payment Summary */}
-        <div
-          className={`space-y-6 ${
-            canProcessRefund(booking) &&
-            booking.session_status === "UPCOMING" &&
-            booking.status !== "CANCELLED"
-              ? "-mt-6 lg:mt-0"
-              : ""
-          }`}
-        >
+        <div className="-mt-6 lg:mt-0 space-y-6">
           {/* Payment Summary */}
           <Card>
             <CardHeader>
@@ -1702,26 +1726,50 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
           <div className="space-y-3">
             {booking.status === "PAID" || booking.status === "REFUNDED" ? (
               <>
-                <Button
-                  onClick={handleResendEmail}
-                  disabled={resendingEmail}
-                  variant="ghost"
-                  size="lg"
-                  className="w-full bg-blue-50 border-blue-200 hover:bg-blue-100 rounded-full"
-                >
-                  {resendingEmail ? (
-                    <>
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      Sending...
-                    </>
-                  ) : (
-                    <>
-                      <Mail className="mr-2 h-5 w-5" />
-                      Resend Confirmation Email
-                    </>
+                {booking.status === "PAID" &&
+                  !booking.venue_payment_received && (
+                    <Button
+                      onClick={handleResendEmail}
+                      disabled={resendingEmail}
+                      variant="ghost"
+                      size="lg"
+                      className="w-full bg-blue-50 border-blue-200 hover:bg-blue-100 rounded-full"
+                    >
+                      {resendingEmail ? (
+                        <>
+                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                          Sending...
+                        </>
+                      ) : (
+                        <>
+                          <Mail className="mr-2 h-5 w-5" />
+                          Resend Booking Confirmation
+                        </>
+                      )}
+                    </Button>
                   )}
-                </Button>
 
+                {booking.venue_payment_received && (
+                  <Button
+                    onClick={handleResendVenuePaymentEmail}
+                    disabled={resendingVenueEmail}
+                    variant="ghost"
+                    size="lg"
+                    className="w-full bg-green-50 border-green-200 hover:bg-green-100 rounded-full"
+                  >
+                    {resendingVenueEmail ? (
+                      <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Mail className="mr-2 h-5 w-5" />
+                        Resend Venue Payment Receipt
+                      </>
+                    )}
+                  </Button>
+                )}
                 <Button
                   onClick={handleDownloadPDF}
                   disabled={!pdfBlob || generatingPdf}
@@ -1899,9 +1947,9 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
           </Card>
         )}
 
-        {/* Refund Completed Badge */}
+        {/* Refund Completed Badge on mobile */}
         {booking.refund_status === "COMPLETED" && (
-          <Card className="border-green-200 bg-green-50">
+          <Card className="flex lg:hidden border-green-200 bg-green-50">
             <CardContent className="p-4">
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
@@ -1998,7 +2046,7 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
                 <SelectTrigger id="paymentMethod" className="mt-2">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-80 ml-3">
                   <SelectItem value="CASH">💵 Cash</SelectItem>
                   <SelectItem value="DEBIT_CARD">💳 Debit Card</SelectItem>
                   <SelectItem value="BANK_TRANSFER">
@@ -2276,199 +2324,209 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
       <Dialog open={refundDialogOpen} onOpenChange={setRefundDialogOpen}>
         <DialogContent
           onOpenAutoFocus={(e) => e.preventDefault()}
-          className="max-w-sm"
+          className="max-w-sm h-[100dvh] sm:h-[90dvh] overflow-hidden p-0"
         >
-          <DialogHeader>
-            <DialogTitle>Process Refund</DialogTitle>
-            <DialogDescription>
-              Refund payment for booking <strong>{booking.booking_ref}</strong>
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            {/* Policy-Based Refund Notice */}
-            <Alert
-              className={
-                getRefundType(booking) === "FULL"
-                  ? "bg-green-50 border-green-200"
-                  : getRefundType(booking) === "PARTIAL"
-                    ? "bg-blue-50 border-blue-200"
-                    : "bg-gray-50 border-gray-200"
-              }
-            >
-              <AlertCircle
-                className={`h-4 w-4 ${
-                  getRefundType(booking) === "FULL"
-                    ? "text-green-600"
-                    : getRefundType(booking) === "PARTIAL"
-                      ? "text-blue-600"
-                      : "text-gray-600"
-                }`}
-              />
-              <AlertDescription
-                className={
-                  getRefundType(booking) === "FULL"
-                    ? "text-green-800"
-                    : getRefundType(booking) === "PARTIAL"
-                      ? "text-blue-800"
-                      : "text-gray-800"
-                }
-              >
-                <strong>
-                  {getRefundType(booking) === "FULL" && "✅ Full Refund (100%)"}
-                  {getRefundType(booking) === "PARTIAL" &&
-                    "⚖️ Partial Refund (50%)"}
-                  {getRefundType(booking) === "NONE" &&
-                    "⚠️ No Refund Available"}
-                </strong>
-                <p className="text-xs mt-1">
-                  Session starts in {getHoursUntilSession(booking)} hours.
-                  {getRefundType(booking) === "FULL" &&
-                    " Customer is eligible for full refund (≥24hrs policy)."}
-                  {getRefundType(booking) === "PARTIAL" &&
-                    " Customer is eligible for 50% refund (12-24hrs policy)."}
-                  {getRefundType(booking) === "NONE" &&
-                    " Customer is not eligible for refund (<12hrs policy)."}
-                </p>
-              </AlertDescription>
-            </Alert>
+          <div className="custom-scrollbar">
+            <div className="p-6">
+              <DialogHeader>
+                <DialogTitle>Process Refund</DialogTitle>
+                <DialogDescription className="mt-2">
+                  Refund payment for booking{" "}
+                  <strong>{booking.booking_ref}</strong>
+                </DialogDescription>
+              </DialogHeader>
+              <div className="mt-2 space-y-4">
+                {/* Policy-Based Refund Notice */}
+                <Alert
+                  className={
+                    getRefundType(booking) === "FULL"
+                      ? "bg-green-50 border-green-200"
+                      : getRefundType(booking) === "PARTIAL"
+                        ? "bg-blue-50 border-blue-200"
+                        : "bg-gray-50 border-gray-200"
+                  }
+                >
+                  <AlertCircle
+                    className={`h-4 w-4 ${
+                      getRefundType(booking) === "FULL"
+                        ? "text-green-600"
+                        : getRefundType(booking) === "PARTIAL"
+                          ? "text-blue-600"
+                          : "text-gray-600"
+                    }`}
+                  />
+                  <AlertDescription
+                    className={
+                      getRefundType(booking) === "FULL"
+                        ? "text-green-800"
+                        : getRefundType(booking) === "PARTIAL"
+                          ? "text-blue-800"
+                          : "text-gray-800"
+                    }
+                  >
+                    <strong>
+                      {getRefundType(booking) === "FULL" &&
+                        "✅ Full Refund (100%)"}
+                      {getRefundType(booking) === "PARTIAL" &&
+                        "⚖️ Partial Refund (50%)"}
+                      {getRefundType(booking) === "NONE" &&
+                        "⚠️ No Refund Available"}
+                    </strong>
+                    <p className="text-xs mt-1">
+                      Session starts in {getHoursUntilSession(booking)} hours.
+                      {getRefundType(booking) === "FULL" &&
+                        " Customer is eligible for full refund (≥24hrs policy)."}
+                      {getRefundType(booking) === "PARTIAL" &&
+                        " Customer is eligible for 50% refund (12-24hrs policy)."}
+                      {getRefundType(booking) === "NONE" &&
+                        " Customer is not eligible for refund (<12hrs policy)."}
+                    </p>
+                  </AlertDescription>
+                </Alert>
 
-            {/* Refund Amount */}
-            <div>
-              <Label htmlFor="refundAmount">Refund Amount *</Label>
-              <div className="relative mt-2">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                  IDR
-                </span>
-                <Input
-                  id="refundAmount"
-                  type="number"
-                  value={refundAmount}
-                  onChange={(e) => setRefundAmount(e.target.value)}
-                  placeholder="0"
-                  className="pl-12"
-                  min="0"
-                  max={booking.total_amount}
-                  step="1000"
-                />
-              </div>
-              <div className="text-xs text-muted-foreground mt-1 space-y-1">
-                <p>
-                  <strong>Policy-based amount:</strong> IDR{" "}
-                  {calculateEligibleRefund(booking).toLocaleString("id-ID")}
-                  {getRefundType(booking) === "PARTIAL" && " (50% of total)"}
-                </p>
-                <p>
-                  Maximum allowed: IDR{" "}
-                  {booking.total_amount.toLocaleString("id-ID")}
-                </p>
-                {parseFloat(refundAmount) > calculateEligibleRefund(booking) &&
-                  calculateEligibleRefund(booking) > 0 && (
-                    <p className="text-orange-600 font-semibold">
-                      ⚠️ Amount exceeds policy recommendation
+                {/* Refund Amount */}
+                <div>
+                  <Label htmlFor="refundAmount">Refund Amount *</Label>
+                  <div className="relative mt-2">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                      IDR
+                    </span>
+                    <Input
+                      id="refundAmount"
+                      type="number"
+                      value={refundAmount}
+                      onChange={(e) => setRefundAmount(e.target.value)}
+                      placeholder="0"
+                      className="pl-12"
+                      min="0"
+                      max={booking.total_amount}
+                      step="1000"
+                    />
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1 space-y-1">
+                    <p>
+                      <strong>Policy-based amount:</strong> IDR{" "}
+                      {calculateEligibleRefund(booking).toLocaleString("id-ID")}
+                      {getRefundType(booking) === "PARTIAL" &&
+                        " (50% of total)"}
+                    </p>
+                    <p>
+                      Maximum allowed: IDR{" "}
+                      {booking.total_amount.toLocaleString("id-ID")}
+                    </p>
+                    {parseFloat(refundAmount) >
+                      calculateEligibleRefund(booking) &&
+                      calculateEligibleRefund(booking) > 0 && (
+                        <p className="text-orange-600 font-semibold">
+                          ⚠️ Amount exceeds policy recommendation
+                        </p>
+                      )}
+                  </div>
+                </div>
+
+                {/* Refund Method */}
+                <div>
+                  <Label htmlFor="refundMethod">Refund Method *</Label>
+                  <Select value={refundMethod} onValueChange={setRefundMethod}>
+                    <SelectTrigger id="refundMethod" className="mt-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="z-80">
+                      <SelectItem value="MIDTRANS">
+                        💳 Midtrans (Auto Refund)
+                      </SelectItem>
+                      <SelectItem value="MANUAL_TRANSFER">
+                        🏦 Manual Bank Transfer
+                      </SelectItem>
+                      <SelectItem value="CASH">💵 Cash Refund</SelectItem>
+                      <SelectItem value="STORE_CREDIT">
+                        🎫 Store Credit/Voucher
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {refundMethod === "MIDTRANS" && (
+                    <p className="text-xs text-blue-600 mt-1">
+                      ⚠️ You'll need to process this in Midtrans dashboard
+                      separately
                     </p>
                   )}
+                </div>
+
+                {/* Refund Reason */}
+                <div>
+                  <Label htmlFor="refundReason">Refund Reason *</Label>
+                  <Textarea
+                    id="refundReason"
+                    value={refundReason}
+                    onChange={(e) => setRefundReason(e.target.value)}
+                    placeholder="Why is this refund being processed?"
+                    className="mt-2"
+                    rows={3}
+                  />
+                </div>
+
+                {/* Admin Notes */}
+                <div>
+                  <Label htmlFor="refundNotes">Admin Notes (Optional)</Label>
+                  <Textarea
+                    id="refundNotes"
+                    value={refundNotes}
+                    onChange={(e) => setRefundNotes(e.target.value)}
+                    placeholder="Internal notes about this refund..."
+                    className="mt-2"
+                    rows={2}
+                  />
+                </div>
+
+                {/* Warning */}
+                <Alert className="bg-yellow-50 border-yellow-200">
+                  <AlertCircle className="h-4 w-4 text-yellow-600" />
+                  <AlertDescription className="text-xs text-yellow-800">
+                    <strong>Important:</strong> This will mark the booking as
+                    refunded and release the time slot. This action records the
+                    refund in the system but does NOT automatically process
+                    payment refunds. You must manually process the refund
+                    through your payment provider.
+                  </AlertDescription>
+                </Alert>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 pt-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      setRefundDialogOpen(false);
+                      setRefundAmount("");
+                      setRefundMethod("MIDTRANS");
+                      setRefundReason("");
+                      setRefundNotes("");
+                    }}
+                    disabled={refunding}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    className="flex-1 bg-purple-600 hover:border-purple-700"
+                    onClick={handleProcessRefund}
+                    disabled={
+                      refunding || !refundAmount || !refundReason.trim()
+                    }
+                  >
+                    {refunding ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <DollarSign className="w-4 h-4 mr-2" />
+                        Process Refund
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
-            </div>
-
-            {/* Refund Method */}
-            <div>
-              <Label htmlFor="refundMethod">Refund Method *</Label>
-              <Select value={refundMethod} onValueChange={setRefundMethod}>
-                <SelectTrigger id="refundMethod" className="mt-2">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="MIDTRANS">
-                    💳 Midtrans (Auto Refund)
-                  </SelectItem>
-                  <SelectItem value="MANUAL_TRANSFER">
-                    🏦 Manual Bank Transfer
-                  </SelectItem>
-                  <SelectItem value="CASH">💵 Cash Refund</SelectItem>
-                  <SelectItem value="STORE_CREDIT">
-                    🎫 Store Credit/Voucher
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              {refundMethod === "MIDTRANS" && (
-                <p className="text-xs text-blue-600 mt-1">
-                  ⚠️ You'll need to process this in Midtrans dashboard
-                  separately
-                </p>
-              )}
-            </div>
-
-            {/* Refund Reason */}
-            <div>
-              <Label htmlFor="refundReason">Refund Reason *</Label>
-              <Textarea
-                id="refundReason"
-                value={refundReason}
-                onChange={(e) => setRefundReason(e.target.value)}
-                placeholder="Why is this refund being processed?"
-                className="mt-2"
-                rows={3}
-              />
-            </div>
-
-            {/* Admin Notes */}
-            <div>
-              <Label htmlFor="refundNotes">Admin Notes (Optional)</Label>
-              <Textarea
-                id="refundNotes"
-                value={refundNotes}
-                onChange={(e) => setRefundNotes(e.target.value)}
-                placeholder="Internal notes about this refund..."
-                className="mt-2"
-                rows={2}
-              />
-            </div>
-
-            {/* Warning */}
-            <Alert className="bg-yellow-50 border-yellow-200">
-              <AlertCircle className="h-4 w-4 text-yellow-600" />
-              <AlertDescription className="text-xs text-yellow-800">
-                <strong>Important:</strong> This will mark the booking as
-                refunded and release the time slot. This action records the
-                refund in the system but does NOT automatically process payment
-                refunds. You must manually process the refund through your
-                payment provider.
-              </AlertDescription>
-            </Alert>
-
-            {/* Action Buttons */}
-            <div className="flex gap-3 pt-2">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => {
-                  setRefundDialogOpen(false);
-                  setRefundAmount("");
-                  setRefundMethod("MIDTRANS");
-                  setRefundReason("");
-                  setRefundNotes("");
-                }}
-                disabled={refunding}
-              >
-                Cancel
-              </Button>
-              <Button
-                className="flex-1 bg-purple-600 hover:border-purple-700"
-                onClick={handleProcessRefund}
-                disabled={refunding || !refundAmount || !refundReason.trim()}
-              >
-                {refunding ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <DollarSign className="w-4 h-4 mr-2" />
-                    Process Refund
-                  </>
-                )}
-              </Button>
             </div>
           </div>
         </DialogContent>

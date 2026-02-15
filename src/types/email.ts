@@ -174,3 +174,30 @@ export interface CancellationEmailData {
   cancellationReason: string;
   hoursBeforeBooking: number;
 }
+
+export interface VenuePaymentConfirmationEmailProps {
+  customerName: string;
+  customerEmail: string;
+  bookingRef: string;
+  courtName: string;
+  date: string;
+  time: string;
+  venuePaymentAmount: number;
+  paymentMethod: string;
+  depositAmount: number;
+  totalAmount: number;
+  logoEmailUrl: string;
+}
+
+export interface VenuePaymentEmailData {
+  customerName: string;
+  customerEmail: string;
+  bookingRef: string;
+  courtName: string;
+  date: string;
+  time: string;
+  venuePaymentAmount: number;
+  paymentMethod: string;
+  depositAmount: number;
+  totalAmount: number;
+}

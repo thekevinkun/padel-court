@@ -5,12 +5,14 @@ import PaymentRequiredEmail from "@/emails/PaymentRequired";
 import BookingReminderEmail from "@/emails/BookingReminder";
 import RefundConfirmationEmail from "@/emails/RefundConfirmation";
 import CancellationConfirmationEmail from "@/emails/CancellationConfirmation";
+import VenuePaymentConfirmationEmail from "@/emails/VenuePaymentConfirmation";
 
 import {
   BookingEmailData,
   ReminderEmailData,
   RefundEmailData,
   CancellationEmailData,
+  VenuePaymentEmailData,
 } from "@/types/email";
 import { createServerClient } from "@/lib/supabase/server";
 
@@ -327,6 +329,68 @@ export async function sendCancellationConfirmation(
     return { success: true, emailId: result?.id };
   } catch (error) {
     console.error("❌ Error sending cancellation confirmation:", error);
+    return { success: false, error };
+  }
+}
+
+/**
+ * Send venue payment confirmation email after payment at venue
+ */
+export async function sendVenuePaymentConfirmation(
+  data: VenuePaymentEmailData,
+) {
+  try {
+    const supabase = createServerClient();
+    const { data: settings } = await supabase
+      .from("site_settings")
+      .select("logo_email_url")
+      .single();
+
+    const logoEmailUrl =
+      settings?.logo_email_url ||
+      `${process.env.NEXT_PUBLIC_SITE_URL}/logos/logo-email.png`;
+
+    const emailHtml = await render(
+      VenuePaymentConfirmationEmail({
+        customerName: data.customerName,
+        customerEmail: data.customerEmail,
+        bookingRef: data.bookingRef,
+        courtName: data.courtName,
+        date: data.date,
+        time: data.time,
+        venuePaymentAmount: data.venuePaymentAmount,
+        paymentMethod: data.paymentMethod,
+        depositAmount: data.depositAmount,
+        totalAmount: data.totalAmount,
+        logoEmailUrl,
+      }),
+    );
+
+    // Send to customer email (or test email in dev)
+    const recipientEmail =
+      process.env.NODE_ENV === "production" ? data.customerEmail : emailUser;
+
+    if (!recipientEmail) {
+      console.error("Error. No recipient email provided.");
+      return { success: false };
+    }
+
+    const { data: result, error } = await resend.emails.send({
+      from: "Padel Batu Alam Permai <onboarding@resend.dev>",
+      to: [recipientEmail],
+      subject: `Venue Payment Received - ${data.bookingRef}`,
+      html: emailHtml,
+    });
+
+    if (error) {
+      console.error("Email send failed:", error);
+      return { success: false, error };
+    }
+
+    console.log("✅ Venue payment confirmation email sent:", result?.id);
+    return { success: true, emailId: result?.id };
+  } catch (error) {
+    console.error("❌ Error sending venue payment confirmation:", error);
     return { success: false, error };
   }
 }

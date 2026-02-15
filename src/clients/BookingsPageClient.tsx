@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Search, Download, Eye, Info, X } from "lucide-react";
@@ -41,6 +41,8 @@ const BookingsPageClient = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  const tableRef = useRef<HTMLDivElement>(null);
+
   // Get initial filter from URL
   const urlFilter = searchParams.get("filter");
 
@@ -79,6 +81,10 @@ const BookingsPageClient = () => {
   const [statusFilter, setStatusFilter] = useState(initialFilters.status);
   const [sessionFilter, setSessionFilter] = useState(initialFilters.session);
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 12;
+
   // Track if any filter is active (URL or manual)
   const hasActiveFilters =
     statusFilter !== "ALL" ||
@@ -111,23 +117,23 @@ const BookingsPageClient = () => {
         .from("bookings")
         .select(
           `
-    *,
-    courts (name, description),
-    booking_time_slots (
-      id,
-      time_slots (time_start, time_end)
-    ),
-    booking_equipment (
-      id,
-      quantity,
-      equipment (name)
-    ),
-    booking_players (
-      id,
-      player_name,
-      is_primary_booker
-    )
-  `,
+            *,
+            courts (name, description),
+            booking_time_slots (
+              id,
+              time_slots (time_start, time_end)
+            ),
+            booking_equipment (
+              id,
+              quantity,
+              equipment (name)
+            ),
+            booking_players (
+              id,
+              player_name,
+              is_primary_booker
+            )
+          `,
         )
         .order("created_at", { ascending: false });
 
@@ -185,7 +191,26 @@ const BookingsPageClient = () => {
     }
 
     setFilteredBookings(filtered);
+
+    // Reset to page 1 when filters change
+    setCurrentPage(1);
   };
+
+  // Function to scroll to table top
+  const scrollToTable = () => {
+    if (tableRef.current) {
+      tableRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
+  };
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredBookings.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const paginatedBookings = filteredBookings.slice(startIndex, endIndex);
 
   // Function for export to csv
   const exportToCSV = () => {
@@ -270,7 +295,7 @@ const BookingsPageClient = () => {
   return (
     <div className="space-y-6">
       {/* Filters */}
-      <Card>
+      <Card ref={tableRef}>
         <CardContent className="p-6">
           {/* Active Filter Indicator */}
           {hasActiveFilters && (
@@ -400,14 +425,14 @@ const BookingsPageClient = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredBookings.length === 0 ? (
+                {paginatedBookings.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={9} className="h-24 text-center">
                       <p className="text-muted-foreground">No bookings found</p>
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredBookings.map((booking) => (
+                  paginatedBookings.map((booking) => (
                     <TableRow key={booking.id}>
                       <TableCell>
                         <div className="font-mono text-sm font-medium">
@@ -416,9 +441,7 @@ const BookingsPageClient = () => {
                               Deposit
                             </Badge>
                           )}
-                          <div>
-                            {booking.booking_ref}
-                          </div>
+                          <div>{booking.booking_ref}</div>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -519,6 +542,84 @@ const BookingsPageClient = () => {
             </Table>
           </div>
         </CardContent>
+
+        {/* Pagination Controls */}
+        {filteredBookings.length > 0 && (
+          <div className="flex items-center justify-between px-6 py-4 border-t">
+            <div className="text-sm text-muted-foreground">
+              Showing {startIndex + 1} to{" "}
+              {Math.min(endIndex, filteredBookings.length)} of{" "}
+              {filteredBookings.length} bookings
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setCurrentPage((prev) => Math.max(1, prev - 1));
+                  setTimeout(() => scrollToTable(), 100); // Small delay for state update
+                }}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </Button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                  (page) => {
+                    // Show first page, last page, current page, and 1 page before/after current
+                    const showPage =
+                      page === 1 ||
+                      page === totalPages ||
+                      page === currentPage ||
+                      page === currentPage - 1 ||
+                      page === currentPage + 1;
+
+                    const showEllipsis =
+                      (page === currentPage - 2 && currentPage > 3) ||
+                      (page === currentPage + 2 &&
+                        currentPage < totalPages - 2);
+
+                    if (showEllipsis) {
+                      return (
+                        <span key={page} className="px-2 text-muted-foreground">
+                          ...
+                        </span>
+                      );
+                    }
+
+                    if (!showPage) return null;
+
+                    return (
+                      <Button
+                        key={page}
+                        variant={currentPage === page ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => {
+                          setCurrentPage(page);
+                          setTimeout(() => scrollToTable(), 100);
+                        }}
+                        className="min-w-[40px]"
+                      >
+                        {page}
+                      </Button>
+                    );
+                  },
+                )}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setCurrentPage((prev) => Math.min(totalPages, prev + 1));
+                  setTimeout(() => scrollToTable(), 100);
+                }}
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
     </div>
   );

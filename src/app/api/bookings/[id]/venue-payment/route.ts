@@ -152,6 +152,33 @@ export async function POST(
       read: false,
     });
 
+    // Send venue payment confirmation email to customer
+    try {
+      const { sendVenuePaymentConfirmation } = await import("@/lib/email");
+      await sendVenuePaymentConfirmation({
+        customerName: booking.customer_name,
+        customerEmail: booking.customer_email,
+        bookingRef: booking.booking_ref,
+        courtName: booking.courts?.name || "Padel Court",
+        date: new Date(booking.date).toLocaleDateString("en-ID", {
+          timeZone: "Asia/Makassar",
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        }),
+        time: booking.time,
+        venuePaymentAmount: amount,
+        paymentMethod: paymentMethod,
+        depositAmount: booking.deposit_amount,
+        totalAmount: booking.subtotal,
+      });
+      console.log("✅ Venue payment confirmation email sent");
+    } catch (emailError) {
+      console.error("❌ Failed to send venue payment email:", emailError);
+      // Don't fail if email fails
+    }
+
     console.log(
       `Venue payment recorded: ${
         booking.booking_ref

@@ -49,7 +49,7 @@ export default function PaymentRequiredEmail({
                   height="auto"
                   style={{ margin: "0 auto 16px" }}
                 />
-                <Heading style={h1}>⏰ Payment Required</Heading>
+                <Heading style={h1}>Payment Required</Heading>
                 <Text style={headerText}>
                   YOUR BOOKING IS RESERVED - COMPLETE PAYMENT TO CONFIRM
                 </Text>
@@ -70,7 +70,7 @@ export default function PaymentRequiredEmail({
                   <tr>
                     <td align="center">
                       <Text style={urgentText}>
-                        ⏳ Payment Window: 24 Hours
+                        ⏰ Payment Window: 24 Hours
                       </Text>
                       <Text style={bookingRefText}>
                         Booking Ref: <strong>{bookingRef}</strong>
