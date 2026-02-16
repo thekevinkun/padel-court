@@ -152,7 +152,7 @@ const Testimonials = ({ content }: TestimonialsProps) => {
 
             {/* Testimonials Slider */}
             <div className="max-w-4xl mx-auto">
-              <div className="relative min-h-[350px] md:min-h-[300px] flex items-center">
+              <div className="relative h-[350px] md:h-[300px] flex items-center">
                 <AnimatePresence initial={false} custom={direction} mode="wait">
                   <motion.div
                     key={currentIndex}
@@ -165,7 +165,7 @@ const Testimonials = ({ content }: TestimonialsProps) => {
                       x: { type: "spring", stiffness: 300, damping: 30 },
                       opacity: { duration: 0.2 },
                     }}
-                    className="w-full"
+                    className="w-full mt-28"
                   >
                     {/* Testimonial Card */}
                     <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 md:p-12">
@@ -232,7 +232,7 @@ const Testimonials = ({ content }: TestimonialsProps) => {
               </div>
 
               {/* Navigation Controls */}
-              <div className="flex items-center justify-center gap-4 md:gap-6 mt-10">
+              <div className="flex items-center justify-center gap-4 md:gap-6 mt-40 sm:mt-44">
                 {/* Prev Button */}
                 <Button
                   variant="outline"

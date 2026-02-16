@@ -162,7 +162,7 @@ const VersionHistoryDialog = ({
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="max-w-2xl max-h-[80vh]">
+      <DialogContent className="max-w-2xl max-h-[80dvh]">
         <DialogHeader>
           <DialogTitle>
             {getSectionName(sectionType)} - Version History

@@ -100,7 +100,7 @@ const GalleryLightbox = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-7xl h-[100vh] md:h-[90vh] p-0 bg-gradient-to-br from-black via-gray-900 to-black border-0 overflow-hidden">
+      <DialogContent className="max-w-7xl h-[100dvh] md:h-[90dvh] p-0 bg-gradient-to-br from-black via-gray-900 to-black border-0 overflow-hidden">
         <DialogHeader className="sr-only">
           <DialogTitle>{currentImage.caption}</DialogTitle>
           <DialogDescription className="sr-only">
