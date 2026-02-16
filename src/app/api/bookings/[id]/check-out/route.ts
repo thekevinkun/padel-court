@@ -5,7 +5,7 @@ import { createAuthClient } from "@/lib/supabase/auth-server";
 // Endpoint to handle admin-initiated booking check-outs
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     // Extract booking ID and optional notes from admin
@@ -55,7 +55,7 @@ export async function POST(
     if (booking.session_status === "COMPLETED") {
       return NextResponse.json(
         { error: "Booking already checked out" },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -63,7 +63,7 @@ export async function POST(
     if (booking.session_status === "UPCOMING") {
       return NextResponse.json(
         { error: "Cannot check out a booking that hasn't been checked in" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -83,8 +83,39 @@ export async function POST(
       console.error("Error checking out:", updateError);
       return NextResponse.json(
         { error: "Failed to check out" },
-        { status: 500 }
+        { status: 500 },
       );
+    }
+
+    // Release ALL time slots after session completes
+    const { data: relatedSlots } = await supabase
+      .from("booking_time_slots")
+      .select("time_slot_id")
+      .eq("booking_id", bookingId);
+
+    if (relatedSlots && relatedSlots.length > 0) {
+      const slotIds = relatedSlots.map((r) => r.time_slot_id);
+
+      // Only unlock slots that are not admin-blocked
+      const { data: slotsToUnlock } = await supabase
+        .from("time_slots")
+        .select("id, admin_blocked")
+        .in("id", slotIds);
+
+      const unblockableSlotIds = (slotsToUnlock || [])
+        .filter((slot) => !slot.admin_blocked)
+        .map((slot) => slot.id);
+
+      if (unblockableSlotIds.length > 0) {
+        await supabase
+          .from("time_slots")
+          .update({ available: true })
+          .in("id", unblockableSlotIds);
+
+        console.log(
+          `✅ Released ${unblockableSlotIds.length} time slot(s) after check-out`,
+        );
+      }
     }
 
     // Create notification
@@ -107,7 +138,7 @@ export async function POST(
     console.error("Unexpected error in check-out:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

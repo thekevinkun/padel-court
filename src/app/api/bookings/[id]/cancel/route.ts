@@ -42,7 +42,7 @@ export async function POST(
     // Get booking details
     const { data: booking, error: bookingError } = await supabase
       .from("bookings")
-      .select("*, time_slots(id)")
+      .select("*")
       .eq("id", bookingId)
       .single();
 

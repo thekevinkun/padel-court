@@ -31,7 +31,11 @@ export interface TimeSlot {
   time_end: string;
   period: "peak" | "off-peak";
   price_per_person: number;
-  available: boolean;
+  available: boolean; // Now derived/calculated, not stored directly
+  admin_blocked: boolean; // Admin's manual block status
+  created_at: string;
+  booking_count?: number; // How many active bookings use this slot
+  is_booked?: boolean; // Helper flag: has active bookings
 }
 
 interface CTA {

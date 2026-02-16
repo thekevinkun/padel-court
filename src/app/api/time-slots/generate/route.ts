@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     if (authError || !user) {
       return NextResponse.json(
         { error: "Unauthorized. Please log in." },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     if (roleError || !adminRole) {
       return NextResponse.json(
         { error: "Forbidden. Admin privileges required." },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     if (courtsError || !courts || courts.length === 0) {
       return NextResponse.json(
         { error: "No available courts found" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -111,7 +111,8 @@ export async function POST(request: NextRequest) {
                   time_end: timeEnd,
                   period: config.period,
                   price_per_person: config.price,
-                  available: true,
+                  admin_blocked: false, // Default to not blocked
+                  // available field will be derived from queries, not inserted
                 });
 
               if (insertError) {
@@ -147,7 +148,7 @@ export async function POST(request: NextRequest) {
         error: "Failed to generate time slots",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

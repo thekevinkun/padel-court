@@ -67,6 +67,37 @@ export async function POST(_request: NextRequest) {
             })
             .eq("id", booking.id);
 
+          // Release time slots for expired/cancelled booking
+          const { data: relatedSlots } = await supabase
+            .from("booking_time_slots")
+            .select("time_slot_id")
+            .eq("booking_id", booking.id);
+
+          if (relatedSlots && relatedSlots.length > 0) {
+            const slotIds = relatedSlots.map((r) => r.time_slot_id);
+
+            // Only unlock slots that are not admin-blocked
+            const { data: slotsToUnlock } = await supabase
+              .from("time_slots")
+              .select("id, admin_blocked")
+              .in("id", slotIds);
+
+            const unblockableSlotIds = (slotsToUnlock || [])
+              .filter((slot) => !slot.admin_blocked)
+              .map((slot) => slot.id);
+
+            if (unblockableSlotIds.length > 0) {
+              await supabase
+                .from("time_slots")
+                .update({ available: true })
+                .in("id", unblockableSlotIds);
+
+              console.log(
+                `✅ Released ${unblockableSlotIds.length} slot(s) after venue payment expiry`,
+              );
+            }
+          }
+
           // Create notification for expired venue payment
           await supabase.from("admin_notifications").insert({
             booking_id: booking.id,
@@ -147,6 +178,37 @@ export async function POST(_request: NextRequest) {
             })
             .eq("id", booking.id);
 
+          // NEW: Release time slots
+          const { data: relatedSlots } = await supabase
+            .from("booking_time_slots")
+            .select("time_slot_id")
+            .eq("booking_id", booking.id);
+
+          if (relatedSlots && relatedSlots.length > 0) {
+            const slotIds = relatedSlots.map((r) => r.time_slot_id);
+
+            // Only unlock slots that are not admin-blocked
+            const { data: slotsToUnlock } = await supabase
+              .from("time_slots")
+              .select("id, admin_blocked")
+              .in("id", slotIds);
+
+            const unblockableSlotIds = (slotsToUnlock || [])
+              .filter((slot) => !slot.admin_blocked)
+              .map((slot) => slot.id);
+
+            if (unblockableSlotIds.length > 0) {
+              await supabase
+                .from("time_slots")
+                .update({ available: true })
+                .in("id", unblockableSlotIds);
+
+              console.log(
+                `✅ Released ${unblockableSlotIds.length} slot(s) for ${booking.booking_ref}`,
+              );
+            }
+          }
+
           // Create notification for auto-completed session
           await supabase.from("admin_notifications").insert({
             booking_id: booking.id,
@@ -225,6 +287,37 @@ export async function POST(_request: NextRequest) {
               checked_out_at: nowDate.toISOString(),
             })
             .eq("id", booking.id);
+
+          // Release time slots
+          const { data: relatedSlots } = await supabase
+            .from("booking_time_slots")
+            .select("time_slot_id")
+            .eq("booking_id", booking.id);
+
+          if (relatedSlots && relatedSlots.length > 0) {
+            const slotIds = relatedSlots.map((r) => r.time_slot_id);
+
+            // Only unlock slots that are not admin-blocked
+            const { data: slotsToUnlock } = await supabase
+              .from("time_slots")
+              .select("id, admin_blocked")
+              .in("id", slotIds);
+
+            const unblockableSlotIds = (slotsToUnlock || [])
+              .filter((slot) => !slot.admin_blocked)
+              .map((slot) => slot.id);
+
+            if (unblockableSlotIds.length > 0) {
+              await supabase
+                .from("time_slots")
+                .update({ available: true })
+                .in("id", unblockableSlotIds);
+
+              console.log(
+                `✅ Released ${unblockableSlotIds.length} slot(s) for ${booking.booking_ref}`,
+              );
+            }
+          }
 
           // Create notification for auto-completed session
           await supabase.from("admin_notifications").insert({

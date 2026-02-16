@@ -34,7 +34,7 @@ const TimeSlotsPageClient = () => {
   const [loadingCourts, setLoadingCourts] = useState(true);
   const [selectedCourt, setSelectedCourt] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState(
-    new Date().toLocaleDateString("en-CA").split("T")[0]
+    new Date().toLocaleDateString("en-CA").split("T")[0],
   );
 
   // Use real-time hook
@@ -87,19 +87,30 @@ const TimeSlotsPageClient = () => {
   };
 
   const toggleSlotAvailability = async (slot: TimeSlot) => {
+    // Check if slot is booked
+    if (slot.is_booked) {
+      toast.error("Cannot modify this slot", {
+        description: "This slot has active bookings. Cancel the booking first.",
+      });
+      return;
+    }
+
     try {
-      const newAvailability = !slot.available;
+      // Toggle admin_blocked status
+      const newBlockedStatus = !slot.admin_blocked;
 
       const { error } = await supabase
         .from("time_slots")
-        .update({ available: newAvailability })
+        .update({
+          admin_blocked: newBlockedStatus,
+          available: !newBlockedStatus, // ALSO update available field for now
+        })
         .eq("id", slot.id);
 
       if (error) throw error;
 
-      // Don't show toast here - real-time hook will handle it
       console.log(
-        `✅ Toggled slot ${slot.id} availability to ${newAvailability}`
+        `✅ Toggled slot ${slot.id} admin_blocked to ${newBlockedStatus}`,
       );
     } catch (error) {
       console.error("Error toggling slot:", error);
@@ -119,17 +130,29 @@ const TimeSlotsPageClient = () => {
 
     setSaving(true);
     try {
+      // Check if we're trying to unblock a booked slot
+      if (!editAvailable && editingSlot.is_booked) {
+        const { canAdminModifySlot } = await import("@/lib/time-slot");
+        const { canModify, reason } = await canAdminModifySlot(editingSlot.id);
+
+        if (!canModify) {
+          toast.error("Cannot modify availability", {
+            description: reason || "This slot has active bookings",
+          });
+          setSaving(false);
+          return;
+        }
+      }
+
       const { error } = await supabase
         .from("time_slots")
         .update({
           price_per_person: editPrice,
-          available: editAvailable,
+          admin_blocked: !editAvailable, // Store as admin_blocked, not available
         })
         .eq("id", editingSlot.id);
 
       if (error) throw error;
-
-      // Don't show toast here - real-time hook will handle it
       console.log("✅ Successfully saved edit");
       setEditDialogOpen(false);
       setEditingSlot(null);
@@ -142,24 +165,41 @@ const TimeSlotsPageClient = () => {
   };
 
   const blockAllSlotsForDate = async () => {
-    if (!confirm(`Block all slots for ${selectedDate}?`)) return;
+    if (!confirm(`Block all available slots for ${selectedDate}?`)) return;
 
     setBlockingAll(true);
     try {
+      // Get slots that can be blocked (not already booked)
+      const slotsToBlock = timeSlots.filter(
+        (slot) => !slot.admin_blocked && !slot.is_booked,
+      );
+
+      if (slotsToBlock.length === 0) {
+        toast.info("No slots available to block");
+        setBlockingAll(false);
+        return;
+      }
+
+      const slotIds = slotsToBlock.map((s) => s.id);
+
       const { data, error } = await supabase
         .from("time_slots")
-        .update({ available: false })
-        .eq("court_id", selectedCourt)
-        .eq("date", selectedDate)
-        .eq("available", true)
+        .update({ admin_blocked: true })
+        .in("id", slotIds)
         .select();
 
       if (error) throw error;
 
-      // Show summary toast (real-time hook will show individual toasts)
       const count = data?.length || 0;
+      const skippedBooked = timeSlots.filter((s) => s.is_booked).length;
+
       if (count > 0) {
-        toast.success(`Blocked ${count} slot${count > 1 ? "s" : ""}`);
+        toast.success(`Blocked ${count} slot${count > 1 ? "s" : ""}`, {
+          description:
+            skippedBooked > 0
+              ? `Skipped ${skippedBooked} booked slot${skippedBooked > 1 ? "s" : ""}`
+              : undefined,
+        });
       }
     } catch (error) {
       console.error("Error blocking slots:", error);
@@ -170,21 +210,32 @@ const TimeSlotsPageClient = () => {
   };
 
   const unblockAllSlotsForDate = async () => {
-    if (!confirm(`Unblock all slots for ${selectedDate}?`)) return;
+    if (!confirm(`Unblock all admin-blocked slots for ${selectedDate}?`))
+      return;
 
     setUnblockingAll(true);
     try {
+      // Only unblock slots that are admin-blocked (not booked)
+      const slotsToUnblock = timeSlots.filter(
+        (slot) => slot.admin_blocked && !slot.is_booked,
+      );
+
+      if (slotsToUnblock.length === 0) {
+        toast.info("No admin-blocked slots to unblock");
+        setUnblockingAll(false);
+        return;
+      }
+
+      const slotIds = slotsToUnblock.map((s) => s.id);
+
       const { data, error } = await supabase
         .from("time_slots")
-        .update({ available: true })
-        .eq("court_id", selectedCourt)
-        .eq("date", selectedDate)
-        .eq("available", false)
+        .update({ admin_blocked: false })
+        .in("id", slotIds)
         .select();
 
       if (error) throw error;
 
-      // Show summary toast (real-time hook will show individual toasts)
       const count = data?.length || 0;
       if (count > 0) {
         toast.success(`Unblocked ${count} slot${count > 1 ? "s" : ""}`);
@@ -241,7 +292,10 @@ const TimeSlotsPageClient = () => {
     );
   }
 
-  const bookedCount = timeSlots.filter((s) => !s.available).length;
+  const bookedCount = timeSlots.filter((s) => s.is_booked).length;
+  const adminBlockedCount = timeSlots.filter(
+    (s) => s.admin_blocked && !s.is_booked,
+  ).length;
   const availableCount = timeSlots.filter((s) => s.available).length;
 
   return (
@@ -341,12 +395,12 @@ const TimeSlotsPageClient = () => {
           )} */}
 
           {/* Stats */}
-          <div className="mt-4 grid grid-cols-3 gap-4">
+          <div className="mt-4 grid grid-cols-4 gap-4">
             <div className="text-center p-3 bg-gray-50 rounded">
               <div className="text-2xl font-bold text-forest">
                 {timeSlots.length}
               </div>
-              <div className="text-xs text-muted-foreground">Total Slots</div>
+              <div className="text-xs text-muted-foreground">Total</div>
             </div>
             <div className="text-center p-3 bg-green-50 rounded">
               <div className="text-2xl font-bold text-green-600">
@@ -354,11 +408,17 @@ const TimeSlotsPageClient = () => {
               </div>
               <div className="text-xs text-muted-foreground">Available</div>
             </div>
-            <div className="text-center p-3 bg-red-50 rounded">
-              <div className="text-2xl font-bold text-red-600">
+            <div className="text-center p-3 bg-blue-50 rounded">
+              <div className="text-2xl font-bold text-blue-600">
                 {bookedCount}
               </div>
-              <div className="text-xs text-muted-foreground">Blocked</div>
+              <div className="text-xs text-muted-foreground">Booked</div>
+            </div>
+            <div className="text-center p-3 bg-red-50 rounded">
+              <div className="text-2xl font-bold text-red-600">
+                {adminBlockedCount}
+              </div>
+              <div className="text-xs text-muted-foreground">Admin Blocked</div>
             </div>
           </div>
         </CardContent>
@@ -388,12 +448,16 @@ const TimeSlotsPageClient = () => {
                     {slot.time_start.substring(0, 5)} -{" "}
                     {slot.time_end.substring(0, 5)}
                   </div>
-                  {slot.available ? (
+                  {slot.is_booked ? (
+                    <Badge className="bg-blue-100 text-blue-800">Booked</Badge>
+                  ) : slot.admin_blocked ? (
+                    <Badge className="bg-red-100 text-red-800">
+                      Admin Blocked
+                    </Badge>
+                  ) : (
                     <Badge className="bg-green-100 text-green-800">
                       Available
                     </Badge>
-                  ) : (
-                    <Badge className="bg-red-100 text-red-800">Blocked</Badge>
                   )}
                 </div>
 
@@ -422,21 +486,31 @@ const TimeSlotsPageClient = () => {
                     <Edit2 className="w-3 h-3 mr-1" />
                     Edit
                   </Button>
+
                   <Button
                     size="sm"
-                    variant={slot.available ? "destructive" : "default"}
+                    variant={slot.admin_blocked ? "default" : "destructive"}
                     className="flex-1"
                     onClick={() => toggleSlotAvailability(slot)}
+                    disabled={slot.is_booked}
+                    title={
+                      slot.is_booked ? "Cannot modify - has active booking" : ""
+                    }
                   >
-                    {slot.available ? (
+                    {slot.is_booked ? (
                       <>
                         <Lock className="w-3 h-3 mr-1" />
-                        Block
+                        Booked
                       </>
-                    ) : (
+                    ) : slot.admin_blocked ? (
                       <>
                         <Unlock className="w-3 h-3 mr-1" />
                         Unblock
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="w-3 h-3 mr-1" />
+                        Block
                       </>
                     )}
                   </Button>
@@ -449,8 +523,8 @@ const TimeSlotsPageClient = () => {
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent 
-          onOpenAutoFocus={(e) => e.preventDefault()} 
+        <DialogContent
+          onOpenAutoFocus={(e) => e.preventDefault()}
           className="max-w-sm"
         >
           <DialogHeader>
@@ -480,17 +554,34 @@ const TimeSlotsPageClient = () => {
                 />
               </div>
 
-              <div className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  id="available"
-                  checked={editAvailable}
-                  onChange={(e) => setEditAvailable(e.target.checked)}
-                  className="cursor-pointer"
-                />
-                <Label htmlFor="available" className="cursor-pointer">
-                  Available for booking
-                </Label>
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    id="available"
+                    checked={editAvailable}
+                    onChange={(e) => setEditAvailable(e.target.checked)}
+                    disabled={editingSlot?.is_booked}
+                    className="cursor-pointer disabled:cursor-not-allowed"
+                  />
+                  <Label
+                    htmlFor="available"
+                    className={
+                      editingSlot?.is_booked
+                        ? "cursor-not-allowed text-muted-foreground"
+                        : "cursor-pointer"
+                    }
+                  >
+                    Available for booking
+                  </Label>
+                </div>
+                {editingSlot?.is_booked && (
+                  <p className="text-xs text-blue-600 bg-blue-50 p-2 rounded">
+                    ℹ️ This slot has {editingSlot.booking_count} active
+                    booking(s). Availability cannot be changed until bookings
+                    are cancelled.
+                  </p>
+                )}
               </div>
 
               <div className="flex gap-3 pt-4">
@@ -524,7 +615,7 @@ const TimeSlotsPageClient = () => {
 
       {/* Generate Slots Dialog */}
       <Dialog open={generateDialogOpen} onOpenChange={setGenerateDialogOpen}>
-        <DialogContent 
+        <DialogContent
           onOpenAutoFocus={(e) => e.preventDefault()}
           className="max-w-sm"
         >

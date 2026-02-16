@@ -23,6 +23,7 @@ export function useRealtimeTimeSlots({
     try {
       setLoading(true);
 
+      // Fetch time slots
       const { data, error } = await supabase
         .from("time_slots")
         .select("*")
@@ -32,8 +33,16 @@ export function useRealtimeTimeSlots({
 
       if (error) throw error;
 
-      setTimeSlots(data || []);
-      console.log(`📅 Fetched ${data?.length || 0} time slots for ${date}`);
+      // Use helper to calculate availability based on bookings
+      const { calculateTimeSlotAvailability } = await import("@/lib/time-slot");
+      const slotsWithBookingInfo = await calculateTimeSlotAvailability(
+        data || [],
+      );
+
+      setTimeSlots(slotsWithBookingInfo);
+      console.log(
+        `📅 Fetched ${slotsWithBookingInfo.length} time slots for ${date}`,
+      );
     } catch (error) {
       console.error("Error fetching time slots:", error);
       toast.error("Failed to load time slots.");
@@ -76,120 +85,77 @@ export function useRealtimeTimeSlots({
           }
 
           if (payload.eventType === "INSERT") {
-            // New slot added
-            setTimeSlots((prev) => {
-              // Check if already exists
-              if (prev.some((s) => s.id === changedSlot.id)) return prev;
-
-              const updated = [...prev, changedSlot].sort((a, b) =>
-                a.time_start.localeCompare(b.time_start)
-              );
-              return updated;
-            });
-
+            // Re-fetch to get proper availability calculation
+            fetchTimeSlots();
             toast.info("New time slot added", {
-              description: `${changedSlot.time_start.substring(
-                0,
-                5
-              )} - ${changedSlot.time_end.substring(0, 5)}`,
+              description: `${changedSlot.time_start.substring(0, 5)} - ${changedSlot.time_end.substring(0, 5)}`,
             });
           } else if (payload.eventType === "UPDATE") {
-            // Slot updated
+            // Re-fetch to recalculate availability properly
+            fetchTimeSlots();
+
             const oldSlot = payload.old as TimeSlot;
 
-            setTimeSlots((prev) =>
-              prev.map((slot) =>
-                slot.id === changedSlot.id ? changedSlot : slot
-              )
-            );
-
-            // Debug logs
-            console.log("🔍 UPDATE detected:");
-            console.log("  Old available:", oldSlot?.available);
-            console.log("  New available:", changedSlot.available);
-            console.log("  Old price:", oldSlot?.price_per_person);
-            console.log("  New price:", changedSlot.price_per_person);
-
             // Check what changed
-            const availabilityChanged =
-              oldSlot?.available !== changedSlot.available;
+            const adminBlockChanged =
+              oldSlot?.admin_blocked !== changedSlot.admin_blocked;
             const priceChanged =
               oldSlot?.price_per_person !== changedSlot.price_per_person;
 
-            console.log("  Availability changed?", availabilityChanged);
-            console.log("  Price changed?", priceChanged);
-
-            // Build changes array for description
+            // Build changes array
             const changes: string[] = [];
-
-            if (availabilityChanged) {
+            if (adminBlockChanged) {
               changes.push(
-                changedSlot.available ? "Now available" : "Now blocked"
+                changedSlot.admin_blocked ? "Admin blocked" : "Admin unblocked",
               );
             }
-
             if (priceChanged) {
               changes.push(
-                `Price: IDR ${changedSlot.price_per_person.toLocaleString(
-                  "id-ID"
-                )}`
+                `Price: IDR ${changedSlot.price_per_person.toLocaleString("id-ID")}`,
               );
             }
 
-            // Only show toast if something actually changed
+            // Show toast if something changed
             if (changes.length > 0) {
-              // Prioritize price change message if only price changed
               let title: string;
               let toastType: "success" | "info";
 
-              if (availabilityChanged && priceChanged) {
-                // Both changed
-                title = changedSlot.available
-                  ? "⏰ Time slot unblocked"
-                  : "🔒 Time slot blocked";
-                toastType = changedSlot.available ? "success" : "info";
-              } else if (availabilityChanged) {
-                // Only availability changed
-                title = changedSlot.available
-                  ? "⏰ Time slot unblocked"
-                  : "🔒 Time slot blocked";
-                toastType = changedSlot.available ? "success" : "info";
+              if (adminBlockChanged && priceChanged) {
+                title = changedSlot.admin_blocked
+                  ? "🔒 Slot blocked & updated"
+                  : "⏰ Slot unblocked & updated";
+                toastType = changedSlot.admin_blocked ? "info" : "success";
+              } else if (adminBlockChanged) {
+                title = changedSlot.admin_blocked
+                  ? "🔒 Admin blocked slot"
+                  : "⏰ Admin unblocked slot";
+                toastType = changedSlot.admin_blocked ? "info" : "success";
               } else {
-                // Only price changed (or other fields)
                 title = "💰 Time slot updated";
                 toastType = "info";
               }
 
-              const description = `${changedSlot.time_start.substring(
-                0,
-                5
-              )} • ${changes.join(" • ")}`;
+              const description = `${changedSlot.time_start.substring(0, 5)} • ${changes.join(" • ")}`;
 
-              console.log("  Showing toast:", title);
-              console.log("  Description:", description);
-
-              // Use appropriate toast type
               if (toastType === "success") {
                 toast.success(title, { description });
               } else {
                 toast.info(title, { description });
               }
-            } else {
-              console.log("  No changes detected, skipping toast");
             }
           } else if (payload.eventType === "DELETE") {
             // Slot deleted
             const deletedId = payload.old.id as string;
 
             setTimeSlots((prev) =>
-              prev.filter((slot) => slot.id !== deletedId)
+              prev.filter((slot) => slot.id !== deletedId),
             );
 
             toast.info("Time slot removed", {
               description: "A time slot was deleted",
             });
           }
-        }
+        },
       )
       .subscribe((status) => {
         console.log("📅 Time slots subscription status:", status);

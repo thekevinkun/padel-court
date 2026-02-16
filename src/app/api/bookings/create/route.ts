@@ -114,29 +114,29 @@ export async function POST(request: NextRequest) {
     // Initialize Supabase client
     const supabase = createServerClient();
 
-    // Check if ALL selected slots are available
-    const { data: slots, error: slotError } = await supabase
+    // Atomically lock slots and check if they were available
+    const { data: lockedSlots, error: lockError } = await supabase
       .from("time_slots")
-      .select("id, available, time_start")
+      .update({ available: false })
       .in("id", timeSlotIds)
       .eq("court_id", courtId)
-      .eq("date", date);
+      .eq("date", date)
+      .eq("available", true) // CRITICAL: Only lock if currently available
+      .select("id, time_start");
 
-    if (slotError || !slots || slots.length !== timeSlotIds.length) {
-      return NextResponse.json(
-        { error: "One or more time slots not found" },
-        { status: 404 },
-      );
-    }
-
-    // Check if any slot is unavailable
-    const unavailableSlots = slots.filter((s) => !s.available);
-    if (unavailableSlots.length > 0) {
+    // If we didn't lock all slots, they were already taken
+    if (
+      lockError ||
+      !lockedSlots ||
+      lockedSlots.length !== timeSlotIds.length
+    ) {
       return NextResponse.json(
         { error: "One or more selected time slots are no longer available" },
         { status: 409 },
       );
     }
+
+    const slots = lockedSlots; // Use locked slots for further checks
 
     // Verify slots are contiguous
     const sortedSlots = slots.sort((a, b) =>
@@ -259,12 +259,6 @@ export async function POST(request: NextRequest) {
         { status: 500 },
       );
     }
-
-    // Lock ALL selected slots
-    await supabase
-      .from("time_slots")
-      .update({ available: false })
-      .in("id", timeSlotIds);
 
     // Create equipment rentals (if any)
     if (equipmentRentals && equipmentRentals.length > 0) {
