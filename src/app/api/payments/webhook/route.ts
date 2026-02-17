@@ -18,12 +18,38 @@ export async function POST(request: NextRequest) {
       serverKey: process.env.MIDTRANS_SERVER_KEY!,
     });
 
-    // Verify notification authenticity
+    // 1. First verify the signature BEFORE making any API calls
+    const crypto = require("crypto");
+
+    const serverKey = process.env.MIDTRANS_SERVER_KEY!;
+    let orderId = notification.order_id;
+    const statusCode = notification.status_code;
+    const grossAmount = notification.gross_amount;
+    const signatureKey = notification.signature_key;
+
+    // Generate hash to compare
+    const expectedSignature = crypto
+      .createHash("sha512")
+      .update(`${orderId}${statusCode}${grossAmount}${serverKey}`)
+      .digest("hex");
+
+    // Verify signature
+    if (signatureKey !== expectedSignature) {
+      console.error("❌ Invalid webhook signature!");
+      console.error("Expected:", expectedSignature);
+      console.error("Received:", signatureKey);
+
+      return NextResponse.json({ error: "Invalid signature" }, { status: 403 });
+    }
+
+    console.log("✅ Webhook signature verified");
+
+    // 2. NOW verify with Midtrans API (as you already do)
     const statusResponse =
       await apiClient.transaction.notification(notification);
 
     // Extract relevant fields
-    const orderId = statusResponse.order_id;
+    orderId = statusResponse.order_id;
     const transactionStatus = statusResponse.transaction_status;
     const fraudStatus = statusResponse.fraud_status;
     const paymentType = statusResponse.payment_type;
@@ -34,6 +60,23 @@ export async function POST(request: NextRequest) {
 
     // Initialize Supabase client
     const supabase = createServerClient();
+
+    // IDEMPOTENCY CHECK - Check if we already processed this webhook
+    const webhookId = `${statusResponse.transaction_id}-${statusResponse.transaction_status}`;
+
+    const { data: processedWebhook } = await supabase
+      .from("processed_webhooks")
+      .select("id")
+      .eq("webhook_id", webhookId)
+      .single();
+
+    if (processedWebhook) {
+      console.log("♻️ Webhook already processed:", webhookId);
+      return NextResponse.json({
+        success: true,
+        message: "Already processed",
+      });
+    }
 
     // Extract booking reference from order ID
     const bookingRef = orderId.replace("BOOKING-", "");
@@ -70,6 +113,39 @@ export async function POST(request: NextRequest) {
       console.error("❌ Booking not found:", bookingRef);
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
     }
+
+    // Verify payment amount matches expected amount
+    const paidAmount = parseFloat(statusResponse.gross_amount);
+    const expectedAmount = booking.total_amount;
+
+    // Allow small floating point differences (1 cent)
+    if (Math.abs(paidAmount - expectedAmount) > 0.01) {
+      console.error("❌ Payment amount mismatch!");
+      console.error("Expected:", expectedAmount);
+      console.error("Received:", paidAmount);
+      console.error("Booking:", bookingRef);
+
+      // Log this as suspicious activity
+      await supabase.from("admin_notifications").insert({
+        booking_id: booking.id,
+        type: "PAYMENT_FRAUD_ATTEMPT",
+        title: "🚨 Payment Amount Mismatch",
+        message: `Booking ${bookingRef}: Expected ${expectedAmount}, received ${paidAmount}`,
+        read: false,
+      });
+
+      // DO NOT mark as paid - return error
+      return NextResponse.json(
+        {
+          error: "Payment amount mismatch",
+          expected: expectedAmount,
+          received: paidAmount,
+        },
+        { status: 400 },
+      );
+    }
+
+    console.log("✅ Payment amount verified:", paidAmount);
 
     // Determine payment status for our database
     let paymentStatus = "PENDING";
@@ -174,6 +250,19 @@ export async function POST(request: NextRequest) {
         paymentType.includes("echannel")
       ) {
         midtransFee = 4000; // Flat fee
+      }
+
+      const { canTransitionBookingStatus } =
+        await import("@/lib/booking-state-machine");
+
+      if (!canTransitionBookingStatus(booking.status, "PAID")) {
+        console.warn(
+          `⚠️ Invalid transition: ${booking.status} → PAID for ${bookingRef}`,
+        );
+        return NextResponse.json({
+          success: true,
+          note: `Booking already in ${booking.status} state`,
+        });
       }
 
       // Update booking status to PAID
@@ -371,6 +460,18 @@ export async function POST(request: NextRequest) {
         });
       }
 
+      const { canTransitionBookingStatus } =
+        await import("@/lib/booking-state-machine");
+      if (!canTransitionBookingStatus(booking.status, "CANCELLED")) {
+        console.warn(
+          `⚠️ Invalid transition: ${booking.status} → CANCELLED for ${bookingRef}`,
+        );
+        return NextResponse.json({
+          success: true,
+          note: `Booking already in ${booking.status} state`,
+        });
+      }
+
       // Update booking to CANCELLED
       await supabase
         .from("bookings")
@@ -408,6 +509,13 @@ export async function POST(request: NextRequest) {
 
       console.log("✅ Booking cancelled, slot released");
     }
+
+    // Save idempotency record
+    await supabase.from("processed_webhooks").insert({
+      webhook_id: webhookId,
+      order_id: orderId,
+      processed_at: new Date().toISOString(),
+    });
 
     return NextResponse.json({ success: true });
   } catch (error: unknown) {

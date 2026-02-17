@@ -24,6 +24,16 @@ export async function POST(_request: NextRequest) {
 
     // Initialize Supabase client
     const supabase = createServerClient();
+
+    // Cleanup expired idempotency keys
+    await supabase.rpc("cleanup_expired_idempotency");
+
+    // Cleanup old webhook logs
+    await supabase.rpc("cleanup_old_webhooks");
+
+    console.log("🧹 Cleanup jobs executed");
+
+    // START from get date to handle booking update
     const nowDate = new Date();
     const options = { timeZone: "Asia/Makassar" };
     const today = nowDate.toLocaleDateString("en-CA", options);
@@ -116,6 +126,57 @@ export async function POST(_request: NextRequest) {
             `⏰ Expired venue payment & cancelled session: ${booking.booking_ref}`,
           );
         }
+      }
+    }
+
+    // EXPIRE STUCK PENDING BOOKINGS (no webhook received within 24 hours)
+    const { data: stuckPendingBookings } = await supabase
+      .from("bookings")
+      .select("id, booking_ref, customer_name, created_at")
+      .eq("status", "PENDING")
+      .lt(
+        "created_at",
+        new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+      );
+
+    if (stuckPendingBookings && stuckPendingBookings.length > 0) {
+      for (const booking of stuckPendingBookings) {
+        // Expire it
+        await supabase
+          .from("bookings")
+          .update({
+            status: "EXPIRED",
+            session_status: "CANCELLED",
+            cancelled_by: "SYSTEM_PAYMENT_TIMEOUT",
+            cancelled_reason: "Payment not completed within 24 hours",
+            cancelled_at: new Date().toISOString(),
+          })
+          .eq("id", booking.id);
+
+        // Release slots
+        const { data: relatedSlots } = await supabase
+          .from("booking_time_slots")
+          .select("time_slot_id")
+          .eq("booking_id", booking.id);
+
+        if (relatedSlots && relatedSlots.length > 0) {
+          const slotIds = relatedSlots.map((r) => r.time_slot_id);
+          await supabase
+            .from("time_slots")
+            .update({ available: true })
+            .in("id", slotIds);
+        }
+
+        // Notify admin
+        await supabase.from("admin_notifications").insert({
+          booking_id: booking.id,
+          type: "PAYMENT_FAILED",
+          title: "⏰ Booking Expired",
+          message: `Booking ${booking.booking_ref} - ${booking.customer_name} expired after 24 hours without payment. Slot released.`,
+          read: false,
+        });
+
+        console.log(`⏰ Expired stuck booking: ${booking.booking_ref}`);
       }
     }
 
@@ -263,6 +324,7 @@ export async function POST(_request: NextRequest) {
       await supabase
         .from("bookings")
         .select("id, booking_ref, customer_name, date, time, time_end")
+        .eq("status", "PAID")
         .eq("session_status", "IN_PROGRESS");
 
     if (completeFetchError) {

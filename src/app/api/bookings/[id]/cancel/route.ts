@@ -65,6 +65,16 @@ export async function POST(
       );
     }
 
+    const { canTransitionBookingStatus } =
+      await import("@/lib/booking-state-machine");
+
+    if (!canTransitionBookingStatus(booking.status, "CANCELLED")) {
+      return NextResponse.json(
+        { error: `Cannot cancel a booking with status: ${booking.status}` },
+        { status: 400 },
+      );
+    }
+
     // Cancel booking
     const { data: updatedBooking, error: updateError } = await supabase
       .from("bookings")

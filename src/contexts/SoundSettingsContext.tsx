@@ -17,6 +17,7 @@ const SOUND_FILES: Record<NotificationSoundType, string> = {
   SESSION_STARTED: "/sounds/session-started.mp3",
   SESSION_COMPLETED: "/sounds/session-completed.mp3",
   REFUND_PROCESSED: "/sounds/session-completed.mp3",
+  PAYMENT_FRAUD_ATTEMPT: "/sounds/payment-failed.mp3",
 };
 
 const STORAGE_KEY = "admin_sound_settings";

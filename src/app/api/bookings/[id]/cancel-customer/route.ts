@@ -132,6 +132,17 @@ export async function POST(
       );
     }
 
+    const { canTransitionBookingStatus } =
+      await import("@/lib/booking-state-machine");
+
+    const targetStatus = refundAmount > 0 ? "REFUNDED" : "CANCELLED";
+    if (!canTransitionBookingStatus(booking.status, targetStatus)) {
+      return NextResponse.json(
+        { error: `Cannot cancel a booking with status: ${booking.status}` },
+        { status: 400 },
+      );
+    }
+
     // Update booking
     const updateData = {
       status: isPendingBooking

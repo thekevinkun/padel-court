@@ -41,6 +41,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (bookingRef && !bookingRef.match(/^BAP\d+$/)) {
+      return NextResponse.json(
+        { error: "Invalid booking reference format" },
+        { status: 400 },
+      );
+    }
+
     console.log(`Processing failed payment cancellation for: ${bookingRef}`);
     console.log(`Status Code: ${statusCode}, Reason: ${reason}`);
 
@@ -59,21 +66,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if already processed
-    if (booking.status === "CANCELLED") {
-      console.log("ℹ️ Booking already cancelled");
-      return NextResponse.json({
-        success: true,
-        message: "Booking was already cancelled",
-        alreadyCancelled: true,
-      });
-    }
+    const { canTransitionBookingStatus } =
+      await import("@/lib/booking-state-machine");
 
-    if (booking.status === "PAID") {
-      console.log("⚠️ Booking is already PAID - cannot cancel");
+    if (!canTransitionBookingStatus(booking.status, "CANCELLED")) {
+      console.log(`⚠️ Cannot cancel booking in ${booking.status} state`);
       return NextResponse.json(
         {
           success: false,
-          error: "Cannot cancel a paid booking through this endpoint",
+          error: `Cannot cancel a booking with status: ${booking.status}`,
         },
         { status: 400 },
       );

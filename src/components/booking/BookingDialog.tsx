@@ -304,7 +304,63 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
   };
 
   const handleSubmit = async () => {
+    // Validate BEFORE doing anything
+    if (!formData.courtId) {
+      toast.error("Court Not Selected", {
+        description: "Please choose a court before continuing.",
+      });
+      return;
+    }
+
+    if (!formData.date) {
+      toast.error("Date Required", {
+        description: "Please select a booking date.",
+      });
+      return;
+    }
+
+    if (!formData.name || !formData.name.trim()) {
+      toast.error("Name Required", {
+        description: "Please enter your full name.",
+      });
+      return;
+    }
+
+    if (!formData.phone || !formData.phone.trim()) {
+      toast.error("Phone Number Required", {
+        description: "Please enter your phone number.",
+      });
+      return;
+    }
+
+    if (!formData.email || !formData.email.trim()) {
+      toast.error("Missing Email", {
+        description:
+          "Please enter your email address to continue with the booking.",
+        duration: 5000,
+      });
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailRegex.test(formData.email)) {
+      toast.error("Invalid Email", {
+        description: "Please enter a valid email address.",
+      });
+      return;
+    }
+
+    if (!formData.slotIds || formData.slotIds.length === 0) {
+      toast.error("No Time Slot Selected", {
+        description: "Please select at least one time slot before proceeding.",
+        duration: 5000,
+      });
+      return;
+    }
+
     setIsProcessing(true);
+
     try {
       const deposit = calculateDeposit();
       const total = calculateTotal();
@@ -348,9 +404,18 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
             )[1] + ":00"
           : "";
 
+      const idempotencyKey = `${formData?.email.toLowerCase().trim()}-${
+        formData.courtId
+      }-${formData.date?.toLocaleDateString("en-CA")}-${formData?.slotIds
+        .sort()
+        .join(",")}-${crypto.randomUUID()}`;
+
       const bookingResponse = await fetch("/api/bookings/create", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": idempotencyKey,
+        },
         body: JSON.stringify({
           courtId: formData.courtId,
           timeSlotIds: formData.slotIds, // Array of slot IDs
@@ -1565,6 +1630,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                           agreeTerms: checked as boolean,
                         })
                       }
+                      className="mt-1"
                     />
                     <label
                       htmlFor="terms"

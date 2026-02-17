@@ -111,8 +111,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // IDEMPOTENCY CHECK - Handle duplicate request processed
+    const idempotencyKey =
+      request.headers.get("idempotency-key") ||
+      `${customerEmail.toLowerCase().trim()}-${courtId}-${date}-${[...timeSlotIds].sort().join(",")}`;
+
     // Initialize Supabase client
     const supabase = createServerClient();
+
+    const { data: existingRequest } = await supabase
+      .from("booking_idempotency")
+      .select("booking_id, bookings(*)")
+      .eq("idempotency_key", idempotencyKey)
+      .single();
+
+    // Check if this request was already processed
+    if (existingRequest) {
+      console.log("♻️ Duplicate booking request detected");
+
+      return NextResponse.json({
+        success: true,
+        booking: existingRequest.bookings,
+        duplicate: true,
+        message: "This booking was already created",
+      });
+    }
 
     // Atomically lock slots and check if they were available
     const { data: lockedSlots, error: lockError } = await supabase
@@ -355,6 +378,12 @@ export async function POST(request: NextRequest) {
       title: "New Booking Created",
       message: notificationMessage,
       read: false,
+    });
+
+    // Save idempotency record
+    await supabase.from("booking_idempotency").insert({
+      idempotency_key: idempotencyKey,
+      booking_id: booking.id,
     });
 
     return NextResponse.json({
