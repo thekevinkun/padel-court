@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { MapPin, Phone, Mail, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -87,14 +88,14 @@ const Contact = () => {
                     size="lg"
                     className="w-full sm:w-auto rounded-full font-semibold hover:scale-105 transition-transform gap-2"
                   >
-                    <a
+                    <Link
                       href={`https://wa.me/${settings.whatsapp.replace(/\D/g, "")}`}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
                       <MessageCircle className="w-5 h-5" />
                       WhatsApp
-                    </a>
+                    </Link>
                   </Button>
                 </CardContent>
               </Card>
@@ -150,12 +151,12 @@ const Contact = () => {
                       <p className="text-xs text-muted-foreground font-medium uppercase mb-1">
                         Phone
                       </p>
-                      <a
+                      <Link
                         href={`tel:${settings.phone}`}
                         className="text-foreground hover:text-forest transition-colors font-medium"
                       >
                         {settings.phone}
-                      </a>
+                      </Link>
                     </div>
                   </div>
 
@@ -168,12 +169,12 @@ const Contact = () => {
                       <p className="text-xs text-muted-foreground font-medium uppercase mb-1">
                         Email
                       </p>
-                      <a
+                      <Link
                         href={`mailto:${settings.email}`}
                         className="text-foreground hover:text-forest transition-colors font-medium break-all"
                       >
                         {settings.email}
-                      </a>
+                      </Link>
                     </div>
                   </div>
 
