@@ -109,7 +109,7 @@ const Gallery = ({ content }: GalleryProps) => {
     <>
       <section
         id="gallery"
-        className="pb-16 md:pb-24 lg:pb-32 bg-background relative overflow-hidden"
+        className="section-py bg-background relative overflow-hidden"
       >
         {/* Decorative background elements */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -z-10" />

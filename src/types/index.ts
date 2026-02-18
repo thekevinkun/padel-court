@@ -276,6 +276,58 @@ export interface PricingSectionCMS {
   savePricing: () => Promise<void>;
 }
 
+export interface Coach {
+  id: string;
+  name: string;
+  role: string; // e.g. "Head Coach"
+  image_url: string;
+  instagram_url?: string;
+  bio: string;
+  specialties: string[]; // e.g. ["Technique", "Strategy"]
+  certifications: string[];
+  experience: string; // e.g. "8+ years"
+  nationality?: string;
+}
+
+export interface CoachesContent {
+  version?: number;
+  badge: string;
+  heading: string;
+  description: string;
+  coaches: Coach[];
+}
+
+export interface CoachesSectionCMS {
+  coaches: CoachesContent & { version?: number };
+  setCoaches: (c: CoachesContent & { version?: number }) => void;
+  coachesDialogOpen: boolean;
+  setCoachesDialogOpen: (v: boolean) => void;
+  editingCoach: Coach | null;
+  setEditingCoach: (c: Coach | null) => void;
+  coachDialogOpen: boolean;
+  setCoachDialogOpen: (v: boolean) => void;
+  coachImageFile: File | null;
+  setCoachImageFile: (f: File | null) => void;
+  coachImagePreview: string | null;
+  setCoachImagePreview: (s: string | null) => void;
+  onCoachImageSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  openAddCoach: () => void;
+  openEditCoach: (coach: Coach) => void;
+  deleteCoach: (id: string) => void;
+  saveCoach: () => void;
+  savingCoach: boolean;
+  savingCoachesHeader: boolean;
+  saveCoachesHeader: () => void;
+  tempCoachesHeader: { badge: string; heading: string; description: string };
+  setTempCoachesHeader: (h: {
+    badge: string;
+    heading: string;
+    description: string;
+  }) => void;
+  headerDialogOpen: boolean;
+  setHeaderDialogOpen: (v: boolean) => void;
+}
+
 export interface GalleryImage {
   id: string;
   url: string;

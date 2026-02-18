@@ -5,6 +5,7 @@ import FeaturesGrid from "@/components/home/FeaturesGrid";
 import Courts from "@/components/home/Courts";
 import Testimonials from "@/components/home/Testimonials";
 import Pricing from "@/components/home/Pricing";
+import Coaches from "@/components/home/Coaches";
 import Gallery from "@/components/home/Gallery";
 import CTA from "@/components/home/CTA";
 import Footer from "@/components/layout/Footer";
@@ -17,6 +18,7 @@ import {
   featuresInitial,
   testimonialsInitial,
   pricingInitial,
+  coachesInitial,
   galleryInitial,
   ctaInitial,
 } from "@/lib/constants";
@@ -31,6 +33,7 @@ export default async function Home() {
   const featuresContent = sections.features || { items: featuresInitial };
   const testimonialsContent = sections.testimonials || testimonialsInitial;
   const pricingContent = sections.pricing || pricingInitial;
+  const coachesContent = sections.coaches || coachesInitial;
   const galleryContent = sections.gallery || galleryInitial;
   const ctaContent = sections.cta || ctaInitial;
   const courts = sections.courts || [];
@@ -48,6 +51,7 @@ export default async function Home() {
         <Courts courts={courts} />
         <Testimonials content={testimonialsContent} />
         <Pricing content={pricingContent} />
+        <Coaches content={coachesContent} />
         <Gallery content={galleryContent} />
         <CTA content={ctaContent} />
         <Footer />

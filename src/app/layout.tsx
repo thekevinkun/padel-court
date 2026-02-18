@@ -70,7 +70,6 @@ export default function RootLayout({
         <StructuredData />
         {/* Favicon */}
         <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link
           rel="icon"
           type="image/png"

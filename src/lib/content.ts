@@ -6,6 +6,7 @@ import {
   Court,
   TestimonialsContent,
   PricingContent,
+  CoachesContent,
   GalleryContent,
   CTAContent,
   PageHero,
@@ -20,6 +21,7 @@ import {
 // Update ContentSections type to include courts
 export interface ContentSectionsWithCourts extends ContentSections {
   courts: Court[];
+  coaches: CoachesContent | null;
 }
 
 /**
@@ -58,7 +60,8 @@ export async function getContentSections(): Promise<ContentSectionsWithCourts> {
       hero: null,
       welcome: null,
       features: null,
-      courts: courts || [], // Add courts array
+      courts: courts || [],
+      coaches: null,
       testimonials: null,
       pricing: null,
       gallery: null,
@@ -84,6 +87,9 @@ export async function getContentSections(): Promise<ContentSectionsWithCourts> {
           case "pricing":
             content.pricing = section.content as PricingContent;
             break;
+          case "coaches":
+            content.coaches = section.content as CoachesContent;
+            break;
           case "gallery":
             content.gallery = section.content as GalleryContent;
             break;
@@ -101,9 +107,10 @@ export async function getContentSections(): Promise<ContentSectionsWithCourts> {
       hero: null,
       welcome: null,
       features: null,
+      courts: [],
       testimonials: null,
       pricing: null,
-      courts: [],
+      coaches: null,
       gallery: null,
       cta: null,
     };
@@ -114,7 +121,7 @@ export async function getContentSections(): Promise<ContentSectionsWithCourts> {
  * Get individual section content
  */
 export async function getSectionContent<T>(
-  sectionType: string
+  sectionType: string,
 ): Promise<T | null> {
   try {
     const supabase = createServerClient();
@@ -142,7 +149,7 @@ export async function getSectionContent<T>(
  * Runs on server side only
  */
 export async function getPageHero(
-  slug: "activities" | "courts" | "shop" | "pricing" | "contact"
+  slug: "activities" | "courts" | "shop" | "pricing" | "contact",
 ): Promise<PageHeroContent | null> {
   try {
     const supabase = createServerClient();
@@ -306,7 +313,7 @@ export async function getShopProducts(): Promise<ShopProduct[]> {
     return shop.products
       .filter((p: ShopProduct) => p.is_active)
       .sort(
-        (a: ShopProduct, b: ShopProduct) => a.display_order - b.display_order
+        (a: ShopProduct, b: ShopProduct) => a.display_order - b.display_order,
       );
   } catch (error) {
     console.error("Unexpected error getting shop products:", error);

@@ -2,6 +2,7 @@ import {
   FeatureItem,
   PricingContent,
   TestimonialsContent,
+  CoachesContent,
   GalleryContent,
   CTAContent,
 } from "@/types";
@@ -241,6 +242,75 @@ export const pricingInitial: PricingContent = {
       { name: "Premium Racket", price: "60,000", description: "Per session" },
     ],
   },
+};
+
+export const coachesInitial: CoachesContent = {
+  badge: "Meet the Team",
+  heading: "Our Expert Coaches",
+  description:
+    "Learn from certified professionals dedicated to elevating your padel game at every level.",
+  coaches: [
+    {
+      id: "coach-1",
+      name: "Carlos Mendez",
+      role: "Head Coach",
+      image_url: "/images/coach-placeholder.webp",
+      instagram_url: "https://instagram.com",
+      bio: "Carlos brings over a decade of professional padel experience from Spain. A certified WPT coach, he has trained players ranging from absolute beginners to national-level competitors. His patient, technique-first approach makes him the go-to coach for serious players.",
+      specialties: [
+        "Technique & Form",
+        "Match Strategy",
+        "Mental Game",
+        "Group Training",
+      ],
+      certifications: [
+        "WPT Certified Level 3 Coach",
+        "Spanish Padel Federation License",
+        "Sports Psychology Certificate",
+      ],
+      experience: "10+ years",
+      nationality: "Spanish",
+    },
+    {
+      id: "coach-2",
+      name: "Rina Santoso",
+      role: "Senior Coach",
+      image_url: "/images/coach-placeholder.webp",
+      instagram_url: "https://instagram.com",
+      bio: "Rina is a former national-level player turned coach with a passion for developing local talent. She specializes in footwork, positioning, and doubles strategy — making her sessions high-energy and incredibly effective.",
+      specialties: [
+        "Footwork & Movement",
+        "Doubles Strategy",
+        "Beginner Friendly",
+        "Youth Training",
+      ],
+      certifications: [
+        "National Padel Association Level 2",
+        "PBSI Certified Coach",
+      ],
+      experience: "6+ years",
+      nationality: "Indonesian",
+    },
+    {
+      id: "coach-3",
+      name: "Marco Ferreira",
+      role: "Junior Coach",
+      image_url: "/images/coach-placeholder.webp",
+      instagram_url: "https://instagram.com",
+      bio: "Marco is an energetic coach with a background in competitive padel across South America. He focuses on physical conditioning, power shots, and helping intermediate players break through their plateaus.",
+      specialties: [
+        "Power & Conditioning",
+        "Smash & Volleys",
+        "Intermediate Development",
+      ],
+      certifications: [
+        "FPF Level 1 Certification",
+        "Fitness & Conditioning Diploma",
+      ],
+      experience: "4+ years",
+      nationality: "Brazilian",
+    },
+  ],
 };
 
 export const galleryInitial: GalleryContent = {

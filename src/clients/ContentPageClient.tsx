@@ -9,6 +9,7 @@ import HeroSection from "@/components/dashboard/HeroSection";
 import WelcomeSection from "@/components/dashboard/WelcomeSection";
 import FeaturesGridSection from "@/components/dashboard/FeaturesGridSection";
 import PricingSection from "@/components/dashboard/PricingSection";
+import CoachesSection from "@/components/dashboard/CoachesSection";
 import CTASection from "@/components/dashboard/CTASection";
 import PageHeroesSection from "@/components/dashboard/PageHeroesSection";
 import ActivitiesSection from "@/components/dashboard/ActivitiesSection";
@@ -20,6 +21,7 @@ import {
   featuresInitial,
   testimonialsInitial,
   pricingInitial,
+  coachesInitial,
   galleryInitial,
   shopInitial,
   ctaInitial,
@@ -41,6 +43,8 @@ import {
   FeatureItem,
   Testimonial,
   TestimonialsContent,
+  Coach,
+  CoachesContent,
   GalleryContent,
   GalleryImage,
   CTAContent,
@@ -717,6 +721,168 @@ const ContentPageClient = () => {
       alert("Failed to save pricing");
     } finally {
       setSavingPricing(false);
+    }
+  };
+
+  /* COACHES HANDLERS */
+  // Coaches state
+  const [coaches, setCoaches] = useState<CoachesContent & { version?: number }>(
+    { ...coachesInitial, version: 1 },
+  );
+  const [editingCoach, setEditingCoach] = useState<Coach | null>(null);
+  const [coachDialogOpen, setCoachDialogOpen] = useState(false);
+  const [coachesDialogOpen, setCoachesDialogOpen] = useState(false);
+  const [coachImageFile, setCoachImageFile] = useState<File | null>(null);
+  const [coachImagePreview, setCoachImagePreview] = useState<string | null>(
+    null,
+  );
+  const [savingCoach, setSavingCoach] = useState(false);
+  const [savingCoachesHeader, setSavingCoachesHeader] = useState(false);
+  const [tempCoachesHeader, setTempCoachesHeader] = useState({
+    badge: "",
+    heading: "",
+    description: "",
+  });
+  const [headerDialogOpen, setHeaderDialogOpen] = useState(false);
+
+  // Coaches functions
+  const onCoachImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+
+    const validation = validateImageFile(f, 5);
+    if (!validation.isValid) {
+      alert(validation.error);
+      return;
+    }
+
+    setCoachImageFile(f);
+    readPreview(f, setCoachImagePreview);
+  };
+
+  const openAddCoach = () => {
+    setEditingCoach({
+      id: `new-${Date.now()}`,
+      name: "",
+      role: "",
+      image_url: "",
+      instagram_url: "",
+      bio: "",
+      specialties: [],
+      certifications: [],
+      experience: "",
+      nationality: "",
+    });
+    setCoachImagePreview(null);
+    setCoachImageFile(null);
+    setCoachDialogOpen(true);
+  };
+
+  const openEditCoach = (coach: Coach) => {
+    setEditingCoach({ ...coach });
+    setCoachImagePreview(null);
+    setCoachImageFile(null);
+    setCoachDialogOpen(true);
+  };
+
+  const deleteCoach = async (id: string) => {
+    if (!confirm("Delete this coach?")) return;
+
+    const coach = coaches.coaches.find((c) => c.id === id);
+    if (coach?.image_url) {
+      const oldPath = extractFilePathFromUrl(coach.image_url, "content");
+      if (oldPath) await deleteImage("content", oldPath);
+    }
+
+    const updated = {
+      ...coaches,
+      coaches: coaches.coaches.filter((c) => c.id !== id),
+    };
+
+    await saveSectionWithVersion("coaches", updated, "Deleted coach");
+    setCoaches({ ...updated, version: (coaches.version || 1) + 1 });
+
+    await triggerRevalidation();
+  };
+
+  const saveCoach = async () => {
+    if (!editingCoach) return;
+
+    setSavingCoach(true);
+
+    try {
+      let imageUrl = editingCoach.image_url;
+      if (coachImageFile) {
+        if (imageUrl && !editingCoach.id.startsWith("new-")) {
+          const oldPath = extractFilePathFromUrl(imageUrl, "content");
+          if (oldPath) await deleteImage("content", oldPath);
+        }
+
+        const uploaded = await uploadImage(
+          "content",
+          coachImageFile,
+          "coaches",
+        );
+
+        if (!uploaded) throw new Error("Failed to upload image.");
+
+        imageUrl = uploaded;
+      }
+
+      const updatedCoach = { ...editingCoach, image_url: imageUrl };
+      const isNew = editingCoach.id.startsWith("new-");
+
+      const updatedList = isNew
+        ? [...coaches.coaches, { ...updatedCoach, id: `coach-${Date.now()}` }]
+        : coaches.coaches.map((c) =>
+            c.id === editingCoach.id ? updatedCoach : c,
+          );
+
+      const updated = { ...coaches, coaches: updatedList };
+
+      await saveSectionWithVersion(
+        "coaches",
+        updated,
+        isNew ? "Added coach" : "Updated coach",
+      );
+
+      setCoaches({ ...updated, version: (coaches.version || 1) + 1 });
+      setCoachDialogOpen(false);
+      setEditingCoach(null);
+      setCoachImageFile(null);
+      setCoachImagePreview(null);
+
+      await triggerRevalidation();
+      console.log("✅ Coach saved");
+    } catch (err) {
+      console.error(err);
+      alert(
+        `Failed to save coach: ${err instanceof Error ? err.message : "Unknown error"}`,
+      );
+    } finally {
+      setSavingCoach(false);
+    }
+  };
+
+  const saveCoachesHeader = async () => {
+    setSavingCoachesHeader(true);
+    try {
+      const updated = { ...coaches, ...tempCoachesHeader };
+
+      await saveSectionWithVersion(
+        "coaches",
+        updated,
+        "Updated coaches header",
+      );
+
+      setCoaches({ ...updated, version: (coaches.version || 1) + 1 });
+      setHeaderDialogOpen(false);
+
+      await triggerRevalidation();
+    } catch (err) {
+      alert("Failed to save header");
+    } finally {
+      setSavingCoachesHeader(false);
     }
   };
 
@@ -1623,6 +1789,9 @@ const ContentPageClient = () => {
             case "pricing":
               setPricing({ ...section.content, version: section.version });
               break;
+            case "coaches":
+              setCoaches({ ...section.content, version: section.version });
+              break;
             case "gallery":
               setGallery({ ...section.content, version: section.version });
               break;
@@ -1875,6 +2044,32 @@ const ContentPageClient = () => {
             removePricingNote={removePricingNote}
             savingPricing={savingPricing}
             savePricing={savePricing}
+          />
+          <CoachesSection
+            coaches={coaches}
+            setCoaches={setCoaches}
+            coachesDialogOpen={coachesDialogOpen}
+            setCoachesDialogOpen={setCoachesDialogOpen}
+            editingCoach={editingCoach}
+            setEditingCoach={setEditingCoach}
+            coachDialogOpen={coachDialogOpen}
+            setCoachDialogOpen={setCoachDialogOpen}
+            coachImageFile={coachImageFile}
+            setCoachImageFile={setCoachImageFile}
+            coachImagePreview={coachImagePreview}
+            setCoachImagePreview={setCoachImagePreview}
+            onCoachImageSelect={onCoachImageSelect}
+            openAddCoach={openAddCoach}
+            openEditCoach={openEditCoach}
+            deleteCoach={deleteCoach}
+            saveCoach={saveCoach}
+            savingCoach={savingCoach}
+            savingCoachesHeader={savingCoachesHeader}
+            saveCoachesHeader={saveCoachesHeader}
+            tempCoachesHeader={tempCoachesHeader}
+            setTempCoachesHeader={setTempCoachesHeader}
+            headerDialogOpen={headerDialogOpen}
+            setHeaderDialogOpen={setHeaderDialogOpen}
           />
           <GallerySection
             gallery={gallery}
