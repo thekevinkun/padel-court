@@ -68,12 +68,8 @@ export async function GET(request: NextRequest) {
       for (const booking of bookings) {
         try {
           // Check if booking time is within 3-4 hour window
-          const bookingDateTime = new Date(booking.date);
-          const [hours, minutes] = booking.time
-            .split(" - ")[0]
-            .split(":")
-            .map(Number);
-          bookingDateTime.setHours(hours, minutes, 0, 0);
+          const timeStart = booking.time.split(" - ")[0];
+          const bookingDateTime = new Date(`${booking.date}T${timeStart}:00+08:00`);
 
           const hoursUntil =
             (bookingDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);

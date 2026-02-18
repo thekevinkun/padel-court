@@ -14,34 +14,21 @@ import { Booking, VenuePaymentStatus } from "@/types/booking";
  * Helper function to check if booking time has passed
  */
 export function hasBookingTimePassed(booking: Booking): boolean {
-  const bookingDate = new Date(booking.date);
-  const timeEnd = booking.time.split(" - ")[1]; // "09:00 - 10:00" -> "10:00"
-  const [hours, minutes] = timeEnd.split(":").map(Number);
+  const timeEnd = booking.time.split(" - ")[1];
+  const endTime = new Date(`${booking.date}T${timeEnd}:00+08:00`);
 
-  bookingDate.setHours(hours, minutes, 0, 0);
-
-  return new Date() > bookingDate;
+  return new Date() > endTime;
 }
 
 /*
  * Helper function to check if booking is currently active
  */
 export function isBookingActive(booking: Booking): boolean {
-  const bookingDate = new Date(booking.date);
   const [timeStart, timeEnd] = booking.time.split(" - ");
+  const startTime = new Date(`${booking.date}T${timeStart}:00+08:00`);
+  const endTime = new Date(`${booking.date}T${timeEnd}:00+08:00`);
 
-  const [startHours, startMinutes] = timeStart.split(":").map(Number);
-  const [endHours, endMinutes] = timeEnd.split(":").map(Number);
-
-  const startTime = new Date(bookingDate);
-  startTime.setHours(startHours, startMinutes, 0, 0);
-
-  const endTime = new Date(bookingDate);
-  endTime.setHours(endHours, endMinutes, 0, 0);
-
-  const now = new Date();
-
-  return now >= startTime && now <= endTime;
+  return new Date() >= startTime && new Date() <= endTime;
 }
 
 /*
@@ -262,10 +249,9 @@ export function getDurationLabel(booking: Booking): string {
  * Get number of hours until booking starts
  */
 export const getHoursUntilBooking = (booking: Booking): number => {
-  const bookingDateTime = new Date(booking.date);
-  const [hours, minutes, seconds] = booking.time_start.split(":").map(Number);
-
-  bookingDateTime.setHours(hours, minutes, seconds || 0, 0);
+  const bookingDateTime = new Date(
+    `${booking.date}T${booking.time_start}+08:00`,
+  );
   const diffInHours =
     (bookingDateTime.getTime() - new Date().getTime()) / (1000 * 60 * 60);
 
@@ -276,8 +262,6 @@ export const getHoursUntilBooking = (booking: Booking): number => {
  * Check if booking has expired (time has passed)
  */
 export function isBookingExpired(booking: Booking): boolean {
-  const bookingDate = new Date(booking.date);
-  const [hours, minutes, seconds] = booking.time_end.split(":").map(Number);
-  bookingDate.setHours(hours, minutes, seconds || 0, 0);
+  const bookingDate = new Date(`${booking.date}T${booking.time_end}+08:00`);
   return new Date() > bookingDate;
 }

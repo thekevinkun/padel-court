@@ -342,12 +342,8 @@ const BookingDetailClient = ({ bookingId }: { bookingId: string }) => {
 
   // Calculate hours until session starts
   const getHoursUntilSession = (booking: Booking): number => {
-    const bookingDateTime = new Date(booking.date);
-    const [hours, minutes] = booking.time
-      .split(" - ")[0]
-      .split(":")
-      .map(Number);
-    bookingDateTime.setHours(hours, minutes, 0, 0);
+    const timeStart = booking.time.split(" - ")[0];
+    const bookingDateTime = new Date(`${booking.date}T${timeStart}:00+08:00`);
 
     return Math.round(
       (bookingDateTime.getTime() - new Date().getTime()) / (1000 * 60 * 60),

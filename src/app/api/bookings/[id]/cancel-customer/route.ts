@@ -81,12 +81,8 @@ export async function POST(
     // Only calculate refund for PAID bookings
     if (!isPendingBooking) {
       // Calculate hours until SESSION STARTS (not booking time!)
-      const bookingDateTime = new Date(booking.date);
-      const [hours, minutes] = booking.time
-        .split(" - ")[0]
-        .split(":")
-        .map(Number);
-      bookingDateTime.setHours(hours, minutes, 0, 0);
+      const timeStart = booking.time.split(" - ")[0];
+      const bookingDateTime = new Date(`${booking.date}T${timeStart}:00+08:00`);
       hoursUntilSession = Math.round(
         (bookingDateTime.getTime() - new Date().getTime()) / (1000 * 60 * 60),
       );

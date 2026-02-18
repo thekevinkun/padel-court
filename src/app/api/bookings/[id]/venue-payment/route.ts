@@ -52,12 +52,8 @@ export async function POST(
     }
 
     // Check if booking time has passed
-    const bookingDate = new Date(booking.date);
-    const [hours, minutes, seconds] = booking.time_end.split(":").map(Number); // Use time_end field
-    bookingDate.setHours(hours, minutes, seconds || 0, 0);
-
-    const now = new Date();
-    const hasTimePassed = now > bookingDate;
+    const bookingDate = new Date(`${booking.date}T${booking.time_end}+08:00`);
+    const hasTimePassed = new Date() > bookingDate;
 
     if (hasTimePassed) {
       // Mark as expired if not already

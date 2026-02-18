@@ -61,11 +61,9 @@ export async function POST(_request: NextRequest) {
     let expiredCount = 0;
     if (bookingsToExpire) {
       for (const booking of bookingsToExpire) {
-        const bookingDate = new Date(booking.date);
-        const [hours, minutes, seconds] = booking.time_end
-          .split(":")
-          .map(Number);
-        bookingDate.setHours(hours, minutes, seconds || 0, 0);
+        const bookingDate = new Date(
+          `${booking.date}T${booking.time_end}+08:00`,
+        );
 
         // If booking time has passed, expire venue payment and cancel session
         if (nowDate > bookingDate) {
@@ -202,19 +200,10 @@ export async function POST(_request: NextRequest) {
     // Check each booking to see if it should be started
     if (bookingsToStart) {
       for (const booking of bookingsToStart) {
-        const bookingDate = new Date(booking.date);
-        const [startHours, startMinutes, startSeconds] = booking.time_start
-          .split(":")
-          .map(Number);
-        const [endHours, endMinutes, endSeconds] = booking.time_end
-          .split(":")
-          .map(Number);
-
-        const startTime = new Date(bookingDate);
-        startTime.setHours(startHours, startMinutes, startSeconds || 0, 0);
-
-        const endTime = new Date(bookingDate);
-        endTime.setHours(endHours, endMinutes, endSeconds || 0, 0);
+        const startTime = new Date(
+          `${booking.date}T${booking.time_start}+08:00`,
+        );
+        const endTime = new Date(`${booking.date}T${booking.time_end}+08:00`);
 
         console.log(`🔍 Checking ${booking.booking_ref}:`);
         console.log(` Date: ${booking.date}, Time: ${booking.time}`);
@@ -334,12 +323,7 @@ export async function POST(_request: NextRequest) {
     let completedCount = 0;
     if (bookingsToComplete) {
       for (const booking of bookingsToComplete) {
-        const bookingDate = new Date(booking.date);
-        const [hours, minutes, seconds] = booking.time_end
-          .split(":")
-          .map(Number);
-        const endTime = new Date(bookingDate);
-        endTime.setHours(hours, minutes, seconds || 0, 0);
+        const endTime = new Date(`${booking.date}T${booking.time_end}+08:00`);
 
         if (nowDate > endTime) {
           await supabase

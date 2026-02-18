@@ -70,12 +70,8 @@ export async function POST(
       settingsData?.refund_partial_percentage ?? 50;
 
     // Calculate hours until session
-    const bookingDateTime = new Date(booking.date);
-    const [hours, minutes] = booking.time
-      .split(" - ")[0]
-      .split(":")
-      .map(Number);
-    bookingDateTime.setHours(hours, minutes, 0, 0);
+    const timeStart = booking.time.split(" - ")[0];
+    const bookingDateTime = new Date(`${booking.date}T${timeStart}:00+08:00`);
     const hoursUntilSession = Math.round(
       (bookingDateTime.getTime() - new Date().getTime()) / (1000 * 60 * 60),
     );

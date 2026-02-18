@@ -282,10 +282,11 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
     bookingDate: Date,
   ): boolean => {
     const now = new Date();
-    const slotDateTime = new Date(bookingDate);
+    const dateStr = bookingDate.toLocaleDateString("en-CA", {
+      timeZone: "Asia/Makassar",
+    });
     const timeStart = slot.time.split(" - ")[0];
-    const [hours, minutes] = timeStart.split(":").map(Number);
-    slotDateTime.setHours(hours, minutes, 0, 0);
+    const slotDateTime = new Date(`${dateStr}T${timeStart}:00+08:00`);
     return slotDateTime < now;
   };
 
@@ -295,10 +296,11 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
   ): boolean => {
     if (!settings) return false;
     const now = new Date();
-    const slotDateTime = new Date(bookingDate);
+    const dateStr = bookingDate.toLocaleDateString("en-CA", {
+      timeZone: "Asia/Makassar",
+    });
     const timeStart = slot.time.split(" - ")[0];
-    const [hours, minutes] = timeStart.split(":").map(Number);
-    slotDateTime.setHours(hours, minutes, 0, 0);
+    const slotDateTime = new Date(`${dateStr}T${timeStart}:00+08:00`);
     const hoursDiff = differenceInHours(slotDateTime, now);
     return hoursDiff >= 0 && hoursDiff < settings.min_advance_booking;
   };

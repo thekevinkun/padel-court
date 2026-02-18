@@ -373,12 +373,10 @@ export async function POST(request: NextRequest) {
 
       // Check if booking is < 3 hours away - send reminder immediately
       try {
-        const bookingDateTime = new Date(booking.date);
-        const [hours, minutes] = booking.time
-          .split(" - ")[0]
-          .split(":")
-          .map(Number);
-        bookingDateTime.setHours(hours, minutes, 0, 0);
+        const timeStart = booking.time.split(" - ")[0];
+        const bookingDateTime = new Date(
+          `${booking.date}T${timeStart}:00+08:00`,
+        );
 
         const hoursUntilBooking = Math.round(
           (bookingDateTime.getTime() - new Date().getTime()) / (1000 * 60 * 60),
