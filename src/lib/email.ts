@@ -55,8 +55,7 @@ export async function sendBookingConfirmation(data: BookingEmailData) {
     );
 
     // Send to our email in test mode (resend rules without domain)
-    const recipientEmail =
-      process.env.NODE_ENV === "production" ? data.customerEmail : emailUser;
+    const recipientEmail = emailUser;
 
     if (!recipientEmail) {
       console.error("Error. No recipent email provided.");
@@ -119,8 +118,7 @@ export async function sendPaymentRequired(
       }),
     );
 
-    const recipientEmail =
-      process.env.NODE_ENV === "production" ? data.customerEmail : emailUser;
+    const recipientEmail = emailUser;
 
     if (!recipientEmail) {
       console.error("Error. No recipient email provided.");
@@ -179,8 +177,7 @@ export async function sendBookingReminder(data: ReminderEmailData) {
       }),
     );
 
-    const recipientEmail =
-      process.env.NODE_ENV === "production" ? data.customerEmail : emailUser;
+    const recipientEmail = emailUser;
 
     if (!recipientEmail) {
       console.error("Error. No recipent email provided.");
@@ -238,8 +235,7 @@ export async function sendRefundConfirmation(data: RefundEmailData) {
       }),
     );
 
-    const recipientEmail =
-      process.env.NODE_ENV === "production" ? data.customerEmail : emailUser;
+    const recipientEmail = emailUser;
 
     if (!recipientEmail) {
       console.error("Error. No recipent email provided.");
@@ -367,8 +363,7 @@ export async function sendVenuePaymentConfirmation(
     );
 
     // Send to customer email (or test email in dev)
-    const recipientEmail =
-      process.env.NODE_ENV === "production" ? data.customerEmail : emailUser;
+    const recipientEmail = emailUser;
 
     if (!recipientEmail) {
       console.error("Error. No recipient email provided.");

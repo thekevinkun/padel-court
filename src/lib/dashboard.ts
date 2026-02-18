@@ -72,7 +72,7 @@ export const initialSettings = {
 
   // Payment Settings
   paymentSettings: {
-    midtransClientKey: process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || "",
+    midtransClientKey: process.env.MIDTRANS_CLIENT_KEY || "",
     midtransIsProduction: false,
     enableCreditCard: true,
     enableBankTransfer: true,
