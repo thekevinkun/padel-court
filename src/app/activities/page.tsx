@@ -4,11 +4,12 @@ import Navbar from "@/components/layout/Navbar";
 import PageHero from "@/components/pages/PageHero";
 import Activities from "@/components/pages/Activities";
 import Gallery from "@/components/home/Gallery";
+import Coaches from "@/components/home/Coaches";
 import CTA from "@/components/home/CTA";
 import Footer from "@/components/layout/Footer";
 import BookingDialogWrapper from "@/components/booking/BookingDialogWrapper";
 
-import { galleryInitial, ctaInitial } from "@/lib/constants";
+import { galleryInitial, ctaInitial, coachesInitial } from "@/lib/constants";
 import { getContentSections, getPageHero, getActivities } from "@/lib/content";
 
 export const metadata: Metadata = {
@@ -24,6 +25,7 @@ export default async function ActivitiesPage() {
 
   // Use database content or fallback to defaults
   const galleryContent = sections.gallery || galleryInitial;
+  const coachesContent = sections.coaches || coachesInitial;
   const ctaContent = sections.cta || ctaInitial;
 
   // Fallback hero content if not in database
@@ -42,6 +44,7 @@ export default async function ActivitiesPage() {
         {/* Activities Section */}
         <Activities activities={activities} />
 
+        <Coaches content={coachesContent} />
         <Gallery content={galleryContent} />
         <CTA content={ctaContent} />
         <Footer />

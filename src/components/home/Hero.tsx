@@ -54,7 +54,7 @@ const Hero = ({ content }: { content: HeroContent }) => {
       </div>
 
       {/* Content */}
-      <div className="relative z-5 h-full flex items-center pt-18">
+      <div className="relative z-5 h-full flex items-center pt-6 sm:pt-18">
         <div className="container-custom">
           <motion.div
             variants={staggerContainer}
