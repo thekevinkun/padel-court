@@ -16,7 +16,7 @@ const SOUND_FILES: Record<NotificationSoundType, string> = {
   CANCELLATION: "/sounds/cancellation.mp3",
   SESSION_STARTED: "/sounds/session-started.mp3",
   SESSION_COMPLETED: "/sounds/session-completed.mp3",
-  REFUND_PROCESSED: "/sounds/session-completed.mp3",
+  REFUND_PROCESSED: "/sounds/refund-processed.mp3",
   PAYMENT_FRAUD_ATTEMPT: "/sounds/payment-failed.mp3",
 };
 
