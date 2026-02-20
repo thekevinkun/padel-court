@@ -853,7 +853,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                         {sortedSelectedSlots.length > 0 && (
                           <Alert className="mt-4 bg-blue-50 border-blue-200">
                             <Info className="h-4 w-4 text-blue-600" />
-                            <AlertDescription className="text-blue-800">
+                            <AlertDescription className="text-blue-800 z-20">
                               <strong>
                                 Selected: {duration} hour
                                 {duration > 1 ? "s" : ""}
@@ -874,7 +874,7 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                         {reachedMaxHours && (
                           <Alert className="mt-2 bg-orange-50 border-orange-200">
                             <AlertCircle className="h-4 w-4 text-orange-600" />
-                            <AlertDescription className="text-orange-800 text-sm">
+                            <AlertDescription className="text-orange-800 text-sm z-20">
                               Maximum {maxHours} hours per booking
                             </AlertDescription>
                           </Alert>

@@ -47,7 +47,7 @@ const CoachLightbox = ({ coach, open, onOpenChange }: CoachLightboxProps) => {
               alt={coach.name}
               fill
               sizes="(max-width: 1200px) 100vw, 1200px"
-              className="object-cover object-top"
+              className="object-cover object-[75%_25%]"
               priority
               placeholder="blur"
               blurDataURL={blurDataURL}

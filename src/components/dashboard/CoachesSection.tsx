@@ -102,7 +102,7 @@ const CoachesSection = ({
                         src={coach.image_url}
                         alt={coach.name}
                         fill
-                        className="object-cover"
+                        className="object-cover object-[25%_75%]"
                         sizes="(max-width: 768px) 100vw, 33vw"
                       />
                     ) : (
@@ -250,7 +250,7 @@ const CoachesSection = ({
                             src={coachImagePreview || editingCoach.image_url}
                             alt="Preview"
                             fill
-                            className="object-cover"
+                            className="object-cover object-[25%_75%]"
                           />
                           <button
                             onClick={() => {

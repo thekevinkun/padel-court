@@ -85,7 +85,7 @@ const Coaches = ({ content }: CoachesProps) => {
                       fill
                       quality={85}
                       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                      className="object-cover group-hover:scale-110 transition-transform duration-500"
+                      className="object-cover group-hover:scale-110 transition-transform duration-500 object-[25%_75%]"
                       placeholder="blur"
                       blurDataURL={blurDataURL}
                     />

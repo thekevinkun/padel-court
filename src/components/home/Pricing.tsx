@@ -90,7 +90,7 @@ const Pricing = ({ content }: { content: PricingContent }) => {
                     {content.courtRental.peakHours.title}
                   </h3>
                   {content.courtRental.peakHours.subtitle && (
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs sm:text-sm text-muted-foreground">
                       {content.courtRental.peakHours.subtitle}
                     </p>
                   )}
@@ -144,7 +144,7 @@ const Pricing = ({ content }: { content: PricingContent }) => {
                     {content.courtRental.offPeakHours.title}
                   </h3>
                   {content.courtRental.offPeakHours.subtitle && (
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs sm:text-sm text-muted-foreground">
                       {content.courtRental.offPeakHours.subtitle}
                     </p>
                   )}
@@ -202,7 +202,7 @@ const Pricing = ({ content }: { content: PricingContent }) => {
                     {content.headCoach.title}
                   </h3>
                   {content.headCoach.subtitle && (
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs sm:text-sm text-muted-foreground">
                       {content.headCoach.subtitle}
                     </p>
                   )}
@@ -262,7 +262,7 @@ const Pricing = ({ content }: { content: PricingContent }) => {
                       {content.seniorCoach.title}
                     </h3>
                     {content.seniorCoach.subtitle && (
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-xs sm:text-sm text-muted-foreground">
                         {content.seniorCoach.subtitle}
                       </p>
                     )}
@@ -314,7 +314,7 @@ const Pricing = ({ content }: { content: PricingContent }) => {
                       {content.juniorCoach.title}
                     </h3>
                     {content.juniorCoach.subtitle && (
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-xs sm:text-sm text-muted-foreground">
                         {content.juniorCoach.subtitle}
                       </p>
                     )}
