@@ -61,6 +61,10 @@ const SettingsPageClient = () => {
   const [logoEmailFile, setLogoEmailFile] = useState<File | null>(null);
   const [logoEmailPreview, setLogoEmailPreview] = useState<string | null>(null);
 
+  // Og Image upload states
+  const [ogImageFile, setOgImageFile] = useState<File | null>(null);
+  const [ogImagePreview, setOgImagePreview] = useState<string | null>(null);
+
   // Active tab
   const [activeTab, setActiveTab] = useState("business");
 
@@ -166,6 +170,31 @@ const SettingsPageClient = () => {
     }
   };
 
+  // Handle og image file selection
+  const handleOgImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const validation = validateImageFile(file, 5);
+    if (!validation.isValid) {
+      setErrorMessage(validation.error || "Invalid file");
+      setSaveStatus("error");
+      return;
+    }
+    setOgImageFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => setOgImagePreview(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  // Add upload function
+  const uploadOgImage = async (file: File): Promise<string | null> => {
+    if (settings?.og_image?.startsWith("http")) {
+      const oldPath = extractFilePathFromUrl(settings.og_image, "settings");
+      if (oldPath) await deleteImage("settings", oldPath);
+    }
+    return await uploadImage("settings", file, "og");
+  };
+
   // Save all settings
   const handleSave = async () => {
     if (!settings) return;
@@ -198,11 +227,18 @@ const SettingsPageClient = () => {
         }
       }
 
+      let ogImageUrl = settings.og_image;
+      if (ogImageFile) {
+        const uploaded = await uploadOgImage(ogImageFile);
+        if (uploaded) ogImageUrl = uploaded;
+      }
+
       // Prepare settings payload
       const payload = {
         ...settings,
         logo_url: logoUrl,
         logo_email_url: logoEmailUrl,
+        og_image: ogImageUrl,
       };
 
       // Send PUT request
@@ -273,6 +309,7 @@ const SettingsPageClient = () => {
         setSettings(data.settings);
         setLogoPreview(data.settings.logo_url);
         setLogoEmailPreview(data.settings.logo_email_url);
+        setOgImagePreview(data.settings.og_image);
         console.log("✅ Settings loaded:", data.settings);
       }
     } catch (error) {
@@ -1382,30 +1419,112 @@ const SettingsPageClient = () => {
 
               <div>
                 <Label htmlFor="ogImage">Open Graph Image URL</Label>
-                <Input
-                  id="ogImage"
-                  value={settings.og_image}
-                  onChange={(e) => updateField("og_image", e.target.value)}
-                  className="mt-1"
-                  placeholder="/images/og-image.jpg"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-muted-foreground mt-1 mb-2">
                   Image shown when sharing on social media (recommended:
-                  1200x630px)
+                  1200x630px), max 5MB
                 </p>
+                <div className="mt-2">
+                  {ogImagePreview ? (
+                    <div className="relative inline-block">
+                      <div
+                        className="relative w-56 h-34 rounded-lg p-2 border
+                          bg-gradient-to-br from-white/55 via-gray-200 to-white"
+                      >
+                        <Image
+                          src={ogImagePreview}
+                          alt="Open Graph Image"
+                          quality={75}
+                          fill
+                          className="object-cover rounded-lg"
+                          sizes="128px"
+                          loading="lazy"
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOgImagePreview(null);
+                          setOgImageFile(null);
+                        }}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="inline-block border-2 border-dashed rounded-lg p-6 cursor-pointer hover:border-forest transition-colors">
+                      <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                      <p className="text-sm font-medium text-center">
+                        Upload Open Graph Image
+                      </p>
+                      <p className="text-xs text-muted-foreground text-center mt-1">
+                        JPG, PNG, GIF, WebP
+                      </p>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                        onChange={handleOgImageSelect}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
               </div>
 
-              <div className="border rounded-lg p-4 bg-muted/30">
+              <div className="border rounded-lg p-4 bg-muted/30 space-y-4">
                 <h3 className="font-semibold mb-2 text-sm">Preview</h3>
-                <div className="space-y-2">
-                  <div className="text-blue-600 text-lg font-medium">
-                    {settings.meta_title}
+
+                {/* Social Share Preview (WhatsApp, Twitter, Facebook) */}
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Social Media Share
+                  </p>
+                  <div className="border rounded-lg overflow-hidden max-w-sm">
+                    {settings.og_image ? (
+                      <img
+                        src={settings.og_image}
+                        alt="OG Preview"
+                        className="w-full object-cover"
+                        style={{ aspectRatio: "1200/680" }}
+                      />
+                    ) : (
+                      <div
+                        className="w-full bg-muted flex items-center justify-center text-muted-foreground text-xs"
+                        style={{ aspectRatio: "1200/680" }}
+                      >
+                        No OG image set
+                      </div>
+                    )}
+                    <div className="p-3 border-t bg-background">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide">
+                        padelbap.com
+                      </p>
+                      <p className="text-sm font-semibold leading-tight mt-0.5">
+                        {settings.meta_title}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                        {settings.meta_description}
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-green-700 text-xs">
-                    padelbap.com › booking
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    {settings.meta_description}
+                </div>
+
+                {/* Google Search Preview */}
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Google Search Result
+                  </p>
+                  <div className="space-y-1">
+                    <div className="text-blue-600 text-lg font-medium leading-tight">
+                      {settings.meta_title}
+                    </div>
+                    <div className="text-green-700 text-xs">
+                      padelbap.com › booking
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {settings.meta_description}
+                    </div>
                   </div>
                 </div>
               </div>
